@@ -1,0 +1,3 @@
+class Topic:
+  pass
+
