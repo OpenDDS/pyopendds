@@ -3,9 +3,9 @@ import os
 from pathlib import Path
 from distutils.core import setup, Extension
 
-ace_root = Path(os.environ.get('ACE_ROOT', '../aces/oci_2.2a/ACE_wrappers')).resolve()
-dds_root = Path(os.environ.get('DDS_ROOT', '../master/OpenDDS')).resolve()
-messenger = Path.cwd().parent.resolve() / 'messenger'
+ace_root = Path(os.environ['ACE_ROOT']).resolve()
+dds_root = Path(os.environ['DDS_ROOT']).resolve()
+messenger = dds_root / 'tests/DCPS/Messenger'
 
 _pyopendds = Extension(
   name = '_pyopendds',
@@ -20,7 +20,7 @@ _pyopendds = Extension(
   extra_compile_args = [
     '-pthread', '-pipe'
   ],
-  runtime_library_dirs = [
+  library_dirs = [
     str(ace_root / 'lib'),
     str(dds_root / 'lib'),
     str(messenger),
@@ -43,7 +43,7 @@ _pyopendds = Extension(
     'TAO',
     'ACE',
     'dl',
-    'rt ',
+    'rt',
   ],
   define_macros = [
     ('_GNU_SOURCE', None),
@@ -53,7 +53,7 @@ _pyopendds = Extension(
 
 setup(
   name = 'pyopendds',
-  version = '0.1',
+  version = '0.1.0',
   description = 'Python Bindings for OpenDDS',
   py_modules = ['pyopendds'],
   ext_modules = [_pyopendds],
