@@ -1,3 +1,4 @@
+from _pyopendds import create_participant
 from .Topic import Topic
 from .Subscriber import Subscriber
 
@@ -9,6 +10,8 @@ class DomainParticipant:
     self.listener = listener
     self.topics = {}
     self.subscribers = []
+
+    create_participant(self, domain)
 
   def create_topic(self, name: str, typename: str, qos=None, listener=None) -> Topic:
     topic = Topic(name, typename, qos, listener)

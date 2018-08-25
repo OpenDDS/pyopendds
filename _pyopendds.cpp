@@ -78,11 +78,83 @@ static PyObject* init_opendds(PyObject* self, PyObject* args)
   Py_RETURN_NONE;
 }
 
+void delete_participant_var(PyObject* var) {
+  if (PyCapsule_CheckExact(var)) {
+    DDS::DomainParticipant_var participant = static_cast<DDS::DomainParticipant*>(
+      PyCapsule_GetPointer(var, NULL));
+    participant = 0;
+  }
+}
+
+/*
+ * create_participant(participant: DomainParticipant, domain: int) -> None
+ */
+static PyObject* create_participant(PyObject* self, PyObject* args)
+{
+  PyObject* participant_obj = PySequence_GetItem(args, 0);
+  // TODO: Check this is a DomainParticipant
+  if (!participant_obj) {
+    PyErr_SetString(PyOpenDDS_Error, "No Participant Given");
+    return NULL;
+  }
+
+  PyObject* domain_obj = PySequence_GetItem(args, 1);
+  if (!domain_obj) {
+    PyErr_SetString(PyOpenDDS_Error, "Domain argument is NULL");
+    return NULL;
+  }
+  PyObject* domain_long_obj = PyNumber_Long(domain_obj);
+  if (!domain_long_obj) {
+    PyErr_SetString(PyOpenDDS_Error, "Invalid Domain argument");
+    return NULL;
+  }
+  long domain = PyLong_AsLong(domain_obj);
+
+  DDS::DomainParticipantQos qos;
+  participant_factory->get_default_participant_qos(qos);
+  DDS::DomainParticipant_var participant =
+    participant_factory->create_participant(
+      domain, qos,
+      DDS::DomainParticipantListener::_nil(),
+      OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+  if (CORBA::is_nil(participant.in())) {
+    PyErr_SetString(PyOpenDDS_Error, "Failed to get Participant");
+    return NULL;
+  }
+
+  PyObject* var = PyCapsule_New(
+    participant._retn(), NULL, delete_participant_var);
+  if (!var) {
+    PyErr_SetString(PyOpenDDS_Error, "Failed Wrap Participant");
+    return NULL;
+  }
+
+  PyObject_SetAttrString(participant_obj, "_var", var);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject* create_subscriber(PyObject* self, PyObject* args)
+{
+}
+
+static PyObject* create_topic(PyObject* self, PyObject* args)
+{
+}
+
+static PyObject* create_datareader(PyObject* self, PyObject* args)
+{
+}
+
 static PyMethodDef pyopendds_Methods[] = {
   {
     "init_opendds", init_opendds, METH_VARARGS,
     "Initialize OpenDDS, using DDS::TheParticipantFactoryWithArgs"
   },
+  { "create_participant", create_participant, METH_VARARGS, "" },
+  { "create_subscriber", create_subscriber, METH_VARARGS, "" },
+  { "create_topic", create_topic, METH_VARARGS, "" },
+  { "create_datareader", create_datareader, METH_VARARGS, "" },
   { NULL, NULL, 0, NULL }
 };
 
