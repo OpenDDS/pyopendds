@@ -91,13 +91,12 @@ void delete_participant_var(PyObject* var) {
  */
 static PyObject* create_participant(PyObject* self, PyObject* args)
 {
+  // Get Arguments
   PyObject* participant_obj = PySequence_GetItem(args, 0);
-  // TODO: Check this is a DomainParticipant
   if (!participant_obj) {
     PyErr_SetString(PyOpenDDS_Error, "No Participant Given");
     return NULL;
   }
-
   PyObject* domain_obj = PySequence_GetItem(args, 1);
   if (!domain_obj) {
     PyErr_SetString(PyOpenDDS_Error, "Domain argument is NULL");
@@ -110,6 +109,7 @@ static PyObject* create_participant(PyObject* self, PyObject* args)
   }
   long domain = PyLong_AsLong(domain_obj);
 
+  // Create Participant
   DDS::DomainParticipantQos qos;
   participant_factory->get_default_participant_qos(qos);
   DDS::DomainParticipant_var participant =
@@ -122,23 +122,39 @@ static PyObject* create_participant(PyObject* self, PyObject* args)
     return NULL;
   }
 
+  // Attach OpenDDS Participant to Participant Python Object
   PyObject* var = PyCapsule_New(
     participant._retn(), NULL, delete_participant_var);
   if (!var) {
     PyErr_SetString(PyOpenDDS_Error, "Failed Wrap Participant");
     return NULL;
   }
-
   PyObject_SetAttrString(participant_obj, "_var", var);
 
   Py_RETURN_NONE;
 }
 
-static PyObject* create_subscriber(PyObject* self, PyObject* args)
+static PyObject* create_topic(PyObject* self, PyObject* args)
 {
+  // Get Arguments
+  PyObject* topic;
+  PyObject* participant;
+  char* name;
+  char* type;
+  if (!PyArg_ParseTuple(args, "OOss", &topic, &participant, &name, &type)) {
+    return NULL;
+  }
+
+  // Get DomainParticipant_var
+
+  // Create Topic
+
+  // Attach OpenDDS Topic to Topic Python Object
+
+  Py_RETURN_NONE;
 }
 
-static PyObject* create_topic(PyObject* self, PyObject* args)
+static PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
 }
 

@@ -11,5 +11,5 @@ class Topic:
     self.qos = qos
     self.listener = listener
 
-    create_topic(self, paricipant, name, typename)
+    create_topic(self, participant, name, typename)
 
