@@ -1,7 +1,8 @@
-source $DDS_BUILDS/master/OpenDDS/setenv.sh
+source $DDS_ROOT/setenv.sh
+source .venv/bin/activate
+pip install -e .
 DCPSInfoRepo &
 repo=$!
 sleep 5
-source .venv/bin/activate
 python test.py
 kill $repo
