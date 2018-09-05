@@ -1,4 +1,6 @@
 __pycache__
+*.pyc
+/repo.ior
 /_pyopendds*so
 /*.egg-info
 /build
