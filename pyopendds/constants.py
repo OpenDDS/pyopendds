@@ -1,0 +1,34 @@
+import enum
+
+class SampleState(enum.Flag):
+  READ = 0x0001
+  NOT_READ = 0x0010
+  ANY = 0xFFFF
+
+class ViewState(enum.Flag):
+  NEW = 0x0001
+  NOT_NEW = 0x0010
+  ANY = 0xFFFF
+
+class InstanceState(enum.Flag):
+  ALIVE = 0x0001
+  NOT_ALIVE_DISPOSED = 0x0010
+  NOT_ALIVE_NO_WRITERS = 0x0100
+  NOT_ALIVE = 0x0006
+  ANY = 0xFFFF
+
+class ReturnCode(enum.IntEnum):
+  OK = 0
+  ERROR = 1
+  UNSUPPORTED = 2
+  BAD_PARAMETER = 3
+  PRECONDITION_NOT_MET = 4
+  OUT_OF_RESOURCES = 5
+  NOT_ENABLED = 6
+  IMMUTABLE_POLICY = 7
+  INCONSISTENT_POLICY = 8
+  ALREADY_DELETED = 9
+  TIMEOUT = 10
+  NO_DATA = 11
+  ILLEGAL_OPERATION = 12
+
