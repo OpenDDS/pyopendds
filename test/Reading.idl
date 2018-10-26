@@ -1,0 +1,16 @@
+#pragma DCPS_DATA_TYPE "Test::Reading"
+#pragma DCPS_DATA_KEY "Test::Reading location"
+
+module Test {
+  enum Location_enum {
+    A,
+    B,
+    C,
+    D
+  };
+
+  struct Reading {
+    long value;
+    Location_enum location;
+  };
+};

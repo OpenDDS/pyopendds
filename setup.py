@@ -4,8 +4,9 @@ from pathlib import Path
 from distutils.core import setup, Extension
 
 ace_root = Path(os.environ['ACE_ROOT']).resolve()
+tao_root = Path(os.environ['TAO_ROOT']).resolve()
 dds_root = Path(os.environ['DDS_ROOT']).resolve()
-messenger = dds_root / 'tests/DCPS/Messenger'
+test = Path('test').resolve() / 'build'
 
 _pyopendds = Extension(
   name = '_pyopendds',
@@ -13,9 +14,9 @@ _pyopendds = Extension(
   language = 'c++',
   include_dirs = [
     str(ace_root),
-    str(ace_root / 'TAO'),
+    str(tao_root),
     str(dds_root),
-    str(messenger),
+    str(test),
   ],
   extra_compile_args = [
     '-pthread', '-pipe'
@@ -23,10 +24,10 @@ _pyopendds = Extension(
   library_dirs = [
     str(ace_root / 'lib'),
     str(dds_root / 'lib'),
-    str(messenger),
+    str(test),
   ],
   libraries = [
-    'DDS_Messenger_Idl',
+    'reading',
     'OpenDDS_Shmem',
     'OpenDDS_Rtps_Udp',
     'OpenDDS_Rtps',

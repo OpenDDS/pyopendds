@@ -3,13 +3,13 @@ import os
 
 from pyopendds import *
 
-DOMAIN = 4
-TOPIC_NAME = 'Movie Discussion List'
-TOPIC_TYPE = 'Messenger::Message'
+DOMAIN = 34
+TOPIC_NAME = 'Readings'
+TOPIC_TYPE = 'Test::Reading'
 
 if __name__ == "__main__":
   try:
-    init_opendds('-DCPSDebugLevel', '10')
+    init_opendds('-DCPSConfigFile', 'rtps.ini', '-DCPSDebugLevel', '10')
 
     part = DomainParticipant(DOMAIN)
     topic = part.create_topic(TOPIC_NAME, TOPIC_TYPE)

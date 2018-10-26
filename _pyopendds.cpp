@@ -6,7 +6,7 @@
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DCPS/Service_Participant.h>
 
-#include "MessengerTypeSupportImpl.h"
+#include "ReadingTypeSupportImpl.h"
 
 // Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
@@ -50,7 +50,8 @@ static PyObject* init_opendds(PyObject* self, PyObject* args)
       PyErr_SetString(PyOpenDDS_Error, "Failed to create UTF-8 C string from argument");
       return NULL;
     }
-    char* duplicate = new char[string_len];
+    char* duplicate = new char[string_len + 1];
+    duplicate[string_len] = '\0';
     if (!duplicate) {
       PyErr_SetString(PyOpenDDS_Error, "Allocation Failed");
       return NULL;
@@ -151,6 +152,7 @@ static PyObject* create_topic(PyObject* self, PyObject* args)
 
   // Attach OpenDDS Topic to Topic Python Object
 
+  // return None
   Py_RETURN_NONE;
 }
 
