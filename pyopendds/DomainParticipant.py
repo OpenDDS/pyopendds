@@ -14,9 +14,7 @@ class DomainParticipant:
     create_participant(self, domain)
 
   def create_topic(self, name: str, typename: str, qos=None, listener=None) -> Topic:
-    topic = Topic(self, name, typename, qos, listener)
-    self.topics[name] = topic
-    return topic
+    return Topic(self, name, typename, qos, listener)
 
   def create_subscriber(self, qos=None, listener=None) -> Subscriber:
     subscriber = Subscriber(qos, listener)

@@ -6,6 +6,7 @@ class Topic:
     participant: 'DomainParticipant', name: str, typename: str,
     qos=None, listener=None
   ):
+    participant.topics[name] = self
     self.name = name
     self.typename = typename
     self.qos = qos
