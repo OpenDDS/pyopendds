@@ -11,3 +11,10 @@ Assumptions:
 
 Run `bash build.sh` to build PyOpenDDS adn the test and `bash test.sh` to run
 the test application.
+
+## TODO
+
+- [ ] Basic `test.py` without interacting with Sample Data
+- [ ] Python IDL Mapping
+- [ ] Type Support for Python Mapping
+- [ ] Interactions with sample data in `test.py`.
