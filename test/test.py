@@ -22,5 +22,7 @@ if __name__ == "__main__":
 
     # TODO: take and print
 
+    print('Done!')
+
   except PyOpenDDS_Error as e:
     sys.exit(e)

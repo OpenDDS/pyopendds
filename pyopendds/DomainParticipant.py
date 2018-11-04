@@ -1,4 +1,4 @@
-from _pyopendds import create_participant
+from _pyopendds import create_participant, participant_cleanup
 from .Topic import Topic
 from .Subscriber import Subscriber
 
@@ -13,10 +13,12 @@ class DomainParticipant:
 
     create_participant(self, domain)
 
+  def __del__(self):
+    participant_cleanup(self)
+
   def create_topic(self, name: str, typename: str, qos=None, listener=None) -> Topic:
     return Topic(self, name, typename, qos, listener)
 
   def create_subscriber(self, qos=None, listener=None) -> Subscriber:
-    subscriber = Subscriber(qos, listener)
-    self.subscribers.append(subscriber)
-    return subscriber
+    return Subscriber(self, qos, listener)
+

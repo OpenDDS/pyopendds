@@ -1,4 +1,4 @@
 source .venv/bin/activate
 pip install -e .
 cd test
-python test.py
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python test.py

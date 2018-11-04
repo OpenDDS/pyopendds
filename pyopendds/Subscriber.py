@@ -1,14 +1,16 @@
+from _pyopendds import create_subscriber
 from .DataReader import DataReader
 from .Topic import Topic
 
 class Subscriber:
 
-  def __init__(self, qos=None, listener=None):
+  def __init__(self, participant: 'DomainParticipant', qos=None, listener=None):
+    participant.subscribers.append(self)
     self.qos = qos
     self.listener = listener
     self.readers = []
 
+    create_subscriber(self, participant)
+
   def create_datareader(self, topic: Topic, qos=None, listener=None):
-    reader = DataReader(topic, qos, listener)
-    self.readers.append(reader)
-    return reader
+    return DataReader(self, topic, qos, listener)
