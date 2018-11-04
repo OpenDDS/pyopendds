@@ -1,5 +1,6 @@
-from _pyopendds import create_datareader
+from _pyopendds import create_datareader, datareader_wait_for
 from .Topic import Topic
+from .constants import StatusKind
 
 class DataReader:
 
@@ -12,3 +13,5 @@ class DataReader:
 
     create_datareader(self, subscriber, topic)
 
+  def wait_for(self, status: StatusKind, timeout):
+    return datareader_wait_for(self, status, timeout)

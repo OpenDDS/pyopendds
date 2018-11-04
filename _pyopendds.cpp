@@ -4,14 +4,29 @@
 #include <vector>
 
 #include <dds/DdsDcpsInfrastructureC.h>
+#include <dds/DdsDcpsCoreC.h>
 #include <dds/DCPS/Service_Participant.h>
 #include <dds/DCPS/Marked_Default_Qos.h>
+#include <dds/DCPS/WaitSet.h>
 
 // HARDCODED
 #include "ReadingTypeSupportImpl.h"
 
 /// Name of PyCapule Attribute Holding the C++ Object
 const char * VAR_NAME = "_var";
+
+/// Get Contents of Capsule from a PyObject
+template <typename T>
+T* get_capsule(PyObject* obj)
+{
+	T* rv = 0;
+  PyObject* capsule = PyObject_GetAttrString(obj, VAR_NAME);
+  bool valid = capsule && PyCapsule_CheckExact(capsule);
+  if (valid) {
+		rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
+  }
+	return rv;
+}
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
@@ -156,13 +171,9 @@ static PyObject* participant_cleanup(PyObject* self, PyObject* args)
   }
 
   // Get DomainParticipant_var
-  DDS::DomainParticipant* participant;
-  PyObject* part_capsule = PyObject_GetAttrString(pyparticipant, VAR_NAME);
-  bool valid_participant = part_capsule && PyCapsule_CheckExact(part_capsule);
-  if (valid_participant) {
-    participant = static_cast<DDS::DomainParticipant*>(
-      PyCapsule_GetPointer(part_capsule, NULL));
-  } else {
+  DDS::DomainParticipant* participant =
+    get_capsule<DDS::DomainParticipant>(pyparticipant);
+  if (!participant) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
     return NULL;
@@ -203,13 +214,9 @@ static PyObject* create_topic(PyObject* self, PyObject* args)
   }
 
   // Get DomainParticipant
-  DDS::DomainParticipant* participant;
-  PyObject* part_capsule = PyObject_GetAttrString(pyparticipant, VAR_NAME);
-  bool valid_participant = part_capsule && PyCapsule_CheckExact(part_capsule);
-  if (valid_participant) {
-    participant = static_cast<DDS::DomainParticipant*>(
-      PyCapsule_GetPointer(part_capsule, NULL));
-  } else {
+  DDS::DomainParticipant* participant =
+    get_capsule<DDS::DomainParticipant>(pyparticipant);
+  if (!participant) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
     return NULL;
@@ -271,13 +278,9 @@ static PyObject* create_subscriber(PyObject* self, PyObject* args)
   }
 
   // Get DomainParticipant_var
-  DDS::DomainParticipant* participant;
-  PyObject* part_capsule = PyObject_GetAttrString(pyparticipant, VAR_NAME);
-  bool valid_participant = part_capsule && PyCapsule_CheckExact(part_capsule);
-  if (valid_participant) {
-    participant = static_cast<DDS::DomainParticipant*>(
-      PyCapsule_GetPointer(part_capsule, NULL));
-  } else {
+  DDS::DomainParticipant* participant =
+    get_capsule<DDS::DomainParticipant>(pyparticipant);
+  if (!participant) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
     return NULL;
@@ -331,26 +334,16 @@ static PyObject* create_datareader(PyObject* self, PyObject* args)
   }
 
   // Get Subscriber
-  DDS::Subscriber* subscriber;
-  PyObject* sub_capsule = PyObject_GetAttrString(pysubscriber, VAR_NAME);
-  bool valid_subscriber = sub_capsule && PyCapsule_CheckExact(sub_capsule);
-  if (valid_subscriber) {
-    subscriber = static_cast<DDS::Subscriber*>(
-      PyCapsule_GetPointer(sub_capsule, NULL));
-  } else {
+  DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(pysubscriber);
+  if (!subscriber) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Subscriber, Python Subscriber is Missing a Valid C++ Subscriber");
     return NULL;
   }
 
   // Get Topic
-  DDS::Topic* topic;
-  PyObject* topic_capsule = PyObject_GetAttrString(pytopic, VAR_NAME);
-  bool valid_topic = topic_capsule && PyCapsule_CheckExact(topic_capsule);
-  if (valid_topic) {
-    topic = static_cast<DDS::Topic*>(
-      PyCapsule_GetPointer(topic_capsule, NULL));
-  } else {
+  DDS::Topic* topic = get_capsule<DDS::Topic>(pytopic);
+  if (!topic) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Topic, Python Topic is Missing a Valid C++ Topic");
     return NULL;
@@ -365,14 +358,60 @@ static PyObject* create_datareader(PyObject* self, PyObject* args)
     return NULL;
   }
 
-  // Attach OpenDDS Subscriber to Subscriber Python Object
+  // Attach OpenDDS DataReader to DataReader Python Object
   PyObject* reader_capsule = PyCapsule_New(
     topic, NULL, delete_reader_var);
   if (!reader_capsule) {
     PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap DataReader");
     return NULL;
   }
-  PyObject_SetAttrString(pytopic, VAR_NAME, reader_capsule);
+  PyObject_SetAttrString(pydatareader, VAR_NAME, reader_capsule);
+
+  // return None
+  Py_RETURN_NONE;
+}
+
+/**
+ * datareader_wait_for(datareader: DataReader, status: StatusKind, timeout: int) -> None
+ */
+static PyObject* datareader_wait_for(PyObject* self, PyObject* args)
+{
+  // Get Arguments
+  PyObject* pydatareader;
+  unsigned long status;
+  unsigned long timeout;
+  if (!PyArg_ParseTuple(args, "Okk", &pydatareader, &status, &timeout)) {
+    PyErr_SetString(PyOpenDDS_Error, "Argument Parsing Failed");
+    return NULL;
+  }
+
+  // Get DataReader
+  DDS::DataReader* reader = get_capsule<DDS::DataReader>(pydatareader);
+  if (!reader) {
+    PyErr_SetString(PyOpenDDS_Error,
+      "Invalid DataReader, Python DataReader is Missing a Valid C++ DataReader");
+    return NULL;
+  }
+
+  // Wait
+  DDS::StatusCondition_var condition = reader->get_statuscondition();
+  condition->set_enabled_statuses(status);
+  DDS::WaitSet_var waitset = new DDS::WaitSet;
+  waitset->attach_condition(condition);
+  DDS::ConditionSeq active;
+  DDS::Duration_t max_duration = {timeout, 0};
+  switch (waitset->wait(active, max_duration)) {
+  case DDS::RETCODE_OK:
+    break;
+  case DDS::RETCODE_TIMEOUT:
+    PyErr_SetString(PyOpenDDS_Error,
+      "Timeout");
+    return NULL;
+  default:
+    PyErr_SetString(PyOpenDDS_Error,
+      "Unexpected Error Occured During Wait");
+    return NULL;
+	}
 
   // return None
   Py_RETURN_NONE;
@@ -388,6 +427,7 @@ static PyMethodDef pyopendds_Methods[] = {
   { "create_subscriber", create_subscriber, METH_VARARGS, "" },
   { "create_topic", create_topic, METH_VARARGS, "" },
   { "create_datareader", create_datareader, METH_VARARGS, "" },
+  { "datareader_wait_for", datareader_wait_for, METH_VARARGS, "" },
   { NULL, NULL, 0, NULL }
 };
 
