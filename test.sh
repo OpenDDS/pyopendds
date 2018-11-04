@@ -7,5 +7,5 @@ sleep 5
 cd build
 ./publisher -DCPSConfigFile ../rtps.ini &
 pub=$!
-wait $pub
-kill $sub
+wait $sub
+kill $pub
