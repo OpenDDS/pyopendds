@@ -19,13 +19,13 @@ const char * VAR_NAME = "_var";
 template <typename T>
 T* get_capsule(PyObject* obj)
 {
-	T* rv = 0;
+  T* rv = 0;
   PyObject* capsule = PyObject_GetAttrString(obj, VAR_NAME);
   bool valid = capsule && PyCapsule_CheckExact(capsule);
   if (valid) {
-		rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
+    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
   }
-	return rv;
+  return rv;
 }
 
 /// Global Participant Factory
@@ -411,7 +411,7 @@ static PyObject* datareader_wait_for(PyObject* self, PyObject* args)
     PyErr_SetString(PyOpenDDS_Error,
       "Unexpected Error Occured During Wait");
     return NULL;
-	}
+  }
 
   // return None
   Py_RETURN_NONE;
