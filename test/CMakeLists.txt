@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(PyOpenDDS_Test)
 
-list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/share/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS)
 
 add_executable(publisher publisher.cpp)
