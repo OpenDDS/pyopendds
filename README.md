@@ -2,21 +2,36 @@
 
 Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
+**WARNING: This project is still a work in progress!**
+
+**The vast majority of DDS functionality is not implemented yet and the major
+question of type support/IDL maping has still not been answered.**
+
 ## Requirements
 
 - Python >= 3.6
-- OpenDDS (Exact Requirements TBD)
+- OpenDDS
+  - Currently using
+    [iguessthislldo/igtd/python](https://github.com/iguessthislldo/OpenDDS/tree/igtd/python).
+    For now this is just CMake Support in OpenDDS that hasn't been merged into
+    master yet. Python support may or may not be added to opendds_idl in the same
+    method that [Node-OpenDDS](https://github.com/oci-labs/node-opendds) uses.
 - CMake
 
-## Running Test
+## Building PyOpenDDS and Running the Test
 
 Assumptions:
 - Unix environment with requirements met
+  - When mature, PyOpenDDS should theoretically work on the intersection of all
+    platoforms that OpenDDS and Python3 Support.
 - `$DDS_ROOT/setenv.sh` has been sourced
 - A Python virtualenv named `.venv` has been set up in the root of the repo.
 
-Run `bash build.sh` to build PyOpenDDS and the test and `bash test.sh` to run
-the test application.
+```sh
+bash build.sh
+bash build_test.sh
+bash test.sh
+```
 
 ## TODO
 
@@ -35,3 +50,4 @@ the test application.
   - [X] Wait Sets (as `DataReader.wait_for(status : StatusKind)`)
   - [ ] QOS
   - [ ] DataReader Listener
+- [ ] Sphinx-based Documentation like a true Python Library
