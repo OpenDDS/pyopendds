@@ -101,6 +101,9 @@ setup(
   name = 'pyopendds',
   version = '0.0.0', # TODO: Automate Versioning
   description = 'Python Bindings for OpenDDS',
+  classifiers = [
+    'License :: OSI Approved :: MIT License',
+  ],
   # TODO: Fill Out More MetaData
   py_modules = ['pyopendds'],
   ext_modules = [_pyopendds],
