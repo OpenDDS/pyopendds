@@ -25,8 +25,7 @@ the test application.
 - [ ] Type Support for Python Mapping
 - [ ] Interactions with sample data in `test.py`.
 - [ ] Replace Shell Scripts with Python
-- [ ] Integrate CMake with CPython Native Extension Build
-- [ ] Integration with Python asyncio somehow
+- [X] Integrate CMake with CPython Native Extension Build
 - [ ] Implementation Progress:
   - [ ] Participant (Started)
   - [ ] Subscriber (Started)

@@ -1,9 +1,3 @@
-cd test
-rm -fr build
-mkdir build
-cd build
-cmake ..
-make
-cd ../..
+rm -fr build pyopendds.egg-info
 source .venv/bin/activate
 pip install -e .
