@@ -15,6 +15,9 @@
 /// Name of PyCapule Attribute Holding the C++ Object
 const char * VAR_NAME = "_var";
 
+/// Documentation for Internal Python Objects
+const char * INTERNAL_DOCSTR = "Internal to PyOpenDDS, not use for directly!";
+
 /// Get Contents of Capsule from a PyObject
 template <typename T>
 T* get_capsule(PyObject* obj)
@@ -422,13 +425,13 @@ static PyMethodDef pyopendds_Methods[] = {
     "init_opendds", init_opendds, METH_VARARGS,
     "Initialize OpenDDS, using DDS::TheParticipantFactoryWithArgs"
   },
-  { "create_participant", create_participant, METH_VARARGS, "" },
-  { "participant_cleanup", participant_cleanup, METH_VARARGS, "" },
-  { "create_subscriber", create_subscriber, METH_VARARGS, "" },
-  { "create_topic", create_topic, METH_VARARGS, "" },
-  { "create_datareader", create_datareader, METH_VARARGS, "" },
-  { "datareader_wait_for", datareader_wait_for, METH_VARARGS, "" },
-  { NULL, NULL, 0, NULL }
+  {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
+  {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
+  {"create_subscriber", create_subscriber, METH_VARARGS, INTERNAL_DOCSTR},
+  {"create_topic", create_topic, METH_VARARGS, INTERNAL_DOCSTR},
+  {"create_datareader", create_datareader, METH_VARARGS, INTERNAL_DOCSTR},
+  {"datareader_wait_for", datareader_wait_for, METH_VARARGS, INTERNAL_DOCSTR},
+  {NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef pyopendds_Module = {
