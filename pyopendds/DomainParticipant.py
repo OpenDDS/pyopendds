@@ -1,6 +1,7 @@
 from _pyopendds import create_participant, participant_cleanup
 from .Topic import Topic
 from .Subscriber import Subscriber
+from .Publisher import Publisher
 
 class DomainParticipant:
 
@@ -10,6 +11,7 @@ class DomainParticipant:
     self.listener = listener
     self.topics = {}
     self.subscribers = []
+    self.publishers = []
 
     create_participant(self, domain)
 
@@ -21,4 +23,7 @@ class DomainParticipant:
 
   def create_subscriber(self, qos=None, listener=None) -> Subscriber:
     return Subscriber(self, qos, listener)
+
+  def create_publisher(self, qos=None, listener=None) -> Publisher:
+    return Publisher(self, qos, listener)
 

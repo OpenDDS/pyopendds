@@ -311,6 +311,61 @@ static PyObject* create_subscriber(PyObject* self, PyObject* args)
 }
 
 /**
+ * Callback for Python to Call when the Publisher Capsule is Deleted
+ */
+void delete_publisher_var(PyObject* publisher_capsule)
+{
+  if (PyCapsule_CheckExact(publisher_capsule)) {
+    DDS::Publisher_var publisher = static_cast<DDS::Publisher*>(
+      PyCapsule_GetPointer(publisher_capsule, NULL));
+    publisher = 0;
+  }
+}
+
+/**
+ * create_publisher(publisher: Publisher, participant: DomainParticipant) -> None
+ */
+static PyObject* create_publisher(PyObject* self, PyObject* args)
+{
+  // Get Arguments
+  PyObject* pyparticipant;
+  PyObject* pypublisher;
+  if (!PyArg_ParseTuple(args, "OO", &pypublisher, &pyparticipant)) {
+    PyErr_SetString(PyOpenDDS_Error, "Argument Parsing Failed");
+    return NULL;
+  }
+
+  // Get DomainParticipant_var
+  DDS::DomainParticipant* participant =
+    get_capsule<DDS::DomainParticipant>(pyparticipant);
+  if (!participant) {
+    PyErr_SetString(PyOpenDDS_Error,
+      "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
+    return NULL;
+  }
+
+  // Create Publisher
+  DDS::Publisher* publisher = participant->create_publisher(
+    PUBLISHER_QOS_DEFAULT, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+  if (!publisher) {
+    PyErr_SetString(PyOpenDDS_Error, "Create Publisher Failed");
+    return NULL;
+  }
+
+  // Attach OpenDDS Publisher to Publisher Python Object
+  PyObject* publisher_capsule = PyCapsule_New(
+    publisher, NULL, delete_publisher_var);
+  if (!publisher_capsule) {
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap Publisher");
+    return NULL;
+  }
+  PyObject_SetAttrString(pypublisher, VAR_NAME, publisher_capsule);
+
+  // return None
+  Py_RETURN_NONE;
+}
+
+/**
  * Callback for Python to Call when the DataReader Capsule is Deleted
  */
 void delete_reader_var(PyObject* reader_capsule)
@@ -428,6 +483,7 @@ static PyMethodDef pyopendds_Methods[] = {
   {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
   {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_subscriber", create_subscriber, METH_VARARGS, INTERNAL_DOCSTR},
+  {"create_publisher", create_publisher, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_topic", create_topic, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_datareader", create_datareader, METH_VARARGS, INTERNAL_DOCSTR},
   {"datareader_wait_for", datareader_wait_for, METH_VARARGS, INTERNAL_DOCSTR},

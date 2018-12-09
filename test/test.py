@@ -18,6 +18,8 @@ if __name__ == "__main__":
     sub = part.create_subscriber()
     dr = sub.create_datareader(topic)
 
+    pub = part.create_publisher()
+
     # Wait for Publisher to Connect
     dr.wait_for(StatusKind.PUBLICATION_MATCHED, 10)
 
