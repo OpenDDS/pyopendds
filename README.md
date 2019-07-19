@@ -28,8 +28,8 @@ Assumptions:
 - A Python virtualenv named `.venv` has been set up in the root of the repo.
 
 ```sh
-bash build.sh
 bash build_test.sh
+bash build.sh
 bash test.sh
 ```
 
