@@ -70,7 +70,7 @@ class CMakeWrapperBuild(build_ext):
         native_filename = ext._file_name
       except AttributeError:
         raise DistutilsSetupError(
-          'PLEASE REPORT THIS ERROR IF IT OCCURS:'
+          'PLEASE REPORT THIS ERROR IF IT OCCURS: '
           'Extension does not have _file_name!'
         )
 
@@ -109,4 +109,3 @@ setup(
   ext_modules = [_pyopendds],
   cmdclass = {'build_ext': CMakeWrapperBuild},
 )
-
