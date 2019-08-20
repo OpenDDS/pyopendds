@@ -4,18 +4,15 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
 **WARNING: This project is still a work in progress!**
 
-**The vast majority of DDS functionality is not implemented yet and the major
-question of type support/IDL maping has still not been answered.**
-
 ## Requirements
 
-- Python >= 3.6
+- Python >= 3.7
+  - This uses the C API of CPython, so PyPy, or any other Python implementation
+    is not supported.
 - OpenDDS
   - Currently using
-    [iguessthislldo/igtd/python](https://github.com/iguessthislldo/OpenDDS/tree/igtd/python).
-    For now this is just CMake Support in OpenDDS that hasn't been merged into
-    master yet. Python support may or may not be added to opendds_idl in the same
-    method that [Node-OpenDDS](https://github.com/oci-labs/node-opendds) uses.
+    [iguessthislldo/igtd/python](https://github.com/iguessthislldo/OpenDDS/tree/igtd/python)
+    As the test bed for adding Python support to OpenDDS.
 - CMake
 
 ## Building PyOpenDDS and Running the Test
@@ -23,7 +20,7 @@ question of type support/IDL maping has still not been answered.**
 Assumptions:
 - Unix environment with requirements met
   - When mature, PyOpenDDS should theoretically work on the intersection of all
-    platoforms that OpenDDS and Python3 Support.
+    platforms that OpenDDS and CPython Support.
 - `$DDS_ROOT/setenv.sh` has been sourced
 - A Python virtualenv named `.venv` has been set up in the root of the repo.
 
@@ -36,7 +33,7 @@ bash test.sh
 ## TODO
 
 - [ ] Basic `test.py` without interacting with Sample Data
-- [ ] Python IDL Mapping
+- [ ] Python IDL Mapping (Started)
 - [ ] Type Support for Python Mapping
 - [ ] Interactions with sample data in `test.py`.
 - [ ] Replace Shell Scripts with Python
