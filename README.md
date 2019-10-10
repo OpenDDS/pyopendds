@@ -13,7 +13,7 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
   - Currently using
     [iguessthislldo/igtd/python](https://github.com/iguessthislldo/OpenDDS/tree/igtd/python)
     As the test bed for adding Python support to OpenDDS.
-- CMake
+- CMake >= 3.12
 
 ## Building PyOpenDDS and Running the Test
 

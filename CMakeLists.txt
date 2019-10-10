@@ -1,13 +1,12 @@
 # CMakeLists for Native Part of PyOpenDDS
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(PyOpenDDS)
 
 # TODO: HARDCODED IDL
 set(HARDCODED_IDL libreading.so)
 
 # Find Python
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs REQUIRED)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
 # Find OpenDDS
 list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
@@ -28,8 +27,8 @@ OPENDDS_TARGET_SOURCES(_pyopendds PUBLIC)
 target_link_libraries(_pyopendds OpenDDS::OpenDDS)
 
 # Connect to Python
-target_link_libraries(_pyopendds ${PYTHON_LIBRARIES})
-target_include_directories(_pyopendds PUBLIC ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(_pyopendds ${Python3_LIBRARIES})
+target_include_directories(_pyopendds PUBLIC ${Python3_INCLUDE_DIRS})
 
 # TODO: HARDCODED IDL
 # Hardcoded Reading IDL Library
