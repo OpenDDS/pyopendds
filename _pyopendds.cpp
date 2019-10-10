@@ -13,10 +13,10 @@
 #include "ReadingTypeSupportImpl.h"
 
 /// Name of PyCapule Attribute Holding the C++ Object
-const char * VAR_NAME = "_var";
+const char* VAR_NAME = "_var";
 
 /// Documentation for Internal Python Objects
-const char * INTERNAL_DOCSTR = "Internal to PyOpenDDS, not use for directly!";
+const char* INTERNAL_DOCSTR = "Internal to PyOpenDDS, not use for directly!";
 
 /// Get Contents of Capsule from a PyObject
 template <typename T>
@@ -68,7 +68,7 @@ static PyObject* init_opendds(PyObject* self, PyObject* args)
       return NULL;
     }
     Py_INCREF(string_obj);
-    char* string;
+    const char* string;
     ssize_t string_len;
     string = PyUnicode_AsUTF8AndSize(string_obj, &string_len);
     if (!string) {
