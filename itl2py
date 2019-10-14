@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-# A Prototype for Generating a Python Mapping from a ITL File
+# A Prototype for Generating a Python Mapping from an ITL File
 
 import sys
 import json
 from enum import Enum, auto
+from argparse import ArgumentParser
+from pathlib import Path
 
 def itl_name_to_scope(itl_name):
   return itl_name.split(':')[1].split('/')
@@ -84,13 +86,12 @@ class TypeVisitor:
 
 class Output(TypeVisitor):
 
-  def __init__(self, name):
-    self.name = name
+  def __init__(self, path : Path):
+    self.path = path
     self.contents = []
 
   def write(self):
-    with open(self.name, 'w') as f:
-      f.write('\n'.join(self.contents))
+    self.path.write_text('\n'.join(self.contents))
 
   def extend(self, lines, insert_newline=True):
     if self.contents and insert_newline:
@@ -114,53 +115,86 @@ class PythonOutput(Output):
     PrimitiveType.Kind.s8: ('str', "''"),
   }
 
-  def __init__(self, name):
-    super().__init__(name)
+  def __init__(self, root_package_name, path):
+    super().__init__(path)
+    self.root_package_name = root_package_name
     self.imports = set()
 
-  def add_import(self, name):
-    if name not in self.imports:
-      self.imports |= {name}
-      self.contents.insert(0, 'import ' + name + ' as _' + name)
+  def stdlib_import_name(self, name):
+    return '_pystdlib_' + name
 
-  def get_python_name(self, node):
+  def add_stdlib_import(self, name):
+    iname = self.stdlib_import_name(name)
+    if iname not in self.imports:
+      self.imports |= {iname}
+      self.contents.insert(0, 'import {} as {}'.format(name, iname))
+    return iname
+
+# Start TODO
+  def add_import(self, current_scope, scoped_name):
+    abs_imp_scope = [self.root_package_name] + [scoped_name]
+    abs_imp_name = '.'.join(abs_imp_scope)
+    abs_cur_scope = [self.root_package_name] + [current_scope]
+    abs_cur_name = '.'.join(abs_cur_scope)
+
+    if abs_imp_name.startswith(abs_cur_name):
+      imp_name = abs_imp_name[len(abs_cur_name):]
+      ret_name = abs_imp_name
+    else:
+      import_name = '.' + abs_imp_name[len(abs_cur_name):]
+      return_name = abs_imp_name
+
+    if abs_name not in self.imports:
+      self.imports |= {abs_name}
+      self.contents.insert(0, 'import '
+
+  def scoper(self, current_scope, node):
+    if current_scope == node.scoped_name[:-1]:
+      return node.scoped_name[-1]
+    else:
+      return '.'.join(self.add_import(node.scoped_name))
+# End TODO
+
+  def get_python_name(self, current_scope, node):
     node_type = type(node)
     if node_type is PrimitiveType:
-      return self.primitive_types[node.kind][0]
+      name = self.primitive_types[node.kind][0]
     elif node_type is StructType:
-      return node.name
+      name = self.scoper(current_scope, node)
     elif node_type is EnumType:
-      return node.name
+      name = self.scoper(current_scope, node)
     else:
       raise TypeError("Can't get Python Name for a " + repr(node_type))
+    return name
 
-  def get_python_default_value(self, node):
+  def get_python_default_value(self, current_scope, node):
     node_type = type(node)
     if node_type is PrimitiveType:
       return self.primitive_types[node.kind][1]
     elif node_type is StructType:
-      return node.name + '()'
+      return self.scoper(current_scope, node) + '()'
     elif node_type is EnumType:
-      return '{}.{}'.format(node.name, node.default_member)
+      return '{}.{}'.format(self.scoper(current_scope, node), node.default_member)
     else:
-      raise TypeError("Can't get Python Name for a " + repr(node_type))
+      raise TypeError("Can't get Python Default Value for a " + repr(node_type))
 
   def visit_struct(self, struct_type):
-    self.add_import('dataclasses')
+    pydataclass_name = self.add_stdlib_import('dataclasses') + '.dataclass'
     result = [
-      '@_dataclasses.dataclass',
+      '@' + pydataclass_name,
       'class ' + struct_type.name + ':']
+    current_scope = struct_type.scoped_name[:-1]
     for field_name, field_properities in struct_type.fields.items():
       field_type = field_properities[0]
       result.append('    {}: {} = {}'.format(
         field_name,
-        self.get_python_name(field_type),
-        self.get_python_default_value(field_type)))
+        self.get_python_name(current_scope, field_type),
+        self.get_python_default_value(current_scope, field_type)))
     self.extend(result)
 
   def visit_enum(self, enum_type):
-    self.add_import('enum')
-    result = ['class ' + enum_type.name + '(_enum.IntFlag):']
+    pyenum_name = self.add_stdlib_import('enum') + '.IntFlag'
+    result = ['class {}({}):'.format(enum_type.name, pyenum_name)]
     for name, value in enum_type.members.items():
       result.append('    {} = {}'.format(name, value))
     self.extend(result)
@@ -278,24 +312,63 @@ def parse_type(types, details):
 def parse_root(types, itl):
   for itl_type in itl['types']:
     parsed_type = parse_type(types, itl_type)
-    types[parsed_type.itl_name] = parsed_type
+    if not parsed_type.itl_name:
+      raise ValueError('Invalid type name ' + repr(parsed_type.itl_name))
+    # opendds_idl produces ITL that includes types from included IDL files, so
+    # just use the first definition we found.
+    if parsed_type.itl_name not in types:
+      types[parsed_type.itl_name] = parsed_type
 
-if __name__ == "__main__":
-  if len(sys.argv) != 2:
-    sys.exit('Must pass ITL file')
+def create_package(root_package_name, output, name, contents):
+  submodules = contents[0]
+  type_nodes = contents[1]
+  idl_module = '_PyOpenDDS'
 
-  itl_file_path = sys.argv[1]
+  # Create Directory
+  path = output / name
+  path.mkdir(exist_ok=True)
 
-  if not itl_file_path.endswith('.itl'):
-    sys.exit('ITL file must have itl file extension')
+  # Create __init__.py file
+  with (path / '__init__.py').open('w') as f:
+    print('from .{} import *'.format(idl_module), file=f)
 
-  # Parse ITL
-  types = {}
-  with open(itl_file_path) as itl_file:
-    parse_root(types, json.load(itl_file))
-
-  # Output Python
-  pyout = PythonOutput(itl_file_path[:-4] + '.py')
-  for type_name, type_node in types.items():
+  # Create IDL Module
+  pyout = PythonOutput(root_package_name, path / (idl_module + '.py'))
+  for type_node in type_nodes.values():
     type_node.accept(pyout)
   pyout.write()
+
+  # Recurse
+  for submodule in submodules.items():
+    create_package(root_package_name, path, *submodule)
+
+if __name__ == "__main__":
+  # Parse Arguments
+  argparser = ArgumentParser(description='ITL to Python Mapping')
+  argparser.add_argument('itl_files', metavar='ITL_FILE', type=Path, nargs='+')
+  argparser.add_argument('-n', '--package-name', type=str)
+  argparser.add_argument('-o', '--output', type=Path, default=Path('.'))
+  args = argparser.parse_args()
+
+  if args.package_name is None:
+    if len(args.itl_files) > 1:
+      sys.exit('--package-name is required when using multiple ITL files')
+    args.package_name = args.itl_files[0].stem
+
+  # Parse ITL Files for Types
+  types = {}
+  for itl_file in args.itl_files:
+    with itl_file.open() as f:
+      parse_root(types, json.load(f))
+
+  # Sort Types into Modules
+  modules = ({}, {}) # (Submodules, Types)
+  for type_node in types.values():
+    module = modules
+    for module_name in type_node.scoped_name[:-1]:
+      module[0].setdefault(module_name, ({}, {}))
+      module = module[0][module_name]
+    module[1][type_node.itl_name] = type_node
+
+  # Recursively Generate Python Packages
+  create_package(args.package_name, args.output, args.package_name, modules)
