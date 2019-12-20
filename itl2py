@@ -7,22 +7,33 @@ import json
 from enum import Enum, auto
 from argparse import ArgumentParser
 from pathlib import Path
+from os.path import relpath
 
-def itl_name_to_scope(itl_name):
-  return itl_name.split(':')[1].split('/')
+class Name:
+
+  def __init__(self, itl_name=None, parts=None):
+    if itl_name is not None and parts is None:
+      self.itl_name = itl_name
+      self.parts = itl_name.split(':')[1].split('/')
+    elif itl_name is None and parts is not None:
+      self.itl_name = None
+      self.parts = parts
+    else:
+      raise ValueError('Either parts or itl_name must be passed')
+
+  def relative_to(self, target):
+    parts = Path(relpath('/'.join(target), '/'.join(current))).parts
+    up = parts.count('..')
+    return ('.' * (up + 1)) + '.'.join(parts[up:])
 
 class Type:
 
   def __init__(self, note):
     self.note = note
-    self.itl_name = None
-    self.scoped_name = None
     self.name = None
 
   def set_name(self, itl_name):
-    self.itl_name = itl_name
-    self.scoped_name = itl_name_to_scope(itl_name)
-    self.name = self.scoped_name[-1]
+    self.name = Name(itl_name)
 
   def accept(self, visitor):
     raise NotImplementedError
@@ -130,30 +141,22 @@ class PythonOutput(Output):
       self.contents.insert(0, 'import {} as {}'.format(name, iname))
     return iname
 
-# Start TODO
   def add_import(self, current_scope, scoped_name):
-    abs_imp_scope = [self.root_package_name] + [scoped_name]
-    abs_imp_name = '.'.join(abs_imp_scope)
-    abs_cur_scope = [self.root_package_name] + [current_scope]
-    abs_cur_name = '.'.join(abs_cur_scope)
-
-    if abs_imp_name.startswith(abs_cur_name):
-      imp_name = abs_imp_name[len(abs_cur_name):]
-      ret_name = abs_imp_name
-    else:
-      import_name = '.' + abs_imp_name[len(abs_cur_name):]
-      return_name = abs_imp_name
-
-    if abs_name not in self.imports:
-      self.imports |= {abs_name}
-      self.contents.insert(0, 'import '
+    full_name = '.'.join(scoped_name)
+    item = scoped_name[-1]
+    if full_name not in self.imports:
+      import_module = relative_module(
+        [self.root_package_name] + current_scope,
+        [self.root_package_name] + scoped_name[:-1])
+      self.imports |= {full_name}
+      self.contents.insert(0, 'from {} import {}'.format(import_module, item))
+    return item
 
   def scoper(self, current_scope, node):
     if current_scope == node.scoped_name[:-1]:
       return node.scoped_name[-1]
     else:
-      return '.'.join(self.add_import(node.scoped_name))
-# End TODO
+      return self.add_import(current_scope, node.scoped_name)
 
   def get_python_name(self, current_scope, node):
     node_type = type(node)
