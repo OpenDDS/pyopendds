@@ -1,7 +1,7 @@
 source .venv/bin/activate
 pip install -e .
-cd test
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python test.py &
+cd tests/basic_test
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python subscriber.py &
 sub=$!
 sleep 5
 cd build

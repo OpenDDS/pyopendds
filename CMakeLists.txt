@@ -33,7 +33,7 @@ target_include_directories(_pyopendds PUBLIC ${Python3_INCLUDE_DIRS})
 # TODO: HARDCODED IDL
 # Hardcoded Reading IDL Library
 add_library(reading SHARED IMPORTED)
-set_property(TARGET reading PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/test/build/${HARDCODED_IDL})
-link_directories(test/build)
+set_property(TARGET reading PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/tests/basic_test/build/${HARDCODED_IDL})
+link_directories(tests/basic_test/build)
 target_link_libraries(_pyopendds reading)
-target_include_directories(_pyopendds PUBLIC ${CMAKE_CURRENT_LIST_DIR}/test/build)
+target_include_directories(_pyopendds PUBLIC ${CMAKE_CURRENT_LIST_DIR}/tests/basic_test/build)
