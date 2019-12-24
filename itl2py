@@ -21,22 +21,47 @@ class Name:
     else:
       raise ValueError('Either parts or itl_name must be passed')
 
-  def relative_to(self, target):
-    parts = Path(relpath('/'.join(target), '/'.join(current))).parts
-    up = parts.count('..')
-    return ('.' * (up + 1)) + '.'.join(parts[up:])
-
 class Type:
 
   def __init__(self, note):
     self.note = note
     self.name = None
 
-  def set_name(self, itl_name):
-    self.name = Name(itl_name)
+  def set_name(self, itl_name=None, parts=None):
+    self.name = Name(itl_name=itl_name, parts=parts)
+
+  def local_name(self):
+    if self.name:
+      return self.name.parts[-1]
+    return None
+
+  def parent_name(self):
+    if self.name:
+      return self.name.parts[:-1]
+    return None
 
   def accept(self, visitor):
     raise NotImplementedError
+
+class Module(Type):
+
+  def __init__(self, parent, name):
+    super().__init__(None)
+    self.parent = parent
+    name_parts = []
+    if parent and name:
+      name_parts.extend(parent.name.parts)
+      name_parts.append(name)
+    self.set_name(parts=name_parts)
+    self.submodules = {}
+    self.types = {}
+
+  def accept(self, visitor):
+    for type_node in self.types.values():
+      type_node.accept(visitor)
+
+    for submodule in self.submodules.values():
+      visitor.visit_module(submodule)
 
 class PrimitiveType(Type):
 
@@ -89,6 +114,9 @@ class EnumType(Type):
 
 class TypeVisitor:
 
+  def visit_module(self, module):
+    module.accept(self)
+
   def visit_struct(self, struct_type):
     raise NotImplementedError
 
@@ -126,81 +154,41 @@ class PythonOutput(Output):
     PrimitiveType.Kind.s8: ('str', "''"),
   }
 
-  def __init__(self, root_package_name, path):
+  def __init__(self, path):
     super().__init__(path)
-    self.root_package_name = root_package_name
-    self.imports = set()
 
-  def stdlib_import_name(self, name):
-    return '_pystdlib_' + name
+  def write(self):
+    self.path.write_text('\n'.join([
+      'def _pyopendds_inject_idl(module_name):',
+      '  from pyopendds.IDL import IDL',
+      '  idl = IDL()',
+      ] + self.contents + [
+      '  idl.inject(module_name)',
+      '_pyopendds_inject_idl(__name__)',
+      'del _pyopendds_inject_idl', ''
+      ]))
 
-  def add_stdlib_import(self, name):
-    iname = self.stdlib_import_name(name)
-    if iname not in self.imports:
-      self.imports |= {iname}
-      self.contents.insert(0, 'import {} as {}'.format(name, iname))
-    return iname
-
-  def add_import(self, current_scope, scoped_name):
-    full_name = '.'.join(scoped_name)
-    item = scoped_name[-1]
-    if full_name not in self.imports:
-      import_module = relative_module(
-        [self.root_package_name] + current_scope,
-        [self.root_package_name] + scoped_name[:-1])
-      self.imports |= {full_name}
-      self.contents.insert(0, 'from {} import {}'.format(import_module, item))
-    return item
-
-  def scoper(self, current_scope, node):
-    if current_scope == node.scoped_name[:-1]:
-      return node.scoped_name[-1]
-    else:
-      return self.add_import(current_scope, node.scoped_name)
-
-  def get_python_name(self, current_scope, node):
-    node_type = type(node)
-    if node_type is PrimitiveType:
-      name = self.primitive_types[node.kind][0]
-    elif node_type is StructType:
-      name = self.scoper(current_scope, node)
-    elif node_type is EnumType:
-      name = self.scoper(current_scope, node)
-    else:
-      raise TypeError("Can't get Python Name for a " + repr(node_type))
-    return name
-
-  def get_python_default_value(self, current_scope, node):
-    node_type = type(node)
-    if node_type is PrimitiveType:
-      return self.primitive_types[node.kind][1]
-    elif node_type is StructType:
-      return self.scoper(current_scope, node) + '()'
-    elif node_type is EnumType:
-      return '{}.{}'.format(self.scoper(current_scope, node), node.default_member)
-    else:
-      raise TypeError("Can't get Python Default Value for a " + repr(node_type))
+  def visit_module(self, module):
+    if module.name.parts:
+      self.extend(["  idl.add_module('{}', '{}')".format(
+        '.'.join(module.parent_name()),
+        module.local_name())
+      ])
+    super().visit_module(module)
 
   def visit_struct(self, struct_type):
-    pydataclass_name = self.add_stdlib_import('dataclasses') + '.dataclass'
-    result = [
-      '@' + pydataclass_name,
-      'class ' + struct_type.name + ':']
-    current_scope = struct_type.scoped_name[:-1]
-    for field_name, field_properities in struct_type.fields.items():
-      field_type = field_properities[0]
-      result.append('    {}: {} = {}'.format(
-        field_name,
-        self.get_python_name(current_scope, field_type),
-        self.get_python_default_value(current_scope, field_type)))
-    self.extend(result)
+    self.extend(["  idl.add_struct('{}', '{}', [".format(
+        '.'.join(struct_type.parent_name()),
+        struct_type.local_name())] +
+      ["    ('{}'),".format(name) for name in struct_type.fields] +
+    ["  ])"])
 
   def visit_enum(self, enum_type):
-    pyenum_name = self.add_stdlib_import('enum') + '.IntFlag'
-    result = ['class {}({}):'.format(enum_type.name, pyenum_name)]
-    for name, value in enum_type.members.items():
-      result.append('    {} = {}'.format(name, value))
-    self.extend(result)
+    self.extend(["  idl.add_enum('{}', '{}', [".format(
+        '.'.join(enum_type.parent_name()),
+        enum_type.local_name())] +
+      ["    '{}',".format(name) for name in enum_type.members] +
+    ["  ])"])
 
 def parse_int(details):
   note = details.get('note', {})
@@ -256,7 +244,7 @@ def parse_fixed(details):
   raise NotImplementedError
 
 def parse_string(details):
-  raise NotImplementedError
+  return PrimitiveType(PrimitiveType.Kind.s8, details.get('note', {}))
 
 def parse_sequence(types, details):
   raise NotImplementedError
@@ -315,35 +303,10 @@ def parse_type(types, details):
 def parse_root(types, itl):
   for itl_type in itl['types']:
     parsed_type = parse_type(types, itl_type)
-    if not parsed_type.itl_name:
-      raise ValueError('Invalid type name ' + repr(parsed_type.itl_name))
     # opendds_idl produces ITL that includes types from included IDL files, so
     # just use the first definition we found.
-    if parsed_type.itl_name not in types:
-      types[parsed_type.itl_name] = parsed_type
-
-def create_package(root_package_name, output, name, contents):
-  submodules = contents[0]
-  type_nodes = contents[1]
-  idl_module = '_PyOpenDDS'
-
-  # Create Directory
-  path = output / name
-  path.mkdir(exist_ok=True)
-
-  # Create __init__.py file
-  with (path / '__init__.py').open('w') as f:
-    print('from .{} import *'.format(idl_module), file=f)
-
-  # Create IDL Module
-  pyout = PythonOutput(root_package_name, path / (idl_module + '.py'))
-  for type_node in type_nodes.values():
-    type_node.accept(pyout)
-  pyout.write()
-
-  # Recurse
-  for submodule in submodules.items():
-    create_package(root_package_name, path, *submodule)
+    if parsed_type.name.itl_name not in types:
+      types[parsed_type.name.itl_name] = parsed_type
 
 if __name__ == "__main__":
   # Parse Arguments
@@ -365,13 +328,17 @@ if __name__ == "__main__":
       parse_root(types, json.load(f))
 
   # Sort Types into Modules
-  modules = ({}, {}) # (Submodules, Types)
+  root_module = Module(None, '')
   for type_node in types.values():
-    module = modules
-    for module_name in type_node.scoped_name[:-1]:
-      module[0].setdefault(module_name, ({}, {}))
-      module = module[0][module_name]
-    module[1][type_node.itl_name] = type_node
+    module = root_module
+    for module_name in type_node.parent_name():
+      if module_name not in module.submodules:
+        module.submodules[module_name] = Module(module, module_name)
+      module = module.submodules[module_name]
+    module.types[type_node.name.itl_name] = type_node
 
-  # Recursively Generate Python Packages
-  create_package(args.package_name, args.output, args.package_name, modules)
+  path = args.output / args.package_name
+  path.mkdir(exist_ok=True)
+  pyout = PythonOutput(path / '__init__.py')
+  pyout.visit_module(root_module)
+  pyout.write()
