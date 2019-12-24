@@ -1,0 +1,14 @@
+module basic {
+  enum ReadingKind {
+    distance,
+    speed,
+    acceleration
+  };
+
+  @topic
+  struct Reading {
+    ReadingKind kind;
+    long value;
+    string where;
+  };
+};

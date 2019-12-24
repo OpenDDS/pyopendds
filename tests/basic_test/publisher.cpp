@@ -1,4 +1,4 @@
-#include <ReadingTypeSupportImpl.h>
+#include <basicTypeSupportImpl.h>
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsPublicationC.h>
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    Test::ReadingTypeSupport_var ts = new Test::ReadingTypeSupportImpl();
+    basic::ReadingTypeSupport_var ts = new basic::ReadingTypeSupportImpl();
     DDS::ReturnCode_t rc = ts->register_type(participant.in(), "");
     if (rc != DDS::RETCODE_OK) {
       std::cerr
@@ -82,11 +82,12 @@ int main(int argc, char* argv[]) {
     ws->detach_condition(sc);
 
     // Write Sample
-    Test::ReadingDataWriter_var reading_writer =
-      Test::ReadingDataWriter::_narrow(writer);
-    Test::Reading reading;
+    basic::ReadingDataWriter_var reading_writer =
+      basic::ReadingDataWriter::_narrow(writer);
+    basic::Reading reading;
+    reading.kind = basic::speed;
     reading.value = -200;
-    reading.location = Test::B;
+    reading.where = "Somewhere";
     rc = reading_writer->write(reading, DDS::HANDLE_NIL);
     if (rc != DDS::RETCODE_OK) {
       std::cerr << "Error: Failed to write: "
