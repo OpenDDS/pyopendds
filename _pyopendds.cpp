@@ -10,7 +10,7 @@
 #include <dds/DCPS/WaitSet.h>
 
 // HARDCODED
-#include "ReadingTypeSupportImpl.h"
+#include <basicTypeSupportImpl.h>
 
 /// Name of PyCapule Attribute Holding the C++ Object
 const char* VAR_NAME = "_var";
@@ -226,8 +226,8 @@ static PyObject* create_topic(PyObject* self, PyObject* args)
   }
 
   // HARDCODED Register Type
-  Test::ReadingTypeSupport_var type_support = new
-    Test::ReadingTypeSupportImpl();
+  basic::ReadingTypeSupport_var type_support = new
+    basic::ReadingTypeSupportImpl();
   if (type_support->register_type(participant, "") != DDS::RETCODE_OK) {
     PyErr_SetString(PyOpenDDS_Error, "Failed to Register Type");
     return NULL;

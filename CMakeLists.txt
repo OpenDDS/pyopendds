@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 project(PyOpenDDS)
 
 # TODO: HARDCODED IDL
-set(HARDCODED_IDL libreading.so)
+set(HARDCODED_IDL libbasic_idl.so)
 
 # Find Python
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)

@@ -7,7 +7,6 @@ find_package(OpenDDS)
 
 add_executable(publisher publisher.cpp)
 add_library(basic_idl SHARED)
-OPENDDS_TARGET_SOURCES(basic_idl PUBLIC basic.idl)
-OPENDDS_TARGET_SOURCES(publisher PUBLIC)
+OPENDDS_TARGET_SOURCES(basic_idl PUBLIC basic.idl OPENDDS_IDL_OPTIONS -Gitl)
 target_link_libraries(publisher OpenDDS::OpenDDS)
 target_link_libraries(publisher basic_idl)
