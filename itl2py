@@ -16,12 +16,15 @@ class Name:
       self.itl_name = itl_name
       self.parts = itl_name.split(':')[1].split('/')
     elif itl_name is None and parts is not None:
-      self.itl_name = None
+      self.itl_name = 'IDL:{}:1.0'.format('/'.join(parts))
       self.parts = parts
     else:
       raise ValueError('Either parts or itl_name must be passed')
 
-class Type:
+  def join(self,sep = '.'):
+    return sep.join(self.parts)
+
+class Node:
 
   def __init__(self, note):
     self.note = note
@@ -37,13 +40,13 @@ class Type:
 
   def parent_name(self):
     if self.name:
-      return self.name.parts[:-1]
+      return Name(parts=self.name.parts[:-1])
     return None
 
   def accept(self, visitor):
     raise NotImplementedError
 
-class Module(Type):
+class Module(Node):
 
   def __init__(self, parent, name):
     super().__init__(None)
@@ -63,7 +66,7 @@ class Module(Type):
     for submodule in self.submodules.values():
       visitor.visit_module(submodule)
 
-class PrimitiveType(Type):
+class PrimitiveType(Node):
 
   class Kind(Enum):
     u8 = auto()
@@ -85,7 +88,39 @@ class PrimitiveType(Type):
       raise ValueError('Invalid Primitive Kind: ' + repr(kind))
     self.kind = kind
 
-class StructType(Type):
+  def is_int(self):
+    return {
+      self.Kind.u8: True,
+      self.Kind.i8: True,
+      self.Kind.u16: True,
+      self.Kind.i16: True,
+      self.Kind.u32: True,
+      self.Kind.i32: True,
+      self.Kind.u64: True,
+      self.Kind.i64: True,
+      self.Kind.f32: False,
+      self.Kind.f64: False,
+      self.Kind.c8: False,
+      self.Kind.s8: False,
+    }[self.kind]
+
+  def is_string(self):
+    return {
+      self.Kind.u8: False,
+      self.Kind.i8: False,
+      self.Kind.u16: False,
+      self.Kind.i16: False,
+      self.Kind.u32: False,
+      self.Kind.i32: False,
+      self.Kind.u64: False,
+      self.Kind.i64: False,
+      self.Kind.f32: False,
+      self.Kind.f64: False,
+      self.Kind.c8: False,
+      self.Kind.s8: True,
+    }[self.kind]
+
+class StructType(Node):
 
   def __init__(self, note):
     super().__init__(note)
@@ -97,7 +132,7 @@ class StructType(Type):
   def accept(self, visitor):
     visitor.visit_struct(self)
 
-class EnumType(Type):
+class EnumType(Node):
 
   def __init__(self, note):
     super().__init__(note)
@@ -112,7 +147,7 @@ class EnumType(Type):
   def accept(self, visitor):
     visitor.visit_enum(self)
 
-class TypeVisitor:
+class NodeVisitor:
 
   def visit_module(self, module):
     module.accept(self)
@@ -123,19 +158,23 @@ class TypeVisitor:
   def visit_enum(self, enum_type):
     raise NotImplementedError
 
-class Output(TypeVisitor):
+class Output(NodeVisitor):
 
-  def __init__(self, path : Path):
-    self.path = path
+  def __init__(self, path):
+    self.path = Path(path)
     self.contents = []
 
-  def write(self):
-    self.path.write_text('\n'.join(self.contents))
+  def before(self):
+    return ''
 
-  def extend(self, lines, insert_newline=True):
-    if self.contents and insert_newline:
-      self.contents.append('')
-    self.contents.extend(lines)
+  def after(self):
+    return ''
+
+  def write(self):
+    self.path.write_text(self.before() + ''.join(self.contents) + self.after())
+
+  def append(self, what):
+    self.contents.append(what + '\n')
 
 class PythonOutput(Output):
 
@@ -156,39 +195,42 @@ class PythonOutput(Output):
 
   def __init__(self, path):
     super().__init__(path)
+    self.append('''\
+def _pyopendds_inject_idl(module_name):
+    from pyopendds.IDL import IDL
+    idl = IDL()
+''')
 
   def write(self):
-    self.path.write_text('\n'.join([
-      'def _pyopendds_inject_idl(module_name):',
-      '  from pyopendds.IDL import IDL',
-      '  idl = IDL()',
-      ] + self.contents + [
-      '  idl.inject(module_name)',
-      '_pyopendds_inject_idl(__name__)',
-      'del _pyopendds_inject_idl', ''
-      ]))
+    self.append('''
+    idl.inject(module_name)
+_pyopendds_inject_idl(__name__)
+del _pyopendds_inject_idl''')
+    super().write()
 
   def visit_module(self, module):
     if module.name.parts:
-      self.extend(["  idl.add_module('{}', '{}')".format(
-        '.'.join(module.parent_name()),
+      self.append("    idl.add_module('{}', '{}')".format(
+        module.parent_name().join(),
         module.local_name())
-      ])
+      )
     super().visit_module(module)
 
   def visit_struct(self, struct_type):
-    self.extend(["  idl.add_struct('{}', '{}', [".format(
-        '.'.join(struct_type.parent_name()),
-        struct_type.local_name())] +
-      ["    ('{}'),".format(name) for name in struct_type.fields] +
-    ["  ])"])
+    self.append("    idl.add_struct('{}', '{}', [".format(
+      struct_type.parent_name().join(),
+      struct_type.local_name()))
+    for name in struct_type.fields:
+      self.append("        ('{}'),".format(name))
+    self.append("    ])")
 
   def visit_enum(self, enum_type):
-    self.extend(["  idl.add_enum('{}', '{}', [".format(
-        '.'.join(enum_type.parent_name()),
-        enum_type.local_name())] +
-      ["    '{}',".format(name) for name in enum_type.members] +
-    ["  ])"])
+    self.append("    idl.add_enum('{}', '{}', [".format(
+      enum_type.parent_name().join(),
+      enum_type.local_name()))
+    for name in enum_type.members:
+      self.append("        '{}',".format(name))
+    self.append("    ])")
 
 def parse_int(details):
   note = details.get('note', {})
@@ -331,7 +373,7 @@ if __name__ == "__main__":
   root_module = Module(None, '')
   for type_node in types.values():
     module = root_module
-    for module_name in type_node.parent_name():
+    for module_name in type_node.parent_name().parts:
       if module_name not in module.submodules:
         module.submodules[module_name] = Module(module, module_name)
       module = module.submodules[module_name]
