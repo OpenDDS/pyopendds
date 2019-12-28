@@ -1,0 +1,9 @@
+struct AnotherFileNoModuleType {
+  short value;
+};
+
+module XModule {
+  struct AnotherFileSameModuleType {
+    short value;
+  };
+};

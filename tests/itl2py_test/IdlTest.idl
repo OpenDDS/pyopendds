@@ -1,0 +1,52 @@
+#include "AnotherFile.idl"
+
+struct NoModuleType {
+  short value;
+};
+
+module XModule {
+  struct XTypeA {
+    short value;
+  };
+
+  module YModule {
+    struct YTypeA {
+      XTypeA value;
+    };
+
+    module ZModule {
+      struct ZTypeA {
+        YTypeA value;
+      };
+
+      enum EnumType {
+        A,
+        B,
+        C
+      };
+
+      struct ZTypeB {
+        ZTypeA value;
+      };
+    };
+
+    struct YTypeB {
+      ZModule::ZTypeA value;
+    };
+  };
+
+  struct XTypeB {
+    NoModuleType no_module;
+    AnotherFileNoModuleType another_file_no_module;
+    AnotherFileSameModuleType another_file_same_module;
+
+    YModule::YTypeB value;
+
+    unsigned short u16_value;
+    short i16_value;
+    unsigned long u32_value;
+    long i32_value;
+    YModule::ZModule::EnumType enum_value;
+    char char_value;
+  };
+};
