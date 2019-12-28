@@ -232,6 +232,160 @@ del _pyopendds_inject_idl''')
       self.append("        '{}',".format(name))
     self.append("    ])")
 
+class CppOutput(Output):
+
+  def __init__(self, path):
+    super().__init__(path)
+    self.append('''\
+#include <Python.h>
+
+#include <stdexcept>
+
+namespace PyOpenDDS {
+
+class Exception : public std::exception {
+public:
+  Exception(const char* message)
+  : message_(message)
+  {
+  }
+
+  virtual const char* what() const noexcept
+  {
+    return message_;
+  }
+
+private:
+  const char* message_;
+};
+
+class TypeBase {
+public:
+  static const char* get_module_name()
+  {
+    raise Exception("Invalid get_module_name");
+  }
+
+  static const char* get_type_name()
+  {
+    raise Exception("Invalid get_type_name");
+  }
+
+  static PyObject* get_python_class()
+  {
+    PyObject* module = PyImport_ImportModule(get_module_name());
+    if (!module) {
+      throw Exception("Could not get python module");
+      PyErr_Print();
+    }
+    PyObject* cls PyObject_GetAttrString(module, get_type_name());
+    if (!cls) {
+      throw Exception("Could not get python class from module");
+      PyErr_Print();
+    }
+    return cls;
+  }
+};
+
+template<typename T>
+class Type : public TypeBase {
+};
+
+long get_python_long_attr(PyObject* py, const char* attr_name)
+{
+  PyObject* attr = PyObject_GetAttrString(py, attr_name);
+  if (!attr) {
+    PyErr_Print();
+    raise Exception("python error occured");
+  }
+  if (!PyLong_Check(attr)) {
+    raise Exception("python attribute isn't an int");
+  }
+  long long_value = PyLong_AsLong(attr);
+  if (long_value == -1 && PyErr_Occurred()) {
+    PyErr_Print();
+    raise Exception("python error occured");
+  }
+  return long_value;
+}
+''')
+
+  def visit_struct(self, struct_type):
+    cpp_name = '::' + struct_type.name.join('::')
+    python_module = struct_type.parent_name().join()
+    python_name =  struct_type.local_name()
+    self.append('''\
+template<>
+class Type<''' + cpp_name + '''> : TypeBase {
+public:
+  static const char* get_module_name()
+  {
+    return "''' + python_module + '''";
+  }
+
+  static const char* get_type_name()
+  {
+    return "''' + python_name + '''";
+  }
+
+  static void to_python(const ''' + cpp_name + '''& cpp, PyObject*& py)
+  {
+    PyObject* cls = get_python_class();
+    if (py) {
+      if (PyObject_IsInstance(cls, py) != 1) {
+        raise Exception("Python object is not a valid type");
+      }
+    } else {
+      py = PyObject_CallObject(cls, nullptr);
+      if (!py) {
+        PyErr_Print();
+        raise Exception("Could not call __init__ for new class");
+      }
+    }
+''');
+
+    for field_name, (field_type, _) in struct_type.fields.items():
+      if isinstance(field_type, PrimitiveType) and field_type.is_int():
+        self.append('''\
+    if (PyObject_SetAttrString(py, "''' + field_name + '''", PyLong_FromLong(cpp.''' + field_name + '''))) {
+      PyErr_Print();
+      raise Exception("Type<''' + cpp_name + '''>::to_python: Could not set ''' + field_name + '''");
+    }''')
+      else:
+        self.append('    // ' + field_name + ' was left unimplemented')    
+
+    self.append('''\
+  }
+
+  static ''' + cpp_name + ''' from_python(PyObject* py)
+  {
+    ''' + cpp_name + ''' rv;
+
+    PyObject* cls = get_python_class();
+    if (PyObject_IsInstance(py, cls) != 1) {
+      raise Exception("Python object is not a valid type");
+    }
+''');
+
+    for field_name, (field_type, _) in struct_type.fields.items():
+      if isinstance(field_type, PrimitiveType) and field_type.is_int():
+        self.append('''\
+    rv.''' + field_name + ''' = get_python_long_attr(py, "''' + field_name + '''");''')
+      else:
+        self.append('    // ' + field_name + ' was left unimplemented')    
+
+    self.append('''
+    return rv;
+  }
+};
+''')
+
+  def visit_enum(self, enum_type):
+    pass
+
+  def after(self):
+    return '} // PyOpenDDS\n'
+
 def parse_int(details):
   note = details.get('note', {})
   unsigned = 'unsigned' in details and details['unsigned'] == True
@@ -384,3 +538,7 @@ if __name__ == "__main__":
   pyout = PythonOutput(path / '__init__.py')
   pyout.visit_module(root_module)
   pyout.write()
+
+  cppout = CppOutput('/dev/stdout')
+  cppout.visit_module(root_module)
+  cppout.write()
