@@ -9,6 +9,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from os.path import relpath
 
+itl_ext = '.itl'
+
 class Name:
 
   def __init__(self, itl_name=None, parts=None):
@@ -234,9 +236,12 @@ del _pyopendds_inject_idl''')
 
 class CppOutput(Output):
 
-  def __init__(self, path):
+  def __init__(self, path, idl_names):
     super().__init__(path)
-    self.append('''\
+
+    for name in idl_names:
+      self.append('#include <' + name + 'TypeSupportImpl.h>')
+    self.append('''
 #include <Python.h>
 
 #include <stdexcept>
@@ -519,7 +524,9 @@ if __name__ == "__main__":
 
   # Parse ITL Files for Types
   types = {}
+  idl_names = []
   for itl_file in args.itl_files:
+    idl_names.append(itl_file.name[:-len(itl_ext)])
     with itl_file.open() as f:
       parse_root(types, json.load(f))
 
@@ -533,12 +540,12 @@ if __name__ == "__main__":
       module = module.submodules[module_name]
     module.types[type_node.name.itl_name] = type_node
 
-  path = args.output / args.package_name
-  path.mkdir(exist_ok=True)
-  pyout = PythonOutput(path / '__init__.py')
+  python_path = args.output / args.package_name
+  python_path.mkdir(exist_ok=True)
+  pyout = PythonOutput(python_path / '__init__.py')
   pyout.visit_module(root_module)
   pyout.write()
 
-  cppout = CppOutput('/dev/stdout')
+  cppout = CppOutput(args.output / ('_' + args.package_name + '.cpp'), idl_names)
   cppout.visit_module(root_module)
   cppout.write()
