@@ -7,7 +7,6 @@ import json
 from enum import Enum, auto
 from argparse import ArgumentParser
 from pathlib import Path
-from os.path import relpath
 
 itl_ext = '.itl'
 
@@ -501,13 +500,24 @@ def parse_type(types, details):
     raise TypeError(
       'Type {} is not a valid type for parse_type()'.format(details_type.__name__))
 
-def parse_root(types, itl):
+def parse_itl(types, itl):
   for itl_type in itl['types']:
     parsed_type = parse_type(types, itl_type)
     # opendds_idl produces ITL that includes types from included IDL files, so
     # just use the first definition we found.
     if parsed_type.name.itl_name not in types:
       types[parsed_type.name.itl_name] = parsed_type
+
+def get_ast(types):
+  root_module = Module(None, '')
+  for type_node in types.values():
+    module = root_module
+    for module_name in type_node.parent_name().parts:
+      if module_name not in module.submodules:
+        module.submodules[module_name] = Module(module, module_name)
+      module = module.submodules[module_name]
+    module.types[type_node.name.itl_name] = type_node
+  return root_module
 
 if __name__ == "__main__":
   # Parse Arguments
@@ -528,24 +538,15 @@ if __name__ == "__main__":
   for itl_file in args.itl_files:
     idl_names.append(itl_file.name[:-len(itl_ext)])
     with itl_file.open() as f:
-      parse_root(types, json.load(f))
-
-  # Sort Types into Modules
-  root_module = Module(None, '')
-  for type_node in types.values():
-    module = root_module
-    for module_name in type_node.parent_name().parts:
-      if module_name not in module.submodules:
-        module.submodules[module_name] = Module(module, module_name)
-      module = module.submodules[module_name]
-    module.types[type_node.name.itl_name] = type_node
+      parse_itl(types, json.load(f))
+  ast = get_ast(types)
 
   python_path = args.output / args.package_name
   python_path.mkdir(exist_ok=True)
   pyout = PythonOutput(python_path / '__init__.py')
-  pyout.visit_module(root_module)
+  pyout.visit_module(ast)
   pyout.write()
 
   cppout = CppOutput(args.output / ('_' + args.package_name + '.cpp'), idl_names)
-  cppout.visit_module(root_module)
+  cppout.visit_module(ast)
   cppout.write()
