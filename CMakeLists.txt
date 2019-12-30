@@ -2,18 +2,21 @@
 cmake_minimum_required(VERSION 3.12)
 project(PyOpenDDS)
 
-# TODO: HARDCODED IDL
-set(HARDCODED_IDL libbasic_idl.so)
-
 # Find Python
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python3 COMPONENTS Development REQUIRED)
 
 # Find OpenDDS
 list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS REQUIRED)
 
+# TODO: HARDCODED IDL
+set(basic_idl_DIR "${CMAKE_CURRENT_LIST_DIR}/tests/basic_test/build")
+find_package(basic_idl REQUIRED)
+
 # Define _pyopendds
 add_library(_pyopendds SHARED _pyopendds.cpp)
+target_link_libraries(_pyopendds OpenDDS::Dcps)
+target_link_libraries(_pyopendds Python3::Python)
 
 # Set filename to exactly what Python is expecting
 set_target_properties(_pyopendds PROPERTIES
@@ -22,18 +25,5 @@ set_target_properties(_pyopendds PROPERTIES
   SUFFIX ""
 )
 
-# Connect to OpenDDS
-OPENDDS_TARGET_SOURCES(_pyopendds PUBLIC)
-target_link_libraries(_pyopendds OpenDDS::OpenDDS)
-
-# Connect to Python
-target_link_libraries(_pyopendds ${Python3_LIBRARIES})
-target_include_directories(_pyopendds PUBLIC ${Python3_INCLUDE_DIRS})
-
 # TODO: HARDCODED IDL
-# Hardcoded Reading IDL Library
-add_library(reading SHARED IMPORTED)
-set_property(TARGET reading PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/tests/basic_test/build/${HARDCODED_IDL})
-link_directories(tests/basic_test/build)
-target_link_libraries(_pyopendds reading)
-target_include_directories(_pyopendds PUBLIC ${CMAKE_CURRENT_LIST_DIR}/tests/basic_test/build)
+target_link_libraries(_pyopendds basic_idl)
