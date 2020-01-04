@@ -16,4 +16,5 @@ setup(
     cmakelists_dir='.',
   )],
   cmdclass = {'build_ext': CMakeWrapperBuild},
+  scripts = ['itl2py']
 )

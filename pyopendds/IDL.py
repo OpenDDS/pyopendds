@@ -19,8 +19,9 @@ class IDL:
     d.update(kw)
     self.definitions[full_name] = d
 
-  def add_struct(self, module, name, members):
-    self.add_definition(module, name, 'struct', members=members)
+  def add_struct(self, module, name, ts_package, members):
+    self.add_definition(module, name, 'struct',
+      ts_package=ts_package, members=members)
 
   def get_struct(self, full_name):
     if full_name not in self.types:
@@ -28,6 +29,8 @@ class IDL:
       from dataclasses import make_dataclass
       t = make_dataclass(d['name'], d['members'])
       t.__module__ = d['module']
+      if d['ts_package']:
+        t._pyopendds_typesupport_packge_name = d['ts_package']
       self.types[full_name] = t
     else:
       t = self.types[full_name]

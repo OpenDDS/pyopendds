@@ -7,6 +7,9 @@ import json
 from enum import Enum, auto
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import List
+
+from pyopendds_dev.itl2py import *
 
 itl_ext = '.itl'
 
@@ -30,6 +33,7 @@ class Node:
   def __init__(self, note):
     self.note = note
     self.name = None
+    self.is_topic_type = False
 
   def set_name(self, itl_name=None, parts=None):
     self.name = Name(itl_name=itl_name, parts=parts)
@@ -194,8 +198,15 @@ class PythonOutput(Output):
     PrimitiveType.Kind.s8: ('str', "''"),
   }
 
-  def __init__(self, path):
-    super().__init__(path)
+  def __init__(self,
+      output_path: Path,
+      python_package_name: str,
+      native_package_name: str):
+    self.python_package_name = python_package_name
+    self.native_package_name = native_package_name
+    path = output_path / python_package_name
+    path.mkdir(parents=True, exist_ok=True)
+    super().__init__(path / '__init__.py')
     self.append('''\
 def _pyopendds_inject_idl(module_name):
     from pyopendds.IDL import IDL
@@ -218,9 +229,10 @@ del _pyopendds_inject_idl''')
     super().visit_module(module)
 
   def visit_struct(self, struct_type):
-    self.append("    idl.add_struct('{}', '{}', [".format(
+    self.append("    idl.add_struct('{}', '{}', '{}', [".format(
       struct_type.parent_name().join(),
-      struct_type.local_name()))
+      struct_type.local_name(),
+      self.native_package_name if struct_type.is_topic_type else None))
     for name in struct_type.fields:
       self.append("        ('{}'),".format(name))
     self.append("    ])")
@@ -235,17 +247,38 @@ del _pyopendds_inject_idl''')
 
 class CppOutput(Output):
 
-  def __init__(self, path, idl_names):
-    super().__init__(path)
+  def __init__(self, output_path: Path,
+      python_package_name: str,
+      native_package_name: str,
+      idl_names: List[str]):
+    self.python_package_name = python_package_name
+    self.native_package_name = native_package_name
+    super().__init__(output_path / (native_package_name + '.cpp'))
+
+    self.topic_types = []
 
     for name in idl_names:
       self.append('#include <' + name + 'TypeSupportImpl.h>')
     self.append('''
+#include <dds/DdsDcpsDomainC.h>
+
 #include <Python.h>
 
 #include <stdexcept>
 
 namespace PyOpenDDS {
+
+/// Get Contents of Capsule from a PyObject
+template <typename T>
+T* get_capsule(PyObject* obj)
+{
+  T* rv = 0;
+  PyObject* capsule = PyObject_GetAttrString(obj, "_var");
+  if (capsule && PyCapsule_CheckExact(capsule)) {
+    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
+  }
+  return rv;
+}
 
 class Exception : public std::exception {
 public:
@@ -263,52 +296,73 @@ private:
   const char* message_;
 };
 
+template<typename T>
 class TypeBase {
 public:
-  static const char* get_module_name()
+  typedef typename OpenDDS::DCPS::DDSTraits<T> Traits;
+  typedef typename Traits::TypeSupportType TypeSupport;
+  typedef typename Traits::TypeSupportTypeImpl TypeSupportImpl;
+
+  /**
+   * Callback for Python to call when the TypeSupport capsule is deleted
+   */
+  static void delete_typesupport(PyObject* capsule)
   {
-    raise Exception("Invalid get_module_name");
+    if (PyCapsule_CheckExact(capsule)) {
+      delete static_cast<TypeSupportImpl*>(
+        PyCapsule_GetPointer(capsule, NULL));
+    }
   }
 
-  static const char* get_type_name()
+  static void register_type(PyObject* pyparticipant)
   {
-    raise Exception("Invalid get_type_name");
-  }
+    // Get DomainParticipant_var
+    DDS::DomainParticipant* participant =
+      get_capsule<DDS::DomainParticipant>(pyparticipant);
+    if (!participant) {
+      throw Exception("Could not get native particpant");
+    }
 
-  static PyObject* get_python_class()
-  {
-    PyObject* module = PyImport_ImportModule(get_module_name());
-    if (!module) {
-      throw Exception("Could not get python module");
-      PyErr_Print();
+    // Register with OpenDDS
+    TypeSupportImpl* type_support = new TypeSupportImpl;
+    if (type_support->register_type(participant, "") != DDS::RETCODE_OK) {
+      delete type_support;
+      type_support = 0;
+      throw Exception("Could not create register type");
     }
-    PyObject* cls PyObject_GetAttrString(module, get_type_name());
-    if (!cls) {
-      throw Exception("Could not get python class from module");
-      PyErr_Print();
+
+    // Store TypeSupport in Python Participant
+    PyObject* capsule = PyCapsule_New(participant, NULL, delete_typesupport);
+    if (!capsule) {
+      throw Exception("Could not create ts capsule");
     }
-    return cls;
+    PyObject* list = PyObject_GetAttrString(
+      pyparticipant, "_registered_typesupport");
+    if (!list || !PyList_Check(list)) {
+      throw Exception("Could not get ts list");
+    }
+    if (PyList_Append(list, capsule)) {
+      PyErr_Print();
+      throw Exception("Could not append ts to list");
+    }
   }
 };
-
-template<typename T>
-class Type : public TypeBase {
-};
+template<typename T> class Type;
 
 long get_python_long_attr(PyObject* py, const char* attr_name)
 {
   PyObject* attr = PyObject_GetAttrString(py, attr_name);
   if (!attr) {
     PyErr_Print();
-    raise Exception("python error occured");
+    throw Exception("python error occured");
   }
   if (!PyLong_Check(attr)) {
-    raise Exception("python attribute isn't an int");
+    throw Exception("python attribute isn't an int");
   }
   long long_value = PyLong_AsLong(attr);
   if (long_value == -1 && PyErr_Occurred()) {
     PyErr_Print();
-    raise Exception("python error occured");
+    throw Exception("python error occured");
   }
   return long_value;
 }
@@ -316,20 +370,25 @@ long get_python_long_attr(PyObject* py, const char* attr_name)
 
   def visit_struct(self, struct_type):
     cpp_name = '::' + struct_type.name.join('::')
-    python_module = struct_type.parent_name().join()
-    python_name =  struct_type.local_name()
+    if struct_type.is_topic_type:
+      self.topic_types.append(cpp_name)
     self.append('''\
 template<>
-class Type<''' + cpp_name + '''> : TypeBase {
+class Type<''' + cpp_name + '''> : public TypeBase<''' + cpp_name + '''> {
 public:
-  static const char* get_module_name()
-  {
-    return "''' + python_module + '''";
-  }
 
-  static const char* get_type_name()
+  static PyObject* get_python_class()
   {
-    return "''' + python_name + '''";
+    PyObject* module = PyImport_ImportModule("''' + self.python_package_name + '''");
+    if (!module) return 0;''')
+
+    for name in struct_type.parent_name().parts:
+      self.append('''\
+    module = PyObject_GetAttrString(module, "''' + name + '''");
+    if (!module) return 0;''')
+
+    self.append('''\
+    return PyObject_GetAttrString(module, "''' + struct_type.local_name() + '''");
   }
 
   static void to_python(const ''' + cpp_name + '''& cpp, PyObject*& py)
@@ -337,13 +396,13 @@ public:
     PyObject* cls = get_python_class();
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
-        raise Exception("Python object is not a valid type");
+        throw Exception("Python object is not a valid type");
       }
     } else {
       py = PyObject_CallObject(cls, nullptr);
       if (!py) {
         PyErr_Print();
-        raise Exception("Could not call __init__ for new class");
+        throw Exception("Could not call __init__ for new class");
       }
     }
 ''');
@@ -353,10 +412,10 @@ public:
         self.append('''\
     if (PyObject_SetAttrString(py, "''' + field_name + '''", PyLong_FromLong(cpp.''' + field_name + '''))) {
       PyErr_Print();
-      raise Exception("Type<''' + cpp_name + '''>::to_python: Could not set ''' + field_name + '''");
+      throw Exception("Type<''' + cpp_name + '''>::to_python: Could not set ''' + field_name + '''");
     }''')
       else:
-        self.append('    // ' + field_name + ' was left unimplemented')    
+        self.append('    // ' + field_name + ' was left unimplemented')
 
     self.append('''\
   }
@@ -367,7 +426,7 @@ public:
 
     PyObject* cls = get_python_class();
     if (PyObject_IsInstance(py, cls) != 1) {
-      raise Exception("Python object is not a valid type");
+      throw Exception("Python object is not a valid type");
     }
 ''');
 
@@ -376,7 +435,7 @@ public:
         self.append('''\
     rv.''' + field_name + ''' = get_python_long_attr(py, "''' + field_name + '''");''')
       else:
-        self.append('    // ' + field_name + ' was left unimplemented')    
+        self.append('    // ' + field_name + ' was left unimplemented')
 
     self.append('''
     return rv;
@@ -388,7 +447,88 @@ public:
     pass
 
   def after(self):
-    return '} // PyOpenDDS\n'
+    def for_each_topic_type(what):
+      lines = ''
+      first = True
+      for topic_type in self.topic_types:
+        if first:
+          lines += '  '
+          first = False
+        else:
+          lines += ' else '
+        lines += '''\
+if (pytype == PyOpenDDS::Type<''' + topic_type + '''>::get_python_class()) {
+''' + what(topic_type) + '''\
+  }'''
+      return lines
+    lines = '''\
+} // PyOpenDDS\n
+
+static PyObject* pyregister_type(PyObject* self, PyObject* args)
+{
+  // Get Arguments
+  PyObject* pyparticipant;
+  PyObject* pytype;
+  if (!PyArg_ParseTuple(args, "OO", &pyparticipant, &pytype)) {
+    PyErr_SetString(PyExc_TypeError, "Invalid Arguments");
+    return NULL;
+  }
+
+''' + for_each_topic_type(lambda topic_type: '''\
+    PyOpenDDS::Type<''' + topic_type + '''>::register_type(pyparticipant);
+    Py_RETURN_NONE;
+''') + '''
+
+  PyErr_SetString(PyExc_Exception, "Could Not Match Python Type");
+  return NULL;
+}
+
+static PyObject* pytype_name(PyObject* self, PyObject* args)
+{
+  // Get Arguments
+  PyObject* pytype;
+  if (!PyArg_ParseTuple(args, "O", &pytype)) {
+    PyErr_SetString(PyExc_TypeError, "Invalid Arguments");
+    return NULL;
+  }
+
+  const char* type_name = 0;
+
+''' + for_each_topic_type(lambda topic_type: '''\
+    type_name = PyOpenDDS::Type<''' + topic_type + '''>::Traits::type_name();
+''') + '''
+
+  if (type_name) {
+    return PyUnicode_FromString(type_name);
+  }
+
+  PyErr_SetString(PyExc_Exception, "Could Not Get OpenDDS Type Name");
+  return NULL;
+}
+
+static PyMethodDef ''' + self.native_package_name + '''_Methods[] = {
+  {
+    "register_type", pyregister_type, METH_VARARGS, ""
+  },
+  {
+    "type_name", pytype_name, METH_VARARGS, ""
+  },
+  {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef ''' + self.native_package_name + '''_Module = {
+  PyModuleDef_HEAD_INIT,
+  "''' + self.native_package_name + '''", "",
+  -1, // Global State Module, because OpenDDS uses Singletons
+  ''' + self.native_package_name + '''_Methods
+};
+
+PyMODINIT_FUNC PyInit_''' + self.native_package_name + '''()
+{
+  return PyModule_Create(&''' + self.native_package_name + '''_Module);
+}
+'''
+    return lines
 
 def parse_int(details):
   note = details.get('note', {})
@@ -463,6 +603,7 @@ def parse_union(types, details):
 def parse_alias(types, details):
   the_type = parse_type(types, details['type'])
   the_type.set_name(details['name'])
+  the_type.is_topic_type = details['note'].get("is_dcps_data_type", False) if 'note' in details else False
   return the_type
 
 def parse_typedef(types, details):
@@ -498,7 +639,7 @@ def parse_type(types, details):
     return parse_typedef(types, details)
   else:
     raise TypeError(
-      'Type {} is not a valid type for parse_type()'.format(details_type.__name__))
+      'Type "{}" is not a valid type for parse_type()'.format(details_type.__name__))
 
 def parse_itl(types, itl):
   for itl_type in itl['types']:
@@ -525,12 +666,15 @@ if __name__ == "__main__":
   argparser.add_argument('itl_files', metavar='ITL_FILE', type=Path, nargs='+')
   argparser.add_argument('-n', '--package-name', type=str)
   argparser.add_argument('-o', '--output', type=Path, default=Path('.'))
+  argparser.add_argument('--cmake-idl-name', type=str, default=None)
   args = argparser.parse_args()
 
   if args.package_name is None:
     if len(args.itl_files) > 1:
       sys.exit('--package-name is required when using multiple ITL files')
-    args.package_name = args.itl_files[0].stem
+    args.package_name = 'py' + args.itl_files[0].stem
+    if args.cmake_idl_name is None:
+      args.cmake_idl_name = args.itl_files[0].stem + '_idl'
 
   # Parse ITL Files for Types
   types = {}
@@ -541,12 +685,26 @@ if __name__ == "__main__":
       parse_itl(types, json.load(f))
   ast = get_ast(types)
 
-  python_path = args.output / args.package_name
-  python_path.mkdir(exist_ok=True)
-  pyout = PythonOutput(python_path / '__init__.py')
+  # TODO
+  # # If the package only contains a single module of the same name, eliminate
+  # # that module.
+  # if len(ast.submodules) == 1:
+  #   submodule = next(iter(ast.submodules.values()))
+  #   if submodule.local_name() == args.package_name:
+  #     submodule.parent = None
+  #     submodule.set_name(parts=[])
+  #     ast = submodule
+
+  python_package_name = args.package_name
+  native_package_name = '_' + args.package_name
+
+  pyout = PythonOutput(args.output, python_package_name, native_package_name)
   pyout.visit_module(ast)
   pyout.write()
 
-  cppout = CppOutput(args.output / ('_' + args.package_name + '.cpp'), idl_names)
+  cppout = CppOutput(args.output, python_package_name, native_package_name, idl_names)
   cppout.visit_module(ast)
   cppout.write()
+
+  write_setup_py(args.output, python_package_name, native_package_name)
+  write_cmakelists_txt(args.output, native_package_name, args.cmake_idl_name)

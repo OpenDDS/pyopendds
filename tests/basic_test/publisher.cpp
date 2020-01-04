@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     sc->set_enabled_statuses(DDS::PUBLICATION_MATCHED_STATUS);
     DDS::WaitSet_var ws = new DDS::WaitSet;
     ws->attach_condition(sc);
-    const DDS::Duration_t max_wait = {5, 0};
+    const DDS::Duration_t max_wait = {10, 0};
     DDS::PublicationMatchedStatus status;
     while (writer->get_publication_matched_status(status) == DDS::RETCODE_OK) {
       DDS::ConditionSeq active;

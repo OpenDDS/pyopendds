@@ -9,14 +9,11 @@
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
 
-// HARDCODED
-#include <basicTypeSupportImpl.h>
-
 /// Name of PyCapule Attribute Holding the C++ Object
 const char* VAR_NAME = "_var";
 
 /// Documentation for Internal Python Objects
-const char* INTERNAL_DOCSTR = "Internal to PyOpenDDS, not use for directly!";
+const char* INTERNAL_DOCSTR = "Internal to PyOpenDDS, not for use directly!";
 
 /// Get Contents of Capsule from a PyObject
 template <typename T>
@@ -24,8 +21,7 @@ T* get_capsule(PyObject* obj)
 {
   T* rv = 0;
   PyObject* capsule = PyObject_GetAttrString(obj, VAR_NAME);
-  bool valid = capsule && PyCapsule_CheckExact(capsule);
-  if (valid) {
+  if (capsule && PyCapsule_CheckExact(capsule)) {
     rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
   }
   return rv;
@@ -201,8 +197,12 @@ void delete_topic_var(PyObject* topic_capsule)
   }
 }
 
-/**
+/*
  * create_topic(topic: Topic, participant: DomainParticipant, topic_name: str, topic_type: str) -> None
+ *
+ * Assumes all the agruments are the types listed above and the participant has
+ * a OpenDDS DomainParticipant with the type named by topic_type has already
+ * been registered with it.
  */
 static PyObject* create_topic(PyObject* self, PyObject* args)
 {
@@ -222,14 +222,6 @@ static PyObject* create_topic(PyObject* self, PyObject* args)
   if (!participant) {
     PyErr_SetString(PyOpenDDS_Error,
       "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
-    return NULL;
-  }
-
-  // HARDCODED Register Type
-  basic::ReadingTypeSupport_var type_support = new
-    basic::ReadingTypeSupportImpl();
-  if (type_support->register_type(participant, "") != DDS::RETCODE_OK) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to Register Type");
     return NULL;
   }
 

@@ -1,7 +1,7 @@
-source .venv/bin/activate
-pip install -e .
+set -e
+
 cd tests/basic_test
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python subscriber.py &
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python3 subscriber.py &
 sub=$!
 sleep 5
 cd build
@@ -9,3 +9,4 @@ cd build
 pub=$!
 wait $sub
 kill $pub
+wait

@@ -2,10 +2,10 @@ import sys
 import os
 
 from pyopendds import *
+import pybasic
 
 DOMAIN = 34
 TOPIC_NAME = 'Readings'
-TOPIC_TYPE = 'Test::Reading'
 
 if __name__ == "__main__":
   try:
@@ -14,14 +14,14 @@ if __name__ == "__main__":
 
     # Create DDS Objects
     part = DomainParticipant(DOMAIN)
-    topic = part.create_topic(TOPIC_NAME, TOPIC_TYPE)
+    topic = part.create_topic(pybasic.basic.Reading, TOPIC_NAME)
     sub = part.create_subscriber()
     dr = sub.create_datareader(topic)
 
     pub = part.create_publisher()
 
     # Wait for Publisher to Connect
-    dr.wait_for(StatusKind.PUBLICATION_MATCHED, 10)
+    dr.wait_for(StatusKind.PUBLICATION_MATCHED, 15)
 
     # TODO: wait for message
 

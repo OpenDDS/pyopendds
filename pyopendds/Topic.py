@@ -3,14 +3,18 @@ from _pyopendds import create_topic
 class Topic:
 
   def __init__(self,
-    participant: 'DomainParticipant', name: str, typename: str,
-    qos=None, listener=None
-  ):
+      participant: 'DomainParticipant', topic_type, name: str,
+      qos=None, listener=None):
     participant.topics[name] = self
     self.name = name
-    self.typename = typename
+    self.type = topic_type
     self.qos = qos
     self.listener = listener
 
-    create_topic(self, participant, name, typename)
+    import importlib
+    ts_package = importlib.import_module(topic_type._pyopendds_typesupport_packge_name)
+    if topic_type not in participant._registered_typesupport:
+      ts_package.register_type(participant, topic_type)
+    self.type_name = ts_package.type_name(topic_type)
 
+    create_topic(self, participant, name, self.type_name)
