@@ -30,13 +30,13 @@ T* get_capsule(PyObject* obj)
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
 
-/// _pyopendds.Error
+// pyopendds.PyOpenDDS_Error
 static PyObject* PyOpenDDS_Error;
 
 /**
- * init_opendds(*args[str]) -> None
+ * init_opendds_impl(*args[str]) -> None
  */
-static PyObject* init_opendds(PyObject* self, PyObject* args)
+static PyObject* init_opendds_impl(PyObject* self, PyObject* args)
 {
   /*
    * In addition to the need to convert the arguments into an argv array,
@@ -468,10 +468,7 @@ static PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 }
 
 static PyMethodDef pyopendds_Methods[] = {
-  {
-    "init_opendds", init_opendds, METH_VARARGS,
-    "Initialize OpenDDS, using DDS::TheParticipantFactoryWithArgs"
-  },
+  {"init_opendds_impl", init_opendds_impl, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
   {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_subscriber", create_subscriber, METH_VARARGS, INTERNAL_DOCSTR},
@@ -492,15 +489,17 @@ static struct PyModuleDef pyopendds_Module = {
 PyMODINIT_FUNC PyInit__pyopendds()
 {
   // Create _pyopendds
-  PyObject* module = PyModule_Create(&pyopendds_Module);
-  if (module == NULL) {
-    return NULL;
-  }
+  PyObject* native_module = PyModule_Create(&pyopendds_Module);
+  if (!native_module) return NULL;
 
-  // Add _pyopendds.Error
-  PyOpenDDS_Error = PyErr_NewException("_pyopendds.PyOpenDDS_Error", NULL, NULL);
+  // Get pyopendds
+  PyObject* python_module = PyImport_ImportModule("pyopendds");
+  if (!python_module) return NULL;
+
+  // Get PyOpenDDS_Error from pyopendds
+  PyOpenDDS_Error = PyObject_GetAttrString(python_module, "PyOpenDDS_Error");
+  if (!PyOpenDDS_Error) return NULL;
   Py_INCREF(PyOpenDDS_Error);
-  PyModule_AddObject(module, "PyOpenDDS_Error", PyOpenDDS_Error);
 
-  return module;
+  return native_module;
 }

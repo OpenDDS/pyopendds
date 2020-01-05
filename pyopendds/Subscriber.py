@@ -1,4 +1,3 @@
-from _pyopendds import create_subscriber
 from .DataReader import DataReader
 from .Topic import Topic
 
@@ -10,6 +9,7 @@ class Subscriber:
     self.listener = listener
     self.readers = []
 
+    from _pyopendds import create_subscriber
     create_subscriber(self, participant)
 
   def create_datareader(self, topic: Topic, qos=None, listener=None):

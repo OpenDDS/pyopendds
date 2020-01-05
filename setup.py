@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from pyopendds_dev.cmake import *
+from pyopendds.dev.cmake import *
 
 setup(
   name = 'pyopendds',
@@ -10,11 +10,11 @@ setup(
     'License :: OSI Approved :: MIT License',
   ],
   # TODO: Fill Out More MetaData
-  py_modules = ['pyopendds', 'pyopendds_dev'],
+  py_modules = ['pyopendds'],
   ext_modules = [CMakeWrapperExtension(
     name = '_pyopendds',
-    cmakelists_dir='.',
+    cmakelists_dir='pyopendds/ext',
   )],
   cmdclass = {'build_ext': CMakeWrapperBuild},
-  scripts = ['itl2py']
+  scripts = ['scripts/itl2py']
 )

@@ -1,4 +1,3 @@
-from _pyopendds import create_publisher
 from .Topic import Topic
 
 class Publisher:
@@ -9,6 +8,7 @@ class Publisher:
     self.listener = listener
     self.writers = []
 
+    from _pyopendds import create_publisher
     create_publisher(self, participant)
 
   def create_datawriter(self, topic: Topic, qos=None, listener=None):

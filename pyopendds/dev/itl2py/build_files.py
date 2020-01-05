@@ -4,7 +4,7 @@ def get_setup_py(python_module_name, native_module_name):
     return '''\
 from setuptools import setup
 
-from pyopendds_dev.cmake import *
+from pyopendds.dev.cmake import *
 
 setup(
     name = \'''' + python_module_name + '''\',
