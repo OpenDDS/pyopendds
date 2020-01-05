@@ -71,15 +71,20 @@ int main(int argc, char* argv[]) {
     DDS::WaitSet_var ws = new DDS::WaitSet;
     ws->attach_condition(sc);
     const DDS::Duration_t max_wait = {10, 0};
-    DDS::PublicationMatchedStatus status;
-    while (writer->get_publication_matched_status(status) == DDS::RETCODE_OK) {
+    DDS::PublicationMatchedStatus status = {0, 0, 0, 0, 0};
+    while (status.current_count < 1) {
       DDS::ConditionSeq active;
       if (ws->wait(active, max_wait) != DDS::RETCODE_OK) {
         std::cerr << "Error: Timedout waiting for subscriber" << std::endl;
         return 1;
       }
+      if (writer->get_publication_matched_status(status) != DDS::RETCODE_OK) {
+        std::cerr << "Error: Failed to get pub matched status" << std::endl;
+        return 1;
+      }
     }
     ws->detach_condition(sc);
+    std::cout << "Found Subscriber..." << std::endl;
 
     // Write Sample
     basic::ReadingDataWriter_var reading_writer =

@@ -6,7 +6,7 @@ list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS REQUIRED)
 
 add_library(basic_idl SHARED)
-OPENDDS_TARGET_SOURCES(basic_idl PUBLIC basic.idl OPENDDS_IDL_OPTIONS -Gitl)
+OPENDDS_TARGET_SOURCES(basic_idl basic.idl OPENDDS_IDL_OPTIONS -Gitl)
 target_link_libraries(basic_idl PUBLIC OpenDDS::Dcps)
 export(
   TARGETS basic_idl
