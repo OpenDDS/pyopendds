@@ -22,6 +22,9 @@ if __name__ == "__main__":
     dr.wait_for(StatusKind.SUBSCRIPTION_MATCHED, 15)
     print('Found Publisher!')
 
+    # Read and Print Sample
+    print(dr.read())
+
     print('Done!')
 
   except PyOpenDDS_Error as e:

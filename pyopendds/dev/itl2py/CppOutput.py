@@ -21,6 +21,7 @@ class CppOutput(Output):
       self.append('#include <' + name + 'TypeSupportImpl.h>')
     self.append('''
 #include <dds/DdsDcpsDomainC.h>
+#include <dds/DCPS/WaitSet.h>
 
 #include <stdexcept>
 #include <map>
@@ -90,14 +91,21 @@ public:
   virtual void register_type(PyObject* pyparticipant) = 0;
   virtual PyObject* get_python_class() = 0;
   virtual const char* type_name() = 0;
+  virtual PyObject* read(PyObject* pyreader) = 0;
 };
 
 template<typename T>
 class TemplatedTypeBase : public TypeBase {
 public:
   typedef typename OpenDDS::DCPS::DDSTraits<T> Traits;
+
+  typedef T IdlType;
+  typedef typename Traits::MessageSequenceType IdlTypeSequence;
+
   typedef typename Traits::TypeSupportType TypeSupport;
   typedef typename Traits::TypeSupportTypeImpl TypeSupportImpl;
+  typedef typename Traits::DataWriterType DataWriter;
+  typedef typename Traits::DataReaderType DataReader;
 
   const char* type_name()
   {
@@ -147,6 +155,43 @@ public:
       throw Exception("Could not append ts to list");
     }
   }
+
+  virtual void to_python(const T& cpp, PyObject*& py) = 0;
+
+  PyObject* read(PyObject* pyreader)
+  {
+    DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
+    if (!reader) {
+      PyErr_SetString(PyOpenDDS_Error, "Could not get datareader");
+      return nullptr;
+    }
+
+    DataReader* reader_impl = DataReader::_narrow(reader);
+    if (!reader_impl) {
+      PyErr_SetString(PyOpenDDS_Error, "Could not narrow reader implementation");
+      return nullptr;
+    }
+
+    DDS::ReturnCode_t rc;
+    DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
+      DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
+    DDS::WaitSet_var ws = new DDS::WaitSet;
+    ws->attach_condition(read_condition);
+    DDS::ConditionSeq active;
+    const DDS::Duration_t max_wait_time = {10, 0};
+    rc = ws->wait(active, max_wait_time);
+    ws->detach_condition(read_condition);
+    reader_impl->delete_readcondition(read_condition);
+
+    T sample;
+    DDS::SampleInfo info;
+    if (check_rc(reader_impl->take_next_sample(sample, info))) return nullptr;
+    PyObject *rv = nullptr;
+    to_python(sample, rv);
+    return rv;
+  }
+
+  virtual T from_python(PyObject* py) = 0;
 };
 template<typename T> class Type;
 
@@ -305,8 +350,20 @@ static PyObject* pytype_name(PyObject* self, PyObject* args)
   return nullptr;
 }
 
-  if (type_name) {
-    return PyUnicode_FromString(type_name);
+static PyObject* pyread(PyObject* self, PyObject* args)
+{
+  // Get Arguments
+  PyObject* pyreader;
+  if (!PyArg_ParseTuple(args, "O", &pyreader)) return nullptr;
+
+  // Try to Get Topic Type and Do Read
+  PyObject* pytopic = PyObject_GetAttrString(pyreader, "topic");
+  if (!pytopic) return nullptr;
+  PyObject* pytype = PyObject_GetAttrString(pytopic, "type");
+  if (!pytype) return nullptr;
+  Types::iterator i = types.find(pytype);
+  if (i != types.end()) {
+    return i->second->read(pyreader);
   }
 
   PyErr_SetString(PyExc_TypeError, "Invalid Type");
@@ -316,6 +373,7 @@ static PyObject* pytype_name(PyObject* self, PyObject* args)
 static PyMethodDef ''' + self.native_package_name + '''_Methods[] = {
   {"register_type", pyregister_type, METH_VARARGS, ""},
   {"type_name", pytype_name, METH_VARARGS, ""},
+  {"read", pyread, METH_VARARGS, ""},
   {NULL, NULL, 0, NULL}
 };
 

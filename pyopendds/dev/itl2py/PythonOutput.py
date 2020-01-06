@@ -31,6 +31,7 @@ class PythonOutput(Output):
     self.append('''\
 def _pyopendds_inject_idl(module_name):
     from pyopendds.IDL import IDL
+    from dataclasses import field
     idl = IDL()
 ''')
 
@@ -55,7 +56,7 @@ del _pyopendds_inject_idl''')
       struct_type.local_name(),
       self.native_package_name if struct_type.is_topic_type else None))
     for name in struct_type.fields:
-      self.append("        ('{}'),".format(name))
+      self.append("        ('{}', 'typing.Any', field(default=None)),".format(name))
     self.append("    ])")
 
   def visit_enum(self, enum_type):

@@ -16,3 +16,6 @@ class DataReader:
   def wait_for(self, status: StatusKind, timeout):
     from _pyopendds import datareader_wait_for
     return datareader_wait_for(self, status, timeout)
+
+  def read(self):
+    return self.topic._ts_package.read(self)
