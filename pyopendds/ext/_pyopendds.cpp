@@ -439,7 +439,7 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 
   // Attach OpenDDS DataReader to DataReader Python Object
   PyObject* reader_capsule = PyCapsule_New(
-    topic, NULL, delete_reader_var);
+    datareader, NULL, delete_reader_var);
   if (!reader_capsule) {
     PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap DataReader");
     return NULL;
