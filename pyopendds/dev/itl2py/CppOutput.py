@@ -15,27 +15,58 @@ class CppOutput(Output):
 
     self.topic_types = []
 
+    self.append('#include <Python.h>\n\n')
+
     for name in idl_names:
       self.append('#include <' + name + 'TypeSupportImpl.h>')
     self.append('''
 #include <dds/DdsDcpsDomainC.h>
 
-#include <Python.h>
-
 #include <stdexcept>
+#include <map>
+#include <memory>
 
-namespace PyOpenDDS {
+namespace {
 
 /// Get Contents of Capsule from a PyObject
 template <typename T>
 T* get_capsule(PyObject* obj)
 {
-  T* rv = 0;
+  T* rv = nullptr;
   PyObject* capsule = PyObject_GetAttrString(obj, "_var");
-  if (capsule && PyCapsule_CheckExact(capsule)) {
-    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
+  if (capsule && PyCapsule_IsValid(capsule, nullptr)) {
+    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, nullptr));
   }
   return rv;
+}
+
+// Python Objects To Keep
+PyObject* pyopendds;
+PyObject* PyOpenDDS_Error;
+PyObject* ReturnCodeError;
+
+bool cache_python_objects()
+{
+  // Get pyopendds
+  pyopendds = PyImport_ImportModule("pyopendds");
+  if (!pyopendds) return true;
+
+  // Get PyOpenDDS_Error
+  PyOpenDDS_Error = PyObject_GetAttrString(pyopendds, "PyOpenDDS_Error");
+  if (!PyOpenDDS_Error) return true;
+  Py_INCREF(PyOpenDDS_Error);
+
+  // Get ReturnCodeError
+  ReturnCodeError = PyObject_GetAttrString(pyopendds, "ReturnCodeError");
+  if (!ReturnCodeError) return true;
+  Py_INCREF(ReturnCodeError);
+
+  return false;
+}
+
+bool check_rc(DDS::ReturnCode_t rc)
+{
+  return !PyObject_CallMethod(ReturnCodeError, "check", "k", rc);
 }
 
 class Exception : public std::exception {
@@ -54,12 +85,24 @@ private:
   const char* message_;
 };
 
-template<typename T>
 class TypeBase {
+public:
+  virtual void register_type(PyObject* pyparticipant) = 0;
+  virtual PyObject* get_python_class() = 0;
+  virtual const char* type_name() = 0;
+};
+
+template<typename T>
+class TemplatedTypeBase : public TypeBase {
 public:
   typedef typename OpenDDS::DCPS::DDSTraits<T> Traits;
   typedef typename Traits::TypeSupportType TypeSupport;
   typedef typename Traits::TypeSupportTypeImpl TypeSupportImpl;
+
+  const char* type_name()
+  {
+    return Traits::type_name();
+  }
 
   /**
    * Callback for Python to call when the TypeSupport capsule is deleted
@@ -72,7 +115,7 @@ public:
     }
   }
 
-  static void register_type(PyObject* pyparticipant)
+  void register_type(PyObject* pyparticipant)
   {
     // Get DomainParticipant_var
     DDS::DomainParticipant* participant =
@@ -107,6 +150,17 @@ public:
 };
 template<typename T> class Type;
 
+typedef std::shared_ptr<TypeBase> TypePtr;
+typedef std::map<PyObject*, TypePtr> Types;
+Types types;
+
+template<typename T>
+void init_type()
+{
+  TypePtr type{new Type<T>};
+  types.insert(Types::value_type(type->get_python_class(), type));
+}
+
 long get_python_long_attr(PyObject* py, const char* attr_name)
 {
   PyObject* attr = PyObject_GetAttrString(py, attr_name);
@@ -132,24 +186,26 @@ long get_python_long_attr(PyObject* py, const char* attr_name)
       self.topic_types.append(cpp_name)
     self.append('''\
 template<>
-class Type<''' + cpp_name + '''> : public TypeBase<''' + cpp_name + '''> {
+class Type<''' + cpp_name + '''> : public TemplatedTypeBase<''' + cpp_name + '''> {
 public:
-
-  static PyObject* get_python_class()
+  PyObject* get_python_class()
   {
-    PyObject* module = PyImport_ImportModule("''' + self.python_package_name + '''");
-    if (!module) return 0;''')
+    if (!python_class_) {
+      PyObject* module = PyImport_ImportModule("''' + self.python_package_name + '''");
+      if (!module) return 0;''')
 
     for name in struct_type.parent_name().parts:
       self.append('''\
-    module = PyObject_GetAttrString(module, "''' + name + '''");
-    if (!module) return 0;''')
+      module = PyObject_GetAttrString(module, "''' + name + '''");
+      if (!module) return 0;''')
 
     self.append('''\
-    return PyObject_GetAttrString(module, "''' + struct_type.local_name() + '''");
+      python_class_ = PyObject_GetAttrString(module, "''' + struct_type.local_name() + '''");
+    }
+    return python_class_;
   }
 
-  static void to_python(const ''' + cpp_name + '''& cpp, PyObject*& py)
+  void to_python(const ''' + cpp_name + '''& cpp, PyObject*& py)
   {
     PyObject* cls = get_python_class();
     if (py) {
@@ -178,7 +234,7 @@ public:
     self.append('''\
   }
 
-  static ''' + cpp_name + ''' from_python(PyObject* py)
+  ''' + cpp_name + ''' from_python(PyObject* py)
   {
     ''' + cpp_name + ''' rv;
 
@@ -198,6 +254,9 @@ public:
     self.append('''
     return rv;
   }
+
+private:
+  PyObject* python_class_ = nullptr;
 };
 ''')
 
@@ -205,22 +264,8 @@ public:
     pass
 
   def after(self):
-    def for_each_topic_type(what):
-      lines = ''
-      first = True
-      for topic_type in self.topic_types:
-        if first:
-          lines += '  '
-          first = False
-        else:
-          lines += ' else '
-        lines += '''\
-if (pytype == PyOpenDDS::Type<''' + topic_type + '''>::get_python_class()) {
-''' + what(topic_type) + '''\
-  }'''
-      return lines
     lines = '''\
-} // PyOpenDDS\n
+} // Anonymous Namespace\n
 
 static PyObject* pyregister_type(PyObject* self, PyObject* args)
 {
@@ -232,12 +277,13 @@ static PyObject* pyregister_type(PyObject* self, PyObject* args)
     return NULL;
   }
 
-''' + for_each_topic_type(lambda topic_type: '''\
-    PyOpenDDS::Type<''' + topic_type + '''>::register_type(pyparticipant);
+  Types::iterator i = types.find(pytype);
+  if (i != types.end()) {
+    i->second->register_type(pyparticipant);
     Py_RETURN_NONE;
-''') + '''
+  }
 
-  PyErr_SetString(PyExc_Exception, "Could Not Match Python Type");
+  PyErr_SetString(PyExc_TypeError, "Invalid Type");
   return NULL;
 }
 
@@ -250,27 +296,26 @@ static PyObject* pytype_name(PyObject* self, PyObject* args)
     return NULL;
   }
 
-  const char* type_name = 0;
+  Types::iterator i = types.find(pytype);
+  if (i != types.end()) {
+    return PyUnicode_FromString(i->second->type_name());
+  }
 
-''' + for_each_topic_type(lambda topic_type: '''\
-    type_name = PyOpenDDS::Type<''' + topic_type + '''>::Traits::type_name();
-''') + '''
+  PyErr_SetString(PyExc_TypeError, "Invalid Type");
+  return nullptr;
+}
 
   if (type_name) {
     return PyUnicode_FromString(type_name);
   }
 
-  PyErr_SetString(PyExc_Exception, "Could Not Get OpenDDS Type Name");
+  PyErr_SetString(PyExc_TypeError, "Invalid Type");
   return NULL;
 }
 
 static PyMethodDef ''' + self.native_package_name + '''_Methods[] = {
-  {
-    "register_type", pyregister_type, METH_VARARGS, ""
-  },
-  {
-    "type_name", pytype_name, METH_VARARGS, ""
-  },
+  {"register_type", pyregister_type, METH_VARARGS, ""},
+  {"type_name", pytype_name, METH_VARARGS, ""},
   {NULL, NULL, 0, NULL}
 };
 
@@ -283,7 +328,16 @@ static struct PyModuleDef ''' + self.native_package_name + '''_Module = {
 
 PyMODINIT_FUNC PyInit_''' + self.native_package_name + '''()
 {
-  return PyModule_Create(&''' + self.native_package_name + '''_Module);
+  PyObject* module = PyModule_Create(&''' + self.native_package_name + '''_Module);
+  if (!module || cache_python_objects()) return nullptr;
+
+'''
+    for topic_type in self.topic_types:
+      lines += '  init_type<' + topic_type + '>();\n'
+
+    lines += '''\
+
+  return module;
 }
 '''
     return lines

@@ -2,12 +2,15 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
 #include <dds/DCPS/Service_Participant.h>
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
+
+namespace {
 
 /// Name of PyCapule Attribute Holding the C++ Object
 const char* VAR_NAME = "_var";
@@ -19,24 +22,50 @@ const char* INTERNAL_DOCSTR = "Internal to PyOpenDDS, not for use directly!";
 template <typename T>
 T* get_capsule(PyObject* obj)
 {
-  T* rv = 0;
+  T* rv = nullptr;
   PyObject* capsule = PyObject_GetAttrString(obj, VAR_NAME);
-  if (capsule && PyCapsule_CheckExact(capsule)) {
-    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, NULL));
+  if (capsule && PyCapsule_IsValid(capsule, nullptr)) {
+    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, nullptr));
   }
   return rv;
+}
+
+// Python Objects To Keep
+PyObject* pyopendds;
+PyObject* PyOpenDDS_Error;
+PyObject* ReturnCodeError;
+
+bool cache_python_objects()
+{
+  // Get pyopendds
+  pyopendds = PyImport_ImportModule("pyopendds");
+  if (!pyopendds) return true;
+
+  // Get PyOpenDDS_Error
+  PyOpenDDS_Error = PyObject_GetAttrString(pyopendds, "PyOpenDDS_Error");
+  if (!PyOpenDDS_Error) return true;
+  Py_INCREF(PyOpenDDS_Error);
+
+  // Get ReturnCodeError
+  ReturnCodeError = PyObject_GetAttrString(pyopendds, "ReturnCodeError");
+  if (!ReturnCodeError) return true;
+  Py_INCREF(ReturnCodeError);
+
+  return false;
+}
+
+bool check_rc(DDS::ReturnCode_t rc)
+{
+  return !PyObject_CallMethod(ReturnCodeError, "check", "k", rc);
 }
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
 
-// pyopendds.PyOpenDDS_Error
-static PyObject* PyOpenDDS_Error;
-
 /**
  * init_opendds_impl(*args[str]) -> None
  */
-static PyObject* init_opendds_impl(PyObject* self, PyObject* args)
+PyObject* init_opendds_impl(PyObject* self, PyObject* args)
 {
   /*
    * In addition to the need to convert the arguments into an argv array,
@@ -115,7 +144,7 @@ void delete_participant_var(PyObject* part_capsule)
 /**
  * create_participant(participant: DomainParticipant, domain: int) -> None
  */
-static PyObject* create_participant(PyObject* self, PyObject* args)
+PyObject* create_participant(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pyparticipant = PySequence_GetItem(args, 0);
@@ -160,7 +189,7 @@ static PyObject* create_participant(PyObject* self, PyObject* args)
   Py_RETURN_NONE;
 }
 
-static PyObject* participant_cleanup(PyObject* self, PyObject* args)
+PyObject* participant_cleanup(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pyparticipant;
@@ -204,7 +233,7 @@ void delete_topic_var(PyObject* topic_capsule)
  * a OpenDDS DomainParticipant with the type named by topic_type has already
  * been registered with it.
  */
-static PyObject* create_topic(PyObject* self, PyObject* args)
+PyObject* create_topic(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pytopic;
@@ -262,7 +291,7 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
 /**
  * create_subscriber(subsciber: Subscriber, participant: DomainParticipant) -> None
  */
-static PyObject* create_subscriber(PyObject* self, PyObject* args)
+PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pyparticipant;
@@ -317,7 +346,7 @@ void delete_publisher_var(PyObject* publisher_capsule)
 /**
  * create_publisher(publisher: Publisher, participant: DomainParticipant) -> None
  */
-static PyObject* create_publisher(PyObject* self, PyObject* args)
+PyObject* create_publisher(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pyparticipant;
@@ -372,7 +401,7 @@ void delete_reader_var(PyObject* reader_capsule)
 /**
  * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic) -> None
  */
-static PyObject* create_datareader(PyObject* self, PyObject* args)
+PyObject* create_datareader(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pydatareader;
@@ -424,7 +453,7 @@ static PyObject* create_datareader(PyObject* self, PyObject* args)
 /**
  * datareader_wait_for(datareader: DataReader, status: StatusKind, timeout: int) -> None
  */
-static PyObject* datareader_wait_for(PyObject* self, PyObject* args)
+PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pydatareader;
@@ -450,24 +479,13 @@ static PyObject* datareader_wait_for(PyObject* self, PyObject* args)
   waitset->attach_condition(condition);
   DDS::ConditionSeq active;
   DDS::Duration_t max_duration = {timeout, 0};
-  switch (waitset->wait(active, max_duration)) {
-  case DDS::RETCODE_OK:
-    break;
-  case DDS::RETCODE_TIMEOUT:
-    PyErr_SetString(PyOpenDDS_Error,
-      "Timeout");
-    return NULL;
-  default:
-    PyErr_SetString(PyOpenDDS_Error,
-      "Unexpected Error Occured During Wait");
-    return NULL;
-  }
+  if (check_rc(waitset->wait(active, max_duration))) return nullptr;
 
   // return None
   Py_RETURN_NONE;
 }
 
-static PyMethodDef pyopendds_Methods[] = {
+PyMethodDef pyopendds_Methods[] = {
   {"init_opendds_impl", init_opendds_impl, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
   {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
@@ -479,27 +497,20 @@ static PyMethodDef pyopendds_Methods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef pyopendds_Module = {
+PyModuleDef pyopendds_Module = {
   PyModuleDef_HEAD_INIT,
   "_pyopendds", "Internal Python Bindings for OpenDDS",
   -1, // Global State Module, because OpenDDS uses Singletons
   pyopendds_Methods
 };
 
+} // Anonymous Namespace
+
 PyMODINIT_FUNC PyInit__pyopendds()
 {
   // Create _pyopendds
   PyObject* native_module = PyModule_Create(&pyopendds_Module);
-  if (!native_module) return NULL;
-
-  // Get pyopendds
-  PyObject* python_module = PyImport_ImportModule("pyopendds");
-  if (!python_module) return NULL;
-
-  // Get PyOpenDDS_Error from pyopendds
-  PyOpenDDS_Error = PyObject_GetAttrString(python_module, "PyOpenDDS_Error");
-  if (!PyOpenDDS_Error) return NULL;
-  Py_INCREF(PyOpenDDS_Error);
+  if (!native_module || cache_python_objects()) return NULL;
 
   return native_module;
 }
