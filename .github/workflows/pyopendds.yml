@@ -32,6 +32,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo dpkg -i OpenDDS-Debian/opendds.deb
+        sudo wget -O '/usr/share/ace/bin/generate_export_file.pl' 'https://raw.githubusercontent.com/DOCGroup/ACE_TAO/master/ACE/bin/generate_export_file.pl'
         # python -m pip install --upgrade pip
         # pip install -r requirements.txt
 
