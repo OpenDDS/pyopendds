@@ -23,10 +23,25 @@ Assumptions:
   - When mature, PyOpenDDS should theoretically work on the intersection of all
     platforms that OpenDDS and CPython Support. Right now it's only being
     developed for Linux.
-- `$DDS_ROOT/setenv.sh` has been sourced
+- `$DDS_ROOT/setenv.sh` has been sourced or the equivalent.
 
 ```sh
-bash build.sh
-bash build_test.sh
-bash test.sh
+# Build and Install PyOpenDDS
+pip install .
+
+# Build Basic Test
+cd tests/basic_test
+mkdir build
+cd build
+cmake ..
+make
+
+# Build and Install Basic Test Python Bindings
+itl2py -o basic_output basic.itl
+cd basic_output
+basic_idl_DIR=$(realpath ..) pip install .
+
+# Run Basic Test
+cd ..
+bash run_test.sh
 ```

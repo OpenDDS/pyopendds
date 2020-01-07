@@ -1,4 +1,3 @@
-cd tests/basic_test
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python3 subscriber.py &
 sub=$!
 
