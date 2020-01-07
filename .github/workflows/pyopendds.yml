@@ -5,7 +5,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: "0 2 * * 5"
+    - cron: "0 3 * * 5"
 
 jobs:
   build:
@@ -21,18 +21,38 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Get OpenDDS
       uses: actions/checkout@v2
       with:
         repository: 'iguessthislldo/OpenDDS-Debian'
         path: OpenDDS-Debian
         ref: ubuntu_18_04
+
     - name: Install Dependencies
       run: |
         sudo dpkg -i OpenDDS-Debian/opendds.deb
         # python -m pip install --upgrade pip
         # pip install -r requirements.txt
+
     - name: Install PyOpenDDS
       run: |
         source /usr/share/dds/dds-devel.sh
         python -m pip install .
+
+    - name: Build Basic Test
+      run: |
+        source /usr/share/dds/dds-devel.sh
+        cd tests/basic_test
+        mkdir build
+        cd build
+        cmake ..
+        make
+        itl2py -o basic_output basic.itl
+        cd basic_output
+        basic_idl_DIR=$(realpath ..) pip install .
+
+    - name: Run Basic Test
+      run: |
+        cd tests/basic_test
+        bash run_test.sh
