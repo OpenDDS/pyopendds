@@ -15,6 +15,11 @@ jobs:
       matrix:
         python-version: [3.7]
 
+    env:
+      ACE_ROOT: '/usr/share/ace'
+      TAO_ROOT: '/usr/share/tao'
+      DDS_ROOT: '/usr/share/dds'
+
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
@@ -39,12 +44,10 @@ jobs:
 
     - name: Install PyOpenDDS
       run: |
-        source /usr/share/dds/dds-devel.sh
         python -m pip install .
 
     - name: Build Basic Test
       run: |
-        source /usr/share/dds/dds-devel.sh
         cd tests/basic_test
         mkdir build
         cd build
