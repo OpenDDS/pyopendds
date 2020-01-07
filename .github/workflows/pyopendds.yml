@@ -1,0 +1,38 @@
+name: pyopendds
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 2 * * 5"
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+        python-version: [3.7]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Get OpenDDS
+      uses: actions/checkout@v2
+      with:
+        repository: 'iguessthislldo/OpenDDS-Debian'
+        path: OpenDDS-Debian
+        ref: ubuntu_18_04
+    - name: Install Dependencies
+      run: |
+        sudo dpkg -i OpenDDS-Debian/opendds.deb
+        # python -m pip install --upgrade pip
+        # pip install -r requirements.txt
+    - name: Install PyOpenDDS
+      run: |
+        source /usr/share/dds/dds-devel.sh
+        python -m pip install .
