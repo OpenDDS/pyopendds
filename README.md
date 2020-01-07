@@ -1,5 +1,8 @@
 # PyOpenDDS
 
+[![](https://github.com/iguessthislldo/pyopendds/workflows/pyopendds/badge.svg)](
+  https://github.com/iguessthislldo/pyopendds/actions?query=workflow%3Apyopendds)
+
 Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
 **WARNING: This project is still a work in progress!**
