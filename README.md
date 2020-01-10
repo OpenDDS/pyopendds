@@ -42,6 +42,6 @@ cd basic_output
 basic_idl_DIR=$(realpath ..) pip install .
 
 # Run Basic Test
-cd ..
+cd ../..
 bash run_test.sh
 ```
