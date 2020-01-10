@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from .ast import Output, PrimitiveType
+from .ast import Output, PrimitiveType, EnumType
 
 class CppOutput(Output):
 
@@ -264,12 +264,33 @@ public:
         throw Exception("Could not call __init__ for new class");
       }
     }
+
+    PyObject* field_value;
 ''');
 
     for field_name, (field_type, _) in struct_type.fields.items():
-      if isinstance(field_type, PrimitiveType) and field_type.is_int():
-        self.append('''\
-    if (PyObject_SetAttrString(py, "''' + field_name + '''", PyLong_FromLong(cpp.''' + field_name + '''))) {
+      implemented = True
+      if isinstance(field_type, PrimitiveType):
+        if field_type.is_int():
+          self.append('''
+    field_value = PyLong_FromLong(cpp.''' + field_name + ');')
+
+        elif field_type.is_string():
+          self.append('''
+    field_value = PyUnicode_FromString(cpp.''' + field_name + ');')
+
+        else:
+          implemented = False
+
+      elif isinstance(field_type, EnumType):
+        implemented = False
+
+      else:
+        implemented = False
+
+      if implemented:
+          self.append('''\
+    if (PyObject_SetAttrString(py, "''' + field_name + '''", field_value)) {
       PyErr_Print();
       throw Exception("Type<''' + cpp_name + '''>::to_python: Could not set ''' + field_name + '''");
     }''')

@@ -82,36 +82,19 @@ class PrimitiveType(Node):
     self.kind = kind
 
   def is_int(self):
-    return {
-      self.Kind.u8: True,
-      self.Kind.i8: True,
-      self.Kind.u16: True,
-      self.Kind.i16: True,
-      self.Kind.u32: True,
-      self.Kind.i32: True,
-      self.Kind.u64: True,
-      self.Kind.i64: True,
-      self.Kind.f32: False,
-      self.Kind.f64: False,
-      self.Kind.c8: False,
-      self.Kind.s8: False,
-    }[self.kind]
+    return self.kind in [
+      self.Kind.u8,
+      self.Kind.i8,
+      self.Kind.u16,
+      self.Kind.i16,
+      self.Kind.u32,
+      self.Kind.i32,
+      self.Kind.u64,
+      self.Kind.i64,
+    ]
 
   def is_string(self):
-    return {
-      self.Kind.u8: False,
-      self.Kind.i8: False,
-      self.Kind.u16: False,
-      self.Kind.i16: False,
-      self.Kind.u32: False,
-      self.Kind.i32: False,
-      self.Kind.u64: False,
-      self.Kind.i64: False,
-      self.Kind.f32: False,
-      self.Kind.f64: False,
-      self.Kind.c8: False,
-      self.Kind.s8: True,
-    }[self.kind]
+    return self.kind == self.Kind.s8
 
 class StructType(Node):
 
