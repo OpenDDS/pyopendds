@@ -6,6 +6,7 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 import json
+import codecs
 
 from pyopendds.dev.itl2py import *
 
@@ -16,7 +17,13 @@ if __name__ == "__main__":
   argparser.add_argument('-n', '--package-name', type=str)
   argparser.add_argument('-o', '--output', type=Path, default=Path('.'))
   argparser.add_argument('--cmake-idl-name', type=str, default=None)
+  argparser.add_argument('--default-encoding', type=str, default='utf_8')
   args = argparser.parse_args()
+
+  try:
+    codecs.lookup(args.default_encoding)
+  except LookupError:
+    sys.exit('Invalid Python codec: "{}"'.format(args.default_encoding))
 
   if args.package_name is None:
     if len(args.itl_files) > 1:
@@ -51,7 +58,9 @@ if __name__ == "__main__":
   pyout.visit_module(ast)
   pyout.write()
 
-  cppout = CppOutput(args.output, python_package_name, native_package_name, idl_names)
+  cppout = CppOutput(
+    args.output, python_package_name, native_package_name, idl_names,
+    args.default_encoding)
   cppout.visit_module(ast)
   cppout.write()
 

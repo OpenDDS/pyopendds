@@ -8,9 +8,11 @@ class CppOutput(Output):
   def __init__(self, output_path: Path,
       python_package_name: str,
       native_package_name: str,
-      idl_names: List[str]):
+      idl_names: List[str],
+      default_encoding: str):
     self.python_package_name = python_package_name
     self.native_package_name = native_package_name
+    self.default_encoding = default_encoding
     super().__init__(output_path / (native_package_name + '.cpp'))
 
     self.topic_types = []
@@ -277,7 +279,9 @@ public:
 
         elif field_type.is_string():
           self.append('''
-    field_value = PyUnicode_FromString(cpp.''' + field_name + ');')
+    field_value = PyUnicode_Decode(cpp.''' + field_name + ', ' + \
+       'strlen(cpp.''' + field_name + '), "' + self.default_encoding + '", ' + \
+       '"strict");')
 
         else:
           implemented = False
@@ -290,9 +294,8 @@ public:
 
       if implemented:
           self.append('''\
-    if (PyObject_SetAttrString(py, "''' + field_name + '''", field_value)) {
-      PyErr_Print();
-      throw Exception("Type<''' + cpp_name + '''>::to_python: Could not set ''' + field_name + '''");
+    if (!field_value || PyObject_SetAttrString(py, "''' + field_name + '''", field_value)) {
+      py = nullptr;
     }''')
       else:
         self.append('    // ' + field_name + ' was left unimplemented')
