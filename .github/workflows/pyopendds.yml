@@ -27,37 +27,44 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Get OpenDDS
-      uses: actions/checkout@v2
-      with:
-        repository: 'iguessthislldo/OpenDDS-Debian'
-        path: OpenDDS-Debian
-        ref: ubuntu_18_04
-
     - name: Install Dependencies
       run: |
-        sudo dpkg -i OpenDDS-Debian/opendds.deb
-        sudo wget -O '/usr/share/ace/bin/generate_export_file.pl' 'https://raw.githubusercontent.com/DOCGroup/ACE_TAO/master/ACE/bin/generate_export_file.pl'
-        sudo chmod +x '/usr/share/ace/bin/generate_export_file.pl'
-        # python -m pip install --upgrade pip
-        # pip install -r requirements.txt
+        set -x
+        which python
+        which python3
+        which python3.7
 
-    - name: Install PyOpenDDS
-      run: |
-        python -m pip install .
+    # - name: Get OpenDDS
+    #   uses: actions/checkout@v2
+    #   with:
+    #     repository: 'iguessthislldo/OpenDDS-Debian'
+    #     path: OpenDDS-Debian
+    #     ref: ubuntu_18_04
 
-    - name: Build Basic Test
-      run: |
-        cd tests/basic_test
-        mkdir build
-        cd build
-        cmake ..
-        make
-        itl2py -o basic_output basic.itl
-        cd basic_output
-        basic_idl_DIR=$(realpath ..) python -m pip install .
+    # - name: Install Dependencies
+    #   run: |
+    #     sudo dpkg -i OpenDDS-Debian/opendds.deb
+    #     sudo wget -O '/usr/share/ace/bin/generate_export_file.pl' 'https://raw.githubusercontent.com/DOCGroup/ACE_TAO/master/ACE/bin/generate_export_file.pl'
+    #     sudo chmod +x '/usr/share/ace/bin/generate_export_file.pl'
+    #     # python -m pip install --upgrade pip
+    #     # pip install -r requirements.txt
 
-    - name: Run Basic Test
-      run: |
-        cd tests/basic_test
-        bash run_test.sh
+    # - name: Install PyOpenDDS
+    #   run: |
+    #     python -m pip install .
+
+    # - name: Build Basic Test
+    #   run: |
+    #     cd tests/basic_test
+    #     mkdir build
+    #     cd build
+    #     cmake ..
+    #     make
+    #     itl2py -o basic_output basic.itl
+    #     cd basic_output
+    #     basic_idl_DIR=$(realpath ..) python -m pip install .
+
+    # - name: Run Basic Test
+    #   run: |
+    #     cd tests/basic_test
+    #     bash run_test.sh
