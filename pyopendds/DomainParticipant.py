@@ -2,10 +2,6 @@ from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
 
-def init_opendds(*args: str) -> None:
-  from _pyopendds import init_opendds_impl
-  init_opendds_impl(*args)
-
 class DomainParticipant:
 
   def __init__(self, domain: int, qos=None, listener=None):

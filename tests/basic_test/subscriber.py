@@ -8,10 +8,8 @@ debug = False
 if __name__ == "__main__":
   try:
     # Initialize OpenDDS and Create DDS Objects
-    args = ['-DCPSConfigFile', 'rtps.ini']
-    if debug:
-      args.extend(['-DCPSDebugLevel', '10'])
-    init_opendds(*args)
+    with Config() as cfg:
+      cfg.opendds_debug_level(1)
     part = DomainParticipant(34)
     topic = part.create_topic('Readings', pybasic.basic.Reading)
     sub = part.create_subscriber()

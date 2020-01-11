@@ -1,14 +1,20 @@
+// Python.h should always be first
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#include <string>
-#include <vector>
-#include <map>
+#include <dds/DCPS/transport/framework/TransportRegistry.h>
+#include <dds/DCPS/transport/framework/TransportConfig.h>
+#include <dds/DCPS/transport/framework/TransportInst.h>
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
 #include <dds/DCPS/Service_Participant.h>
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
+
+#include <string>
+#include <vector>
+#include <map>
 
 namespace {
 
@@ -63,9 +69,17 @@ bool check_rc(DDS::ReturnCode_t rc)
 DDS::DomainParticipantFactory_var participant_factory;
 
 /**
- * init_opendds_impl(*args[str]) -> None
+ * init_opendds_impl(*args[str], **kw) -> None
+ *
+ * Initialize participant_factory by passing args to
+ * TheParticipantFactoryWithArgs. Also perform some custom configuration based
+ * on kw:
+ *
+ * default_rtps: bool=True
+ *   Set default transport and discovery to RTPS unless default_rtps=False was
+ *   passed.
  */
-PyObject* init_opendds_impl(PyObject* self, PyObject* args)
+PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
 {
   /*
    * In addition to the need to convert the arguments into an argv array,
@@ -109,6 +123,29 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args)
     argv[i] = original_argv[i] = strncpy(duplicate, string, string_len);
     Py_DECREF(string_obj);
     Py_DECREF(obj);
+  }
+
+  /*
+   * Process default_rtps
+   */
+  bool default_rtps = true;
+  PyObject* default_rtps_obj = PyMapping_GetItemString(kw, "default_rtps");
+  if (default_rtps_obj) {
+    int result = PyObject_IsTrue(default_rtps_obj);
+    if (result == -1) return nullptr;
+    default_rtps = result;
+  } else {
+    PyErr_Clear();
+  }
+  if (default_rtps) {
+    TheServiceParticipant->set_default_discovery(
+      OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
+    OpenDDS::DCPS::TransportConfig_rch transport_config =
+      TheTransportRegistry->create_config("default_rtps_transport_config");
+    OpenDDS::DCPS::TransportInst_rch transport_inst =
+      TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
+    transport_config->instances_.push_back(transport_inst);
+    TheTransportRegistry->global_config(transport_config);
   }
 
   // Initialize OpenDDS
@@ -486,7 +523,10 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 }
 
 PyMethodDef pyopendds_Methods[] = {
-  {"init_opendds_impl", init_opendds_impl, METH_VARARGS, INTERNAL_DOCSTR},
+  {
+    "init_opendds_impl", reinterpret_cast<PyCFunction>(init_opendds_impl),
+    METH_VARARGS | METH_KEYWORDS, INTERNAL_DOCSTR
+  },
   {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
   {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
   {"create_subscriber", create_subscriber, METH_VARARGS, INTERNAL_DOCSTR},
