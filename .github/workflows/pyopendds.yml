@@ -42,7 +42,7 @@ jobs:
 
     - name: Install PyOpenDDS
       run: |
-        python -m pip install .
+        python setup.py install
 
     - name: Build Basic Test
       run: |
@@ -53,7 +53,7 @@ jobs:
         make
         itl2py -o basic_output basic.itl
         cd basic_output
-        basic_idl_DIR=$(realpath ..) python -m pip install .
+        basic_idl_DIR=$(realpath ..) python setup.py install
 
     - name: Run Basic Test
       run: |
