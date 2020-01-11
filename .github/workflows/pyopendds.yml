@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     env:
       ACE_ROOT: '/usr/share/ace'
@@ -42,7 +42,7 @@ jobs:
 
     - name: Install PyOpenDDS
       run: |
-        python setup.py install
+        sudo python setup.py install
 
     - name: Build Basic Test
       run: |
@@ -53,7 +53,7 @@ jobs:
         make
         itl2py -o basic_output basic.itl
         cd basic_output
-        basic_idl_DIR=$(realpath ..) python setup.py install
+        basic_idl_DIR=$(realpath ..) sudo python setup.py install
 
     - name: Run Basic Test
       run: |
