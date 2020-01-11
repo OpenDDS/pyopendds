@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from pyopendds.dev.cmake import *
 
@@ -10,7 +10,7 @@ setup(
     'License :: OSI Approved :: MIT License',
   ],
   # TODO: Fill Out More MetaData
-  py_modules = ['pyopendds'],
+  packages = find_packages(),
   ext_modules = [CMakeWrapperExtension(
     name = '_pyopendds',
     cmakelists_dir='pyopendds/ext',
