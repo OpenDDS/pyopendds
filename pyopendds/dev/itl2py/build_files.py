@@ -2,13 +2,13 @@ from pathlib import Path
 
 def get_setup_py(python_module_name, native_module_name):
     return '''\
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from pyopendds.dev.cmake import *
 
 setup(
     name = \'''' + python_module_name + '''\',
-    py_modules = [\'''' + python_module_name + '''\'],
+    packages = find_packages(),
     ext_modules = [CMakeWrapperExtension(
         name = \'''' + native_module_name + '''\',
         cmakelists_dir='.',
