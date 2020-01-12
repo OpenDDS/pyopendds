@@ -1,3 +1,4 @@
+import pathlib
 class Config:
     '''Class for configuring and initializing OpenDDS
 
@@ -11,6 +12,10 @@ class Config:
     ...     cfg.args.extend([
     ...         '-DCPSChunks', '10',
     ...     ])
+
+    Even if no configuration is desired, Config is still needed to initilaize
+    PyOpenDDS and OpenDDS. For this the done method can be called directly:
+    >>> Config().done()
     '''
 
     def __init__(self):
