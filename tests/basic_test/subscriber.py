@@ -3,8 +3,6 @@ import sys
 from pyopendds import Config, DomainParticipant, StatusKind, PyOpenDDS_Error
 import pybasic
 
-debug = False
-
 if __name__ == "__main__":
     try:
         # Initialize OpenDDS and Create DDS Objects
