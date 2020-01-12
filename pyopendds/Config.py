@@ -1,4 +1,3 @@
-import pathlib
 class Config:
     '''Class for configuring and initializing OpenDDS
 
