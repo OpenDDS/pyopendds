@@ -1,27 +1,32 @@
 from pathlib import Path
 
+
 def get_setup_py(python_module_name, native_module_name):
     return '''\
 from setuptools import setup, find_packages
 
-from pyopendds.dev.cmake import *
+from pyopendds.dev.cmake import CMakeWrapperExtension, CMakeWrapperBuild
+
 
 setup(
-    name = \'''' + python_module_name + '''\',
-    packages = find_packages(),
-    ext_modules = [CMakeWrapperExtension(
-        name = \'''' + native_module_name + '''\',
+    name=\'''' + python_module_name + '''\',
+    packages=find_packages(),
+    ext_modules=[CMakeWrapperExtension(
+        name=\'''' + native_module_name + '''\',
         cmakelists_dir='.',
     )],
-    cmdclass = {'build_ext': CMakeWrapperBuild},
+    cmdclass={'build_ext': CMakeWrapperBuild},
 )
 '''
 
-def write_setup_py(output_dir: Path,
+
+def write_setup_py(
+        output_dir: Path,
         python_module_name: str, native_module_name: str,
-        filename: str='setup.py'):
+        filename: str = 'setup.py'):
     (output_dir / filename).write_text(
         get_setup_py(python_module_name, native_module_name))
+
 
 def get_cmakelists_txt(native_module_name: str, idl_library_name: str):
     return '''\
@@ -44,8 +49,10 @@ set_target_properties(''' + native_module_name + ''' PROPERTIES
 )
 '''
 
-def write_cmakelists_txt(output_dir: Path,
+
+def write_cmakelists_txt(
+        output_dir: Path,
         native_module_name: str, idl_library_name: str,
-        filename: str='CMakeLists.txt'):
+        filename: str = 'CMakeLists.txt'):
     (output_dir / filename).write_text(
         get_cmakelists_txt(native_module_name, idl_library_name))

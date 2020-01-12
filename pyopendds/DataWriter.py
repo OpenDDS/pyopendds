@@ -1,2 +1,2 @@
 class DataWriter:
-  pass
+    pass

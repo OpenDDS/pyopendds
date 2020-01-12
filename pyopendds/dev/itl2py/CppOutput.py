@@ -3,25 +3,28 @@ from typing import List
 
 from .ast import Output, PrimitiveType, EnumType
 
+
 class CppOutput(Output):
 
-  def __init__(self, output_path: Path,
-      python_package_name: str,
-      native_package_name: str,
-      idl_names: List[str],
-      default_encoding: str):
-    self.python_package_name = python_package_name
-    self.native_package_name = native_package_name
-    self.default_encoding = default_encoding
-    super().__init__(output_path / (native_package_name + '.cpp'))
+    def __init__(
+            self,
+            output_path: Path,
+            python_package_name: str,
+            native_package_name: str,
+            idl_names: List[str],
+            default_encoding: str):
+        self.python_package_name = python_package_name
+        self.native_package_name = native_package_name
+        self.default_encoding = default_encoding
+        super().__init__(output_path / (native_package_name + '.cpp'))
 
-    self.topic_types = []
+        self.topic_types = []
 
-    self.append('#include <Python.h>\n\n')
+        self.append('#include <Python.h>\n\n')
 
-    for name in idl_names:
-      self.append('#include <' + name + 'TypeSupportImpl.h>')
-    self.append('''
+        for name in idl_names:
+            self.append('#include <' + name + 'TypeSupportImpl.h>')
+        self.append('''
 #include <dds/DdsDcpsDomainC.h>
 #include <dds/DCPS/WaitSet.h>
 
@@ -227,11 +230,11 @@ long get_python_long_attr(PyObject* py, const char* attr_name)
 }
 ''')
 
-  def visit_struct(self, struct_type):
-    cpp_name = '::' + struct_type.name.join('::')
-    if struct_type.is_topic_type:
-      self.topic_types.append(cpp_name)
-    self.append('''\
+    def visit_struct(self, struct_type):
+        cpp_name = '::' + struct_type.name.join('::')
+        if struct_type.is_topic_type:
+            self.topic_types.append(cpp_name)
+        self.append('''\
 template<>
 class Type<''' + cpp_name + '''> : public TemplatedTypeBase<''' + cpp_name + '''> {
 public:
@@ -241,12 +244,12 @@ public:
       PyObject* module = PyImport_ImportModule("''' + self.python_package_name + '''");
       if (!module) return 0;''')
 
-    for name in struct_type.parent_name().parts:
-      self.append('''\
+        for name in struct_type.parent_name().parts:
+            self.append('''\
       module = PyObject_GetAttrString(module, "''' + name + '''");
       if (!module) return 0;''')
 
-    self.append('''\
+        self.append('''\
       python_class_ = PyObject_GetAttrString(module, "''' + struct_type.local_name() + '''");
     }
     return python_class_;
@@ -268,39 +271,39 @@ public:
     }
 
     PyObject* field_value;
-''');
+''')
 
-    for field_name, (field_type, _) in struct_type.fields.items():
-      implemented = True
-      if isinstance(field_type, PrimitiveType):
-        if field_type.is_int():
-          self.append('''
+        for field_name, (field_type, _) in struct_type.fields.items():
+            implemented = True
+            if isinstance(field_type, PrimitiveType):
+                if field_type.is_int():
+                    self.append('''
     field_value = PyLong_FromLong(cpp.''' + field_name + ');')
 
-        elif field_type.is_string():
-          self.append('''
-    field_value = PyUnicode_Decode(cpp.''' + field_name + ', ' + \
-       'strlen(cpp.''' + field_name + '), "' + self.default_encoding + '", ' + \
-       '"strict");')
+                elif field_type.is_string():
+                    self.append('''
+    field_value = PyUnicode_Decode(cpp.''' + field_name + ', '
+                 + 'strlen(cpp.' + field_name + '), "' + self.default_encoding + '", '
+                 + '"strict");')
 
-        else:
-          implemented = False
+                else:
+                    implemented = False
 
-      elif isinstance(field_type, EnumType):
-        implemented = False
+            elif isinstance(field_type, EnumType):
+                implemented = False
 
-      else:
-        implemented = False
+            else:
+                implemented = False
 
-      if implemented:
-          self.append('''\
+            if implemented:
+                self.append('''\
     if (!field_value || PyObject_SetAttrString(py, "''' + field_name + '''", field_value)) {
       py = nullptr;
     }''')
-      else:
-        self.append('    // ' + field_name + ' was left unimplemented')
+            else:
+                self.append('    // ' + field_name + ' was left unimplemented')
 
-    self.append('''\
+        self.append('''\
   }
 
   ''' + cpp_name + ''' from_python(PyObject* py)
@@ -311,16 +314,16 @@ public:
     if (PyObject_IsInstance(py, cls) != 1) {
       throw Exception("Python object is not a valid type");
     }
-''');
+''')
 
-    for field_name, (field_type, _) in struct_type.fields.items():
-      if isinstance(field_type, PrimitiveType) and field_type.is_int():
-        self.append('''\
-    rv.''' + field_name + ''' = get_python_long_attr(py, "''' + field_name + '''");''')
-      else:
-        self.append('    // ' + field_name + ' was left unimplemented')
+        for field_name, (field_type, _) in struct_type.fields.items():
+            if isinstance(field_type, PrimitiveType) and field_type.is_int():
+                self.append('''\
+     rv.''' + field_name + ''' = get_python_long_attr(py, "''' + field_name + '''");''')
+            else:
+                self.append('    // ' + field_name + ' was left unimplemented')
 
-    self.append('''
+        self.append('''
     return rv;
   }
 
@@ -329,11 +332,11 @@ private:
 };
 ''')
 
-  def visit_enum(self, enum_type):
-    pass
+    def visit_enum(self, enum_type):
+        pass
 
-  def after(self):
-    lines = '''\
+    def after(self):
+        lines = '''\
 } // Anonymous Namespace\n
 
 static PyObject* pyregister_type(PyObject* self, PyObject* args)
@@ -414,12 +417,12 @@ PyMODINIT_FUNC PyInit_''' + self.native_package_name + '''()
   if (!module || cache_python_objects()) return nullptr;
 
 '''
-    for topic_type in self.topic_types:
-      lines += '  init_type<' + topic_type + '>();\n'
+        for topic_type in self.topic_types:
+            lines += '  init_type<' + topic_type + '>();\n'
 
-    lines += '''\
+        lines += '''\
 
   return module;
 }
 '''
-    return lines
+        return lines

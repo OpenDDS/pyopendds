@@ -1,5 +1,3 @@
-from pathlib import Path
-
 class Config:
     '''Class for configuring and initializing OpenDDS
 
@@ -19,14 +17,14 @@ class Config:
         self.args = []
         self.kw = {}
 
-    def default_rtps(self, value: bool=True):
+    def default_rtps(self, value: bool = True):
         '''In OpenDDS the default discovery is InfoRepo and the default
         transport is TCP. In PyOpenDDS the default discovery and transport is
         RTPS. Pass False to this to stop PyOpenDDS from setting up RTPS.
         '''
         self.kw['default_rtps'] = value
 
-    def opendds_debug_level(self, level: int=0):
+    def opendds_debug_level(self, level: int = 0):
         if not (0 <= level <= 10):
             raise ValueError('OpenDDS debug level must be between 0 and 10 !')
         self.args.extend(['-DCPSDebugLevel', str(level)])
@@ -40,6 +38,6 @@ class Config:
 
     def __exit__(self, type, value, traceback):
         if type is None:
-          self.done()
-          return True
+            self.done()
+            return True
         return False
