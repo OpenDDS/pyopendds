@@ -71,7 +71,7 @@ def generate(context: dict) -> None:
         - native_package_name
         - default_encoding
         - dry_run
-        - dump_ast 
+        - dump_ast
     '''
 
     try:
