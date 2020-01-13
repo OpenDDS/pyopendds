@@ -1,7 +1,7 @@
 import sys
 
 from pyopendds import Config, DomainParticipant, StatusKind, PyOpenDDS_Error
-import pybasic
+import pybasic.basic
 
 if __name__ == "__main__":
     try:

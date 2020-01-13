@@ -1,4 +1,3 @@
-from pathlib import Path
 from enum import Enum, auto
 
 
@@ -41,6 +40,9 @@ class Node:
     def accept(self, visitor):
         raise NotImplementedError
 
+    def __repr__(self):
+        return '<{}: {}>'.format(self.__class__.__name__, self.name.join())
+
 
 class Module(Node):
 
@@ -61,6 +63,12 @@ class Module(Node):
 
         for submodule in self.submodules.values():
             visitor.visit_module(submodule)
+
+    def __repr__(self):
+        if self.name.parts:
+            return super().__repr__()
+        else:
+            return '<Root Module>'
 
 
 class PrimitiveType(Node):
@@ -100,6 +108,21 @@ class PrimitiveType(Node):
     def is_string(self):
         return self.kind == self.Kind.s8
 
+    def __repr__(self):
+        return '<{} PrimitiveType>'.format(self.kind.name)
+
+
+class FieldType(Node):
+
+    def __init__(self, name, type_node, optional):
+        super().__init__(None)
+        self.name = name
+        self.type_node = type_node
+        self.optional = optional
+
+    def __repr__(self):
+        return '<FieldType: {}: {}>'.format(self.name, repr(self.type_node))
+
 
 class StructType(Node):
 
@@ -108,7 +131,7 @@ class StructType(Node):
         self.fields = {}
 
     def add_field(self, name, type_node, optional):
-        self.fields[name] = (type_node, optional)
+        self.fields[name] = FieldType(name, type_node, optional)
 
     def accept(self, visitor):
         visitor.visit_struct(self)
@@ -142,26 +165,7 @@ class NodeVisitor:
         raise NotImplementedError
 
 
-class Output(NodeVisitor):
-
-    def __init__(self, path):
-        self.path = Path(path)
-        self.contents = []
-
-    def before(self):
-        return ''
-
-    def after(self):
-        return ''
-
-    def write(self):
-        self.path.write_text(self.before() + ''.join(self.contents) + self.after())
-
-    def append(self, what):
-        self.contents.append(what + '\n')
-
-
-def get_ast(types):
+def get_ast(types: dict) -> Module:
     root_module = Module(None, '')
     for type_node in types.values():
         module = root_module
