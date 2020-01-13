@@ -15,4 +15,7 @@ setup(
         ],
     },
     package_data={'pyopendds.dev.itl2py': ['templates/*']},
+    install_requires=[
+        'jinja2',
+    ],
 )
