@@ -37,7 +37,7 @@ cmake ..
 make
 
 # Build and Install Basic Test Python Bindings
-itl2py -o basic_output basic.itl
+itl2py -o basic_output basic_idl basic.itl
 cd basic_output
 basic_idl_DIR=$(realpath ..) pip install .
 
