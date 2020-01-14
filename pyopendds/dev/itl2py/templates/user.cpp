@@ -74,18 +74,31 @@ private:
 
 class TypeBase {
 public:
-  virtual void register_type(PyObject* pyparticipant) = 0;
   virtual PyObject* get_python_class() = 0;
+};
+
+template<typename T>
+class TemplatedTypeBase : virtual public TypeBase {
+public:
+  typedef T IdlType;
+
+  virtual void to_python(const T& cpp, PyObject*& py) = 0;
+
+  virtual T from_python(PyObject* py) = 0;
+};
+
+class TopicTypeBase : virtual public TypeBase {
+public:
   virtual const char* type_name() = 0;
+  virtual void register_type(PyObject* pyparticipant) = 0;
   virtual PyObject* read(PyObject* pyreader) = 0;
 };
 
 template<typename T>
-class TemplatedTypeBase : public TypeBase {
+class TemplatedTopicTypeBase : public TemplatedTypeBase<T>, public TopicTypeBase {
 public:
   typedef typename OpenDDS::DCPS::DDSTraits<T> Traits;
 
-  typedef T IdlType;
   typedef typename Traits::MessageSequenceType IdlTypeSequence;
 
   typedef typename Traits::TypeSupportType TypeSupport;
@@ -97,6 +110,8 @@ public:
   {
     return Traits::type_name();
   }
+
+  using TemplatedTypeBase<T>::to_python;
 
   /**
    * Callback for Python to call when the TypeSupport capsule is deleted
@@ -142,8 +157,6 @@ public:
     }
   }
 
-  virtual void to_python(const T& cpp, PyObject*& py) = 0;
-
   PyObject* read(PyObject* pyreader)
   {
     DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
@@ -176,11 +189,9 @@ public:
     to_python(sample, rv);
     return rv;
   }
-
-  virtual T from_python(PyObject* py) = 0;
 };
-template<typename T> class Type;
 
+template<typename T> class Type;
 typedef std::shared_ptr<TypeBase> TypePtr;
 typedef std::map<PyObject*, TypePtr> Types;
 Types types;
@@ -209,11 +220,23 @@ long get_python_long_attr(PyObject* py, const char* attr_name)
   }
   return long_value;
 }
+/*{%- for type in types %}*/
 
-/*{% for type in types -%}*/
 template<>
-class Type</*{{ type.cpp_name }}*/> : public TemplatedTypeBase</*{{ type.cpp_name }}*/> {
+class Type</*{{ type.cpp_name }}*/> : public Templated/*{{- type.is_topic_type }}*/TypeBase</*{{ type.cpp_name }}*/> {
 public:
+  Type()
+  {
+    if (!instance_) {
+      instance_ = this;
+    }
+  }
+
+  static Type* instance()
+  {
+    return instance_;
+  }
+
   PyObject* get_python_class()
   {
     if (!python_class_) {
@@ -230,43 +253,47 @@ public:
     return python_class_;
   }
 
-  void to_python(const /*{{ type.cpp_name }}*/& cpp, PyObject*& py)
+  void to_python(const IdlType& cpp, PyObject*& py)
   {
     PyObject* cls = get_python_class();
+    /*{% if type.to_replace %}*/
+    if (py) Py_DECREF(py);
+    PyObject* args;
+    /*{{ type.new_lines | indent(4) }}*/
+    py = PyObject_CallObject(cls, args);
+    /*{% else %}*/
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
-        throw Exception("Python object is not a valid type");
+        PyErr_SetString(PyExc_TypeError, "Not a {{ type.py_name }}");
       }
     } else {
-      py = PyObject_CallObject(cls, nullptr);
-      if (!py) {
-        PyErr_Print();
-        throw Exception("Could not call __init__ for new class");
-      }
+      PyObject* args;
+      /*{{ type.new_lines | indent(6) }}*/
+      py = PyObject_CallObject(cls, args);
     }
-
-    PyObject* field_value;
-
-    /*{{ type.to_lines | indent }}*/
+    /*{% if type.to_lines %}*//*{{ type.to_lines | indent(4) }}*//*{% endif %}*/
+    /*{% endif %}*/
   }
 
-  /*{{ type.cpp_name }}*/ from_python(PyObject* py)
+  IdlType from_python(PyObject* py)
   {
-    /*{{ type.cpp_name }}*/ rv;
+    IdlType rv;
 
     PyObject* cls = get_python_class();
     if (PyObject_IsInstance(py, cls) != 1) {
       throw Exception("Python object is not a valid type");
     }
-
-    /*{{ type.from_lines | indent }}*/
+    /*{{ type.from_lines | indent(4) }}*/
 
     return rv;
   }
 
 private:
   PyObject* python_class_ = nullptr;
+  static Type<IdlType>* instance_;
 };
+
+Type</*{{ type.cpp_name }}*/>* Type</*{{ type.cpp_name }}*/>::instance_ = nullptr;
 /*{%- endfor %}*/
 
 } // Anonymous Namespace\n
@@ -283,8 +310,11 @@ static PyObject* pyregister_type(PyObject* self, PyObject* args)
 
   Types::iterator i = types.find(pytype);
   if (i != types.end()) {
-    i->second->register_type(pyparticipant);
-    Py_RETURN_NONE;
+    auto topic_type = dynamic_cast<TopicTypeBase*>(i->second.get());
+    if (topic_type) {
+      topic_type->register_type(pyparticipant);
+      Py_RETURN_NONE;
+    }
   }
 
   PyErr_SetString(PyExc_TypeError, "Invalid Type");
@@ -302,7 +332,10 @@ static PyObject* pytype_name(PyObject* self, PyObject* args)
 
   Types::iterator i = types.find(pytype);
   if (i != types.end()) {
-    return PyUnicode_FromString(i->second->type_name());
+    auto topic_type = dynamic_cast<TopicTypeBase*>(i->second.get());
+    if (topic_type) {
+      return PyUnicode_FromString(topic_type->type_name());
+    }
   }
 
   PyErr_SetString(PyExc_TypeError, "Invalid Type");
@@ -322,7 +355,10 @@ static PyObject* pyread(PyObject* self, PyObject* args)
   if (!pytype) return nullptr;
   Types::iterator i = types.find(pytype);
   if (i != types.end()) {
-    return i->second->read(pyreader);
+    auto topic_type = dynamic_cast<TopicTypeBase*>(i->second.get());
+    if (topic_type) {
+      return topic_type->read(pyreader);
+    }
   }
 
   PyErr_SetString(PyExc_TypeError, "Invalid Type");
@@ -347,9 +383,8 @@ PyMODINIT_FUNC PyInit_/*{{ native_package_name }}*/()
 {
   PyObject* module = PyModule_Create(&/*{{ native_package_name }}*/_Module);
   if (!module || cache_python_objects()) return nullptr;
-
-  /*{% for topic_type in topic_types -%}*/
-  init_type</*{{ topic_type }}*/>();
+  /*{% for type in types %}*/
+  init_type</*{{ type.cpp_name }}*/>();
   /*{%- endfor %}*/
 
   return module;
