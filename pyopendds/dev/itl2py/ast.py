@@ -155,6 +155,9 @@ class EnumType(Node):
 
 class NodeVisitor:
 
+    def visit_root_module(self, root_module):
+        root_module.accept(self)
+
     def visit_module(self, module):
         module.accept(self)
 

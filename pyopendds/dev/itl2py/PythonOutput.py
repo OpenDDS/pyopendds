@@ -40,14 +40,14 @@ class PythonOutput(Output):
         for submodule in self.submodules:
             submodule.write()
 
+    def visit_root_module(self, root_module):
+        self.module = root_module
+        super().visit_module(root_module)
+
     def visit_module(self, module):
-        if self.module:  # We already have a module, this is a submodule
-            submodule = PythonOutput(self.context, module.local_name())
-            self.submodules.append(submodule)
-            submodule.visit_module(module)
-        else:  # This is our module
-            self.module = module
-            super().visit_module(module)
+        submodule = PythonOutput(self.context, module.local_name())
+        self.submodules.append(submodule)
+        submodule.visit_root_module(module)
 
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):

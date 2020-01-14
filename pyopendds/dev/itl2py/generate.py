@@ -37,13 +37,12 @@ class PackageOutput(Output):
         self.pyout = PythonOutput(context, context['package_name'])
         self.cppout = CppOutput(context)
 
-    def visit_module(self, module):
+    def visit_root_module(self, root_module):
         if self.context['dump_ast']:
-            print(repr(module))
-            super().visit_module(module)
-        if not module.name.parts:
-            self.pyout.visit_module(module)
-            self.cppout.visit_module(module)
+            print(repr(root_module))
+            super().visit_root_module(root_module)
+        self.pyout.visit_root_module(root_module)
+        self.cppout.visit_root_module(root_module)
 
     def write(self):
         super().write()
@@ -85,5 +84,5 @@ def generate(context: dict) -> None:
     )
 
     out = PackageOutput(context)
-    out.visit_module(parse_itl_files(context['itl_files']))
+    out.visit_root_module(parse_itl_files(context['itl_files']))
     out.write()
