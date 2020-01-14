@@ -2,7 +2,7 @@
 from dataclasses import dataclass as _pyopendds_struct
 {%- endif %}
 {% if has_enum -%}
-from enum import IntEnum as _pyopendds_enum
+from enum import IntFlag as _pyopendds_enum
 {%- endif %}
 {% for type in types -%}
 {%- if type.struct %}
