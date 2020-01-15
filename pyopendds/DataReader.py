@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .Topic import Topic
 from .constants import StatusKind
-from .util import TimeDurationType, normalize_time_duration;
+from .util import TimeDurationType, normalize_time_duration
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
