@@ -1,4 +1,5 @@
 import sys
+from datetime import timedelta
 
 from pyopendds import Config, DomainParticipant, StatusKind, PyOpenDDS_Error
 import pybasic.basic
@@ -15,7 +16,7 @@ if __name__ == "__main__":
 
         # Wait for Publisher to Connect
         print('Waiting for Publisher...')
-        dr.wait_for(StatusKind.SUBSCRIPTION_MATCHED, 15)
+        dr.wait_for(StatusKind.SUBSCRIPTION_MATCHED, timedelta(seconds=15))
         print('Found Publisher!')
 
         # Read and Print Sample

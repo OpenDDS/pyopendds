@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .Topic import Topic
 from .constants import StatusKind
+from .util import TimeDurationType, normalize_time_duration;
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -20,9 +21,9 @@ class DataReader:
         from _pyopendds import create_datareader
         create_datareader(self, subscriber, topic)
 
-    def wait_for(self, status: StatusKind, timeout):
+    def wait_for(self, status: StatusKind, timeout: TimeDurationType):
         from _pyopendds import datareader_wait_for
-        return datareader_wait_for(self, status, timeout)
+        return datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
     def read(self):
         return self.topic._ts_package.read(self)
