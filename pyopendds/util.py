@@ -1,7 +1,7 @@
 from typing import Union, Tuple
 from datetime import timedelta
 
-DDS_Duration_t = Tuple[int, int];
+DDS_Duration_t = Tuple[int, int]
 TimeDurationType = Union[timedelta, DDS_Duration_t, int]
 
 
@@ -13,11 +13,11 @@ def normalize_time_duration(duration: TimeDurationType):
         try:
             seconds = int(duration[0])
             nanoseconds = int(duration[1])
-        except:
+        except Exception:
             try:
                 seconds = int(duration)
                 nanoseconds = 0
-            except:
+            except Exception:
                 raise TypeError('Could not extract time from value')
 
     return (seconds, nanoseconds)
