@@ -1,14 +1,13 @@
 import sys
 from datetime import timedelta
 
-from pyopendds import Config, DomainParticipant, StatusKind, PyOpenDDS_Error
+from pyopendds import init_opendds, DomainParticipant, StatusKind, PyOpenDDS_Error
 import pybasic.basic
 
 if __name__ == "__main__":
     try:
         # Initialize OpenDDS and Create DDS Objects
-        with Config() as cfg:
-            cfg.opendds_debug_level(1)
+        init_opendds(opendds_debug_level=1)
         part = DomainParticipant(34)
         topic = part.create_topic('Readings', pybasic.basic.Reading)
         sub = part.create_subscriber()

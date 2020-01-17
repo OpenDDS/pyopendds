@@ -1,6 +1,6 @@
 from .constants import SampleState, ViewState, InstanceState, StatusKind
 from .exceptions import PyOpenDDS_Error, ReturnCodeError
-from .Config import Config
+from .init_opendds import init_opendds
 from .DomainParticipant import DomainParticipant
 from .Topic import Topic
 from .Subscriber import Subscriber
@@ -15,7 +15,7 @@ __all__ = [
     "StatusKind",
     "PyOpenDDS_Error",
     "ReturnCodeError",
-    "Config",
+    "init_opendds",
     "DomainParticipant",
     "Topic",
     "Subscriber",
