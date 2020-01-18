@@ -19,43 +19,66 @@
 namespace {
 
 /// Name of PyCapule Attribute Holding the C++ Object
-const char* VAR_NAME = "_var";
+const char* var_name = "_var";
 
 /// Documentation for Internal Python Objects
-const char* INTERNAL_DOCSTR = "Internal to PyOpenDDS, not for use directly!";
+const char* internal_docstr = "Internal to PyOpenDDS, not for use directly!";
 
-/// Get Contents of Capsule from a PyObject
+// Python Objects To Keep
+PyObject* pyopendds = nullptr;
+PyObject* PyOpenDDS_Error = nullptr;
+PyObject* ReturnCodeError = nullptr;
+
+/**
+ * Simple Manager For PyObjects that are to be decremented when the instance is
+ * deleted.
+ */
+class Ref {
+public:
+  Ref(PyObject* o = nullptr) : o_(o) {}
+  ~Ref() { Py_XDECREF(o_); }
+  PyObject* operator*() const { return o_; }
+  operator bool() const { return o_; }
+  void operator++(int) { Py_INCREF(o_); }
+  PyObject* o_;
+};
+
+/**
+ * Get Contents of Capsule from a PyObject
+ */
 template <typename T>
 T* get_capsule(PyObject* obj)
 {
   T* rv = nullptr;
-  PyObject* capsule = PyObject_GetAttrString(obj, VAR_NAME);
-  if (capsule && PyCapsule_IsValid(capsule, nullptr)) {
-    rv = static_cast<T*>(PyCapsule_GetPointer(capsule, nullptr));
+  PyObject* capsule = PyObject_GetAttrString(obj, var_name); // nr
+  if (capsule) {
+    if (PyCapsule_IsValid(capsule, nullptr)) {
+      rv = static_cast<T*>(PyCapsule_GetPointer(capsule, nullptr));
+    }
+    Py_DECREF(capsule);
+  } else {
+    PyErr_Clear();
+  }
+  if (!rv) {
+    PyErr_SetString(PyExc_TypeError,
+      "Python object does not have a valid capsule pointer");
   }
   return rv;
 }
 
-// Python Objects To Keep
-PyObject* pyopendds;
-PyObject* PyOpenDDS_Error;
-PyObject* ReturnCodeError;
-
 bool cache_python_objects()
 {
   // Get pyopendds
-  pyopendds = PyImport_ImportModule("pyopendds");
+  pyopendds = PyImport_ImportModule("pyopendds"); // nr
   if (!pyopendds) return true;
 
   // Get PyOpenDDS_Error
-  PyOpenDDS_Error = PyObject_GetAttrString(pyopendds, "PyOpenDDS_Error");
+  PyOpenDDS_Error = PyObject_GetAttrString(pyopendds, "PyOpenDDS_Error"); // nr
   if (!PyOpenDDS_Error) return true;
-  Py_INCREF(PyOpenDDS_Error);
 
   // Get ReturnCodeError
-  ReturnCodeError = PyObject_GetAttrString(pyopendds, "ReturnCodeError");
+  ReturnCodeError = PyObject_GetAttrString(pyopendds, "ReturnCodeError"); // nr
   if (!ReturnCodeError) return true;
-  Py_INCREF(ReturnCodeError);
 
   return false;
 }
@@ -90,48 +113,33 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
   int argc = original_argc;
   char** original_argv = new char*[argc];
   char** argv = new char*[argc];
-  if (!original_argv || !argv) {
-    PyErr_SetString(PyOpenDDS_Error, "Allocation Failed");
-    return nullptr;
-  }
+  if (!original_argv || !argv) return PyErr_NoMemory();
   for (int i = 0; i < argc; i++) {
-    PyObject* obj = PySequence_GetItem(args, i);
-    if (!obj) {
-      PyErr_SetString(PyOpenDDS_Error, "Failed to get argument");
-      return nullptr;
-    }
-    Py_INCREF(obj);
-    PyObject* string_obj = PyObject_Str(obj);
-    if (!string_obj) {
-      PyErr_SetString(PyOpenDDS_Error, "Failed to create string from argument");
-      return nullptr;
-    }
-    Py_INCREF(string_obj);
-    const char* string;
+    // Get str object
+    Ref obj{PySequence_GetItem(args, i)};
+    if (!obj) return nullptr;
+    Ref string_obj{PyObject_Str(*obj)};
+    if (!string_obj) return nullptr;
+
+    // Get UTF8 char* String
     ssize_t string_len;
-    string = PyUnicode_AsUTF8AndSize(string_obj, &string_len);
-    if (!string) {
-      PyErr_SetString(PyOpenDDS_Error, "Failed to create UTF-8 C string from argument");
-      return nullptr;
-    }
+    const char* string = PyUnicode_AsUTF8AndSize(*string_obj, &string_len);
+    if (!string) return nullptr;
+
+    // Copy It
     char* duplicate = new char[string_len + 1];
+    if (!duplicate) return PyErr_NoMemory();
     duplicate[string_len] = '\0';
-    if (!duplicate) {
-      PyErr_SetString(PyOpenDDS_Error, "Allocation Failed");
-      return nullptr;
-    }
     argv[i] = original_argv[i] = strncpy(duplicate, string, string_len);
-    Py_DECREF(string_obj);
-    Py_DECREF(obj);
   }
 
   /*
    * Process default_rtps
    */
   bool default_rtps = true;
-  PyObject* default_rtps_obj = PyMapping_GetItemString(kw, "default_rtps");
+  Ref default_rtps_obj{PyMapping_GetItemString(kw, "default_rtps")};
   if (default_rtps_obj) {
-    int result = PyObject_IsTrue(default_rtps_obj);
+    int result = PyObject_IsTrue(*default_rtps_obj);
     if (result == -1) return nullptr;
     default_rtps = result;
   } else {
@@ -150,8 +158,8 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
 
   // Initialize OpenDDS
   participant_factory = TheParticipantFactoryWithArgs(argc, argv);
-  if (CORBA::is_nil(participant_factory.in())) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to get ParticipantFactory");
+  if (!participant_factory) {
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Initialize OpenDDS");
     return nullptr;
   }
 
@@ -184,22 +192,12 @@ void delete_participant_var(PyObject* part_capsule)
 PyObject* create_participant(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pyparticipant = PySequence_GetItem(args, 0);
-  if (!pyparticipant) {
-    PyErr_SetString(PyOpenDDS_Error, "No Participant Given");
+  Ref pyparticipant;
+  unsigned domain;
+  if (!PyArg_ParseTuple(args, "OI", &pyparticipant.o_, &domain)) {
     return nullptr;
   }
-  PyObject* domain_obj = PySequence_GetItem(args, 1);
-  if (!domain_obj) {
-    PyErr_SetString(PyOpenDDS_Error, "Domain argument is nullptr");
-    return nullptr;
-  }
-  PyObject* domain_long_obj = PyNumber_Long(domain_obj);
-  if (!domain_long_obj) {
-    PyErr_SetString(PyOpenDDS_Error, "Invalid Domain argument");
-    return nullptr;
-  }
-  long domain = PyLong_AsLong(domain_obj);
+  pyparticipant++;
 
   // Create Participant
   DDS::DomainParticipantQos qos;
@@ -210,15 +208,14 @@ PyObject* create_participant(PyObject* self, PyObject* args)
       DDS::DomainParticipantListener::_nil(),
       OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!participant) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to get Participant");
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Create Participant");
     return nullptr;
   }
 
   // Attach OpenDDS Participant to Participant Python Object
   PyObject* var = PyCapsule_New(
     participant, nullptr, delete_participant_var);
-  if (!var || PyObject_SetAttrString(pyparticipant, VAR_NAME, var)) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed Wrap Participant");
+  if (!var || PyObject_SetAttrString(*pyparticipant, var_name, var)) {
     return nullptr;
   }
 
@@ -229,19 +226,16 @@ PyObject* create_participant(PyObject* self, PyObject* args)
 PyObject* participant_cleanup(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pyparticipant;
-  if (!PyArg_ParseTuple(args, "O", &pyparticipant)) {
+  Ref pyparticipant;
+  if (!PyArg_ParseTuple(args, "O", &pyparticipant.o_)) {
     return nullptr;
   }
+  pyparticipant++;
 
   // Get DomainParticipant_var
   DDS::DomainParticipant* participant =
-    get_capsule<DDS::DomainParticipant>(pyparticipant);
-  if (!participant) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
-    return nullptr;
-  }
+    get_capsule<DDS::DomainParticipant>(*pyparticipant);
+  if (!participant) return nullptr;
 
   // Cleanup
   participant->delete_contained_entities();
@@ -265,47 +259,43 @@ void delete_topic_var(PyObject* topic_capsule)
 /*
  * create_topic(topic: Topic, participant: DomainParticipant, topic_name: str, topic_type: str) -> None
  *
- * Assumes all the agruments are the types listed above and the participant has
+ * Assumes all the arguments are the types listed above and the participant has
  * a OpenDDS DomainParticipant with the type named by topic_type has already
  * been registered with it.
  */
 PyObject* create_topic(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pytopic;
-  PyObject* pyparticipant;
+  Ref pytopic;
+  Ref pyparticipant;
   char* name;
   char* type;
-  if (!PyArg_ParseTuple(args, "OOss", &pytopic, &pyparticipant, &name, &type)) {
+  if (!PyArg_ParseTuple(args, "OOss",
+      &pytopic.o_, &pyparticipant.o_, &name, &type)) {
     return nullptr;
   }
+  pytopic++;
+  pyparticipant++;
 
   // Get DomainParticipant
   DDS::DomainParticipant* participant =
-    get_capsule<DDS::DomainParticipant>(pyparticipant);
-  if (!participant) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
-    return nullptr;
-  }
+    get_capsule<DDS::DomainParticipant>(*pyparticipant);
+  if (!participant) return nullptr;
 
   // Create Topic
   DDS::Topic* topic = participant->create_topic(
     name, type, TOPIC_QOS_DEFAULT, nullptr,
     OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!topic) {
-    PyErr_SetString(PyOpenDDS_Error, "Create Topic Failed");
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Create Topic");
     return nullptr;
   }
 
   // Attach OpenDDS Topic to Topic Python Object
-  PyObject* topic_capsule = PyCapsule_New(
-    topic, nullptr, delete_topic_var);
-  if (!topic_capsule) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap Topic");
+  PyObject* var = PyCapsule_New(topic, nullptr, delete_topic_var);
+  if (!var || PyObject_SetAttrString(*pytopic, var_name, var)) {
     return nullptr;
   }
-  PyObject_SetAttrString(pytopic, VAR_NAME, topic_capsule);
 
   // return None
   Py_RETURN_NONE;
@@ -324,23 +314,23 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
 }
 
 /**
- * create_subscriber(subsciber: Subscriber, participant: DomainParticipant) -> None
+ * create_subscriber(subscriber: Subscriber, participant: DomainParticipant) -> None
  */
 PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pyparticipant;
-  PyObject* pysubscriber;
-  if (!PyArg_ParseTuple(args, "OO", &pysubscriber, &pyparticipant)) {
+  Ref pyparticipant;
+  Ref pysubscriber;
+  if (!PyArg_ParseTuple(args, "OO", &pysubscriber.o_, &pyparticipant.o_)) {
     return nullptr;
   }
+  pyparticipant++;
+  pysubscriber++;
 
   // Get DomainParticipant_var
   DDS::DomainParticipant* participant =
-    get_capsule<DDS::DomainParticipant>(pyparticipant);
+    get_capsule<DDS::DomainParticipant>(*pyparticipant);
   if (!participant) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
     return nullptr;
   }
 
@@ -348,18 +338,15 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
   DDS::Subscriber* subscriber = participant->create_subscriber(
     SUBSCRIBER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!subscriber) {
-    PyErr_SetString(PyOpenDDS_Error, "Create Subscriber Failed");
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Create Subscriber");
     return nullptr;
   }
 
   // Attach OpenDDS Subscriber to Subscriber Python Object
-  PyObject* subscriber_capsule = PyCapsule_New(
-    subscriber, nullptr, delete_subscriber_var);
-  if (!subscriber_capsule) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap Subscriber");
+  PyObject* var = PyCapsule_New(subscriber, nullptr, delete_subscriber_var);
+  if (!var || PyObject_SetAttrString(*pysubscriber, var_name, var)) {
     return nullptr;
   }
-  PyObject_SetAttrString(pysubscriber, VAR_NAME, subscriber_capsule);
 
   // return None
   Py_RETURN_NONE;
@@ -383,37 +370,32 @@ void delete_publisher_var(PyObject* publisher_capsule)
 PyObject* create_publisher(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pyparticipant;
-  PyObject* pypublisher;
-  if (!PyArg_ParseTuple(args, "OO", &pypublisher, &pyparticipant)) {
+  Ref pyparticipant;
+  Ref pypublisher;
+  if (!PyArg_ParseTuple(args, "OO", &pypublisher.o_, &pyparticipant.o_)) {
     return nullptr;
   }
+  pyparticipant++;
+  pypublisher++;
 
   // Get DomainParticipant_var
   DDS::DomainParticipant* participant =
-    get_capsule<DDS::DomainParticipant>(pyparticipant);
-  if (!participant) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Participant, Python Participant is Missing a Valid C++ Participant");
-    return nullptr;
-  }
+    get_capsule<DDS::DomainParticipant>(*pyparticipant);
+  if (!participant) return nullptr;
 
   // Create Publisher
   DDS::Publisher* publisher = participant->create_publisher(
     PUBLISHER_QOS_DEFAULT, nullptr, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!publisher) {
-    PyErr_SetString(PyOpenDDS_Error, "Create Publisher Failed");
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Create Publisher");
     return nullptr;
   }
 
   // Attach OpenDDS Publisher to Publisher Python Object
-  PyObject* publisher_capsule = PyCapsule_New(
-    publisher, nullptr, delete_publisher_var);
-  if (!publisher_capsule) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap Publisher");
+  PyObject* var = PyCapsule_New(publisher, nullptr, delete_publisher_var);
+  if (!var || PyObject_SetAttrString(*pypublisher, var_name, var)) {
     return nullptr;
   }
-  PyObject_SetAttrString(pypublisher, VAR_NAME, publisher_capsule);
 
   // return None
   Py_RETURN_NONE;
@@ -437,46 +419,39 @@ void delete_reader_var(PyObject* reader_capsule)
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pydatareader;
-  PyObject* pysubscriber;
-  PyObject* pytopic;
-  if (!PyArg_ParseTuple(args, "OOO", &pydatareader, &pysubscriber, &pytopic)) {
+  Ref pydatareader;
+  Ref pysubscriber;
+  Ref pytopic;
+  if (!PyArg_ParseTuple(args, "OOO",
+      &pydatareader.o_, &pysubscriber.o_, &pytopic.o_)) {
     return nullptr;
   }
+  pydatareader++;
+  pysubscriber++;
+  pytopic++;
 
   // Get Subscriber
-  DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(pysubscriber);
-  if (!subscriber) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Subscriber, Python Subscriber is Missing a Valid C++ Subscriber");
-    return nullptr;
-  }
+  DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(*pysubscriber);
+  if (!subscriber) return nullptr;
 
   // Get Topic
-  DDS::Topic* topic = get_capsule<DDS::Topic>(pytopic);
-  if (!topic) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid Topic, Python Topic is Missing a Valid C++ Topic");
-    return nullptr;
-  }
+  DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
+  if (!topic) return nullptr;
 
   // Create DataReader
   DDS::DataReader* datareader = subscriber->create_datareader(
     topic, DATAREADER_QOS_DEFAULT, nullptr,
     OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
-    PyErr_SetString(PyOpenDDS_Error, "Create DataReader Failed");
+    PyErr_SetString(PyOpenDDS_Error, "Failed to Create DataReader");
     return nullptr;
   }
 
   // Attach OpenDDS DataReader to DataReader Python Object
-  PyObject* reader_capsule = PyCapsule_New(
-    datareader, nullptr, delete_reader_var);
-  if (!reader_capsule) {
-    PyErr_SetString(PyOpenDDS_Error, "Failed to Wrap DataReader");
+  PyObject* var = PyCapsule_New(datareader, nullptr, delete_reader_var);
+  if (!var || PyObject_SetAttrString(*pydatareader, var_name, var)) {
     return nullptr;
   }
-  PyObject_SetAttrString(pydatareader, VAR_NAME, reader_capsule);
 
   // return None
   Py_RETURN_NONE;
@@ -490,26 +465,25 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 {
   // Get Arguments
-  PyObject* pydatareader;
+  Ref pydatareader;
   unsigned status;
   int seconds;
   unsigned nanoseconds;
-  if (!PyArg_ParseTuple(args, "OIiI", &pydatareader, &status, &seconds, &nanoseconds)) {
+  if (!PyArg_ParseTuple(args, "OIiI",
+      &pydatareader.o_, &status, &seconds, &nanoseconds)) {
     return nullptr;
   }
+  pydatareader++;
 
   // Get DataReader
-  DDS::DataReader* reader = get_capsule<DDS::DataReader>(pydatareader);
-  if (!reader) {
-    PyErr_SetString(PyOpenDDS_Error,
-      "Invalid DataReader, Python DataReader is Missing a Valid C++ DataReader");
-    return nullptr;
-  }
+  DDS::DataReader* reader = get_capsule<DDS::DataReader>(*pydatareader);
+  if (!reader) return nullptr;
 
   // Wait
   DDS::StatusCondition_var condition = reader->get_statuscondition();
   condition->set_enabled_statuses(status);
   DDS::WaitSet_var waitset = new DDS::WaitSet;
+  if (!waitset) return PyErr_NoMemory();
   waitset->attach_condition(condition);
   DDS::ConditionSeq active;
   DDS::Duration_t max_duration = {seconds, nanoseconds};
@@ -522,15 +496,15 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 PyMethodDef pyopendds_Methods[] = {
   {
     "init_opendds_impl", reinterpret_cast<PyCFunction>(init_opendds_impl),
-    METH_VARARGS | METH_KEYWORDS, INTERNAL_DOCSTR
+    METH_VARARGS | METH_KEYWORDS, internal_docstr
   },
-  {"create_participant", create_participant, METH_VARARGS, INTERNAL_DOCSTR},
-  {"participant_cleanup", participant_cleanup, METH_VARARGS, INTERNAL_DOCSTR},
-  {"create_subscriber", create_subscriber, METH_VARARGS, INTERNAL_DOCSTR},
-  {"create_publisher", create_publisher, METH_VARARGS, INTERNAL_DOCSTR},
-  {"create_topic", create_topic, METH_VARARGS, INTERNAL_DOCSTR},
-  {"create_datareader", create_datareader, METH_VARARGS, INTERNAL_DOCSTR},
-  {"datareader_wait_for", datareader_wait_for, METH_VARARGS, INTERNAL_DOCSTR},
+  {"create_participant", create_participant, METH_VARARGS, internal_docstr},
+  {"participant_cleanup", participant_cleanup, METH_VARARGS, internal_docstr},
+  {"create_subscriber", create_subscriber, METH_VARARGS, internal_docstr},
+  {"create_publisher", create_publisher, METH_VARARGS, internal_docstr},
+  {"create_topic", create_topic, METH_VARARGS, internal_docstr},
+  {"create_datareader", create_datareader, METH_VARARGS, internal_docstr},
+  {"datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr},
   {nullptr, nullptr, 0, nullptr}
 };
 
