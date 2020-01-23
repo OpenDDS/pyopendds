@@ -157,7 +157,7 @@ public:
     }
   }
 
-  PyObject* read(PyObject* pyreader)
+  PyObject* take_next_sample(PyObject* pyreader)
   {
     DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
     if (!reader) {
@@ -342,7 +342,7 @@ static PyObject* pytype_name(PyObject* self, PyObject* args)
   return nullptr;
 }
 
-static PyObject* pyread(PyObject* self, PyObject* args)
+static PyObject* pytake_next_sample(PyObject* self, PyObject* args)
 {
   // Get Arguments
   PyObject* pyreader;
@@ -357,7 +357,7 @@ static PyObject* pyread(PyObject* self, PyObject* args)
   if (i != types.end()) {
     auto topic_type = dynamic_cast<TopicTypeBase*>(i->second.get());
     if (topic_type) {
-      return topic_type->read(pyreader);
+      return topic_type->take_next_sample(pyreader);
     }
   }
 
@@ -368,7 +368,7 @@ static PyObject* pyread(PyObject* self, PyObject* args)
 static PyMethodDef /*{{ native_package_name }}*/_Methods[] = {
   {"register_type", pyregister_type, METH_VARARGS, ""},
   {"type_name", pytype_name, METH_VARARGS, ""},
-  {"read", pyread, METH_VARARGS, ""},
+  {"take_next_sample", pytake_next_sample, METH_VARARGS, ""},
   {NULL, NULL, 0, NULL}
 };
 

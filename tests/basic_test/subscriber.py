@@ -19,7 +19,7 @@ if __name__ == "__main__":
         print('Found Publisher!')
 
         # Read and Print Sample
-        print(dr.read())
+        print(dr.take_next_sample())
 
         print('Done!')
 

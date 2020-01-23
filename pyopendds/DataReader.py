@@ -25,5 +25,5 @@ class DataReader:
         from _pyopendds import datareader_wait_for
         return datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
-    def read(self):
-        return self.topic._ts_package.read(self)
+    def take_next_sample(self):
+        return self.topic._ts_package.take_next_sample(self)
