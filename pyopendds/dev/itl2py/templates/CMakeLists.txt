@@ -6,6 +6,7 @@ find_package(OpenDDS REQUIRED)
 find_package({{ idl_library_cmake_name }} REQUIRED)
 
 add_library({{ native_package_name }} SHARED {{ native_package_name }}.cpp)
+target_include_directories({{ native_package_name }} PRIVATE ${PYOPENDDS_INCLUDE})
 target_link_libraries({{ native_package_name }} PRIVATE Python3::Python)
 target_link_libraries({{ native_package_name }} PRIVATE {{ idl_library_cmake_name }})
 

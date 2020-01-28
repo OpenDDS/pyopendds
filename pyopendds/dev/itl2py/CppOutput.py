@@ -8,6 +8,15 @@ def cpp_name(name_parts):
     return '::' + '::'.join(name_parts)
 
 
+def cpp_type_name(type_node):
+    if isinstance(type_node, PrimitiveType):
+        return type_node.kind.name
+    elif isinstance(type_node, (StructType, EnumType)):
+        return cpp_name(type_node.name.parts)
+    else:
+        raise NotImplementedError
+
+
 class CppOutput(Output):
 
     def __init__(self, context: dict):
@@ -33,37 +42,26 @@ class CppOutput(Output):
 
     def visit_struct(self, struct_type):
         struct_to_lines = [
-            'PyObject* field_value;',
+            'Ref field_value;',
         ]
         struct_from_lines = []
         for field_name, field_node in struct_type.fields.items():
             to_lines = []
             from_lines = []
             pyopendds_type = ''
-            if isinstance(field_node.type_node, PrimitiveType):
 
-                if field_node.type_node.is_int():
-                    to_lines.append(
-                        'field_value = PyLong_FromLong(cpp.{field_name});')
-                    from_lines.append(
-                        'rv.{field_name} = get_python_long_attr(py, "{field_name}");')
+            if isinstance(field_node.type_node, PrimitiveType) and field_node.type_node.is_string():
+                to_lines.append('Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}, *field_value, "{default_encoding}");')
+            else:
+                to_lines.append('Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}, *field_value);')
 
-                elif field_node.type_node.is_string():
-                    to_lines.append('field_value = PyUnicode_Decode(cpp.{field_name}, '
-                        'strlen(cpp.{field_name}), "{default_encoding}", "strict");')
-
-            elif isinstance(field_node.type_node, (StructType, EnumType)):
-                pyopendds_type = cpp_name(field_node.type_node.name.parts)
-                to_lines.extend([
-                    'field_value = nullptr;',
-                    'Type<{pyopendds_type}>::instance()->to_python(cpp.{field_name}, field_value);',
-                ])
+            pyopendds_type = cpp_type_name(field_node.type_node)
 
             if to_lines:
                 to_lines.extend([
                     'if (!field_value || PyObject_SetAttrString('
-                    'py, "{field_name}", field_value)) {{',
-                    '  py = nullptr;',
+                    'py, "{field_name}", *field_value)) {{',
+                    '  throw Exception();',
                     '}}'
                 ])
 
@@ -89,7 +87,7 @@ class CppOutput(Output):
             'new_lines': '\n'.join([
                 'args = nullptr;'
             ]),
-            'is_topic_type': 'Topic' if struct_type.is_topic_type else '',
+            'is_topic_type': struct_type.is_topic_type,
             'to_replace': False,
         })
 
@@ -107,5 +105,5 @@ class CppOutput(Output):
                 '',
                 '// left unimplemented'
             ]),
-            'is_topic_type': '',
+            'is_topic_type': False,
         })

@@ -13,12 +13,16 @@ from setuptools.command.build_ext import build_ext
 
 class CMakeWrapperExtension(Extension):
     def __init__(self, name,
-            cmakelists_dir='.', cmake_command='cmake', cmake_build_type='Debug',
+            cmakelists_dir='.',
+            cmake_command='cmake',
+            cmake_build_type='Debug',
+            extra_vars={},
             **kw):
         Extension.__init__(self, name, sources=[], **kw)
         self.cmakelists_dir = Path(cmakelists_dir).resolve()
         self.cmake_command = cmake_command
         self.cmake_build_type = cmake_build_type
+        self.extra_vars = extra_vars
 
     def cmake(self, args, cwd=Path()):
         '''CMake Command Wrapper Function
@@ -40,6 +44,9 @@ class CMakeWrapperExtension(Extension):
             raise DistutilsSetupError(
                 '"{}" returned non-zero result: {}'.format(
                     ' '.join(command), return_code_error.returncode))
+
+    def get_extra_vars(self):
+        return ['-D{}={}'.format(k, v) for k, v in self.extra_vars.items()]
 
 
 class CMakeWrapperBuild(build_ext):
@@ -73,9 +80,13 @@ class CMakeWrapperBuild(build_ext):
                     '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(
                         ext.cmake_build_type.upper(), str(build_temp)),
                     '-DPYTHON_EXECUTABLE=' + sys.executable,
-                ],
+                ] + ext.get_extra_vars(),
                 build_temp,
             )
 
             # Build
             ext.cmake(['--build', '.', '--config', ext.cmake_build_type], build_temp)
+
+
+def get_include_path() -> Path:
+    return Path(__file__).resolve().parent / 'include'

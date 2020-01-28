@@ -1,3 +1,4 @@
+from pathlib import Path
 from setuptools import setup, find_packages
 
 from pyopendds.dev.cmake import CMakeWrapperExtension, CMakeWrapperBuild
@@ -7,6 +8,10 @@ setup(
     ext_modules=[CMakeWrapperExtension(
         name='_pyopendds',
         cmakelists_dir='pyopendds/ext',
+        extra_vars={
+            'PYOPENDDS_INCLUDE':
+                Path(__file__).resolve().parent / 'pyopendds/dev/include',
+        },
     )],
     cmdclass={'build_ext': CMakeWrapperBuild},
     entry_points={
@@ -14,7 +19,14 @@ setup(
             'itl2py=pyopendds.dev.itl2py.__main__:main',
         ],
     },
-    package_data={'pyopendds.dev.itl2py': ['templates/*']},
+    package_data={
+        'pyopendds.dev': [
+            'include/*',
+        ],
+        'pyopendds.dev.itl2py': [
+            'templates/*',
+        ],
+    },
     install_requires=[
         'jinja2',
     ],
