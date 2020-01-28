@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
     ws->detach_condition(sc);
     std::cout << "Found Subscriber..." << std::endl;
 
-    ACE_OS::sleep(5);
+    ACE_OS::sleep(1);
 
     // Write Sample
     basic::ReadingDataWriter_var reading_writer =
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    ACE_OS::sleep(5);
+    ACE_OS::sleep(1);
 
     // Cleanup
     participant->delete_contained_entities();
