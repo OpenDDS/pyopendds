@@ -104,28 +104,28 @@ class Errors {
 public:
   static PyObject* pyopendds()
   {
-    return *pyopendds_;
+    return pyopendds_;
   }
 
   static PyObject* PyOpenDDS_Error()
   {
-    return *PyOpenDDS_Error_;
+    return PyOpenDDS_Error_;
   }
 
   static PyObject* ReturnCodeError()
   {
-    return *ReturnCodeError_;
+    return ReturnCodeError_;
   }
 
   static bool cache()
   {
-    *pyopendds_ = PyImport_ImportModule("pyopendds");
+    pyopendds_ = PyImport_ImportModule("pyopendds");
     if (!pyopendds_) return true;
 
-    *PyOpenDDS_Error_ = PyObject_GetAttrString(*pyopendds_, "PyOpenDDS_Error");
+    PyOpenDDS_Error_ = PyObject_GetAttrString(pyopendds_, "PyOpenDDS_Error");
     if (!PyOpenDDS_Error_) return true;
 
-    *ReturnCodeError_ = PyObject_GetAttrString(*pyopendds_, "ReturnCodeError");
+    ReturnCodeError_ = PyObject_GetAttrString(pyopendds_, "ReturnCodeError");
     if (!ReturnCodeError_) return true;
 
     return false;
@@ -133,13 +133,13 @@ public:
 
   static bool check_rc(DDS::ReturnCode_t rc)
   {
-    return !PyObject_CallMethod(*ReturnCodeError_, "check", "k", rc);
+    return !PyObject_CallMethod(ReturnCodeError_, "check", "k", rc);
   }
 
 private:
-  static Ref pyopendds_;
-  static Ref PyOpenDDS_Error_;
-  static Ref ReturnCodeError_;
+  static PyObject* pyopendds_;
+  static PyObject* PyOpenDDS_Error_;
+  static PyObject* ReturnCodeError_;
 };
 
 } // namesapce pyopendds

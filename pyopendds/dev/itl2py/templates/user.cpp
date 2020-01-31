@@ -6,9 +6,9 @@
 
 namespace pyopendds {
 
-Ref Errors::pyopendds_ = Ref();
-Ref Errors::PyOpenDDS_Error_ = Ref();
-Ref Errors::ReturnCodeError_ = Ref();
+PyObject* Errors::pyopendds_ = nullptr;
+PyObject* Errors::PyOpenDDS_Error_ = nullptr;
+PyObject* Errors::ReturnCodeError_ = nullptr;
 
 TopicTypeBase::TopicTypes TopicTypeBase::topic_types_;
 
@@ -74,7 +74,6 @@ using namespace pyopendds;
 
 PyObject* pyregister_type(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyparticipant;
   Ref pytype;
   if (!PyArg_ParseTuple(args, "OO", &*pyparticipant, &*pytype)) return nullptr;
@@ -91,7 +90,6 @@ PyObject* pyregister_type(PyObject* self, PyObject* args)
 
 PyObject* pytype_name(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pytype;
   if (!PyArg_ParseTuple(args, "O", &*pytype)) return nullptr;
   pytype++;
@@ -105,7 +103,6 @@ PyObject* pytype_name(PyObject* self, PyObject* args)
 
 PyObject* pytake_next_sample(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyreader;
   if (!PyArg_ParseTuple(args, "O", &*pyreader)) return nullptr;
   pyreader++;

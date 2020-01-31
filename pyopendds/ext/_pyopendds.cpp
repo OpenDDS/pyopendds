@@ -12,9 +12,9 @@
 
 using namespace pyopendds;
 
-Ref Errors::pyopendds_ = Ref();
-Ref Errors::PyOpenDDS_Error_ = Ref();
-Ref Errors::ReturnCodeError_ = Ref();
+PyObject* Errors::pyopendds_ = nullptr;
+PyObject* Errors::PyOpenDDS_Error_ = nullptr;
+PyObject* Errors::ReturnCodeError_ = nullptr;
 
 namespace {
 
@@ -100,7 +100,6 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
   delete [] original_argv;
   delete [] argv;
 
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -121,7 +120,6 @@ void delete_participant_var(PyObject* part_capsule)
  */
 PyObject* create_participant(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyparticipant;
   unsigned domain;
   if (!PyArg_ParseTuple(args, "OI", &*pyparticipant, &domain)) {
@@ -147,13 +145,11 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  // return None
   Py_RETURN_NONE;
 }
 
 PyObject* participant_cleanup(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyparticipant;
   if (!PyArg_ParseTuple(args, "O", &*pyparticipant)) {
     return nullptr;
@@ -165,10 +161,7 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     get_capsule<DDS::DomainParticipant>(*pyparticipant);
   if (!participant) return nullptr;
 
-  // Cleanup
   participant->delete_contained_entities();
-
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -193,7 +186,6 @@ void delete_topic_var(PyObject* topic_capsule)
  */
 PyObject* create_topic(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pytopic;
   Ref pyparticipant;
   char* name;
@@ -224,7 +216,6 @@ PyObject* create_topic(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -245,7 +236,6 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
  */
 PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyparticipant;
   Ref pysubscriber;
   if (!PyArg_ParseTuple(args, "OO", &*pysubscriber, &*pyparticipant)) {
@@ -274,7 +264,6 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -295,7 +284,6 @@ void delete_publisher_var(PyObject* publisher_capsule)
  */
 PyObject* create_publisher(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pyparticipant;
   Ref pypublisher;
   if (!PyArg_ParseTuple(args, "OO", &*pypublisher, &*pyparticipant)) {
@@ -322,7 +310,6 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -343,7 +330,6 @@ void delete_datareader_var(PyObject* reader_capsule)
  */
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
@@ -377,7 +363,6 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  // return None
   Py_RETURN_NONE;
 }
 
@@ -388,7 +373,6 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
  */
 PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 {
-  // Get Arguments
   Ref pydatareader;
   unsigned status;
   int seconds;
@@ -413,7 +397,6 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
   DDS::Duration_t max_duration = {seconds, nanoseconds};
   if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
 
-  // return None
   Py_RETURN_NONE;
 }
 
