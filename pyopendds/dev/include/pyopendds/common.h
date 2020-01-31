@@ -15,6 +15,7 @@ public:
   : message_(nullptr)
   , pyexc_(nullptr)
   {
+    assert(PyErr_Occurred());
   }
 
   Exception(const char* message, PyObject* pyexc)

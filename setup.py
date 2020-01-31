@@ -21,7 +21,7 @@ setup(
     },
     package_data={
         'pyopendds.dev': [
-            'include/*',
+            'include/pyopendds/*',
         ],
         'pyopendds.dev.itl2py': [
             'templates/*',

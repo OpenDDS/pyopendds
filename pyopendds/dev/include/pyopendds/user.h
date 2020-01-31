@@ -196,16 +196,11 @@ public:
 
     IdlType sample;
     DDS::SampleInfo info;
-    if (!Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
+    if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
       throw Exception();
     }
     PyObject* rv = nullptr;
-    try {
-      Type<IdlType>::cpp_to_python(sample, rv);
-    } catch (const Exception& e) {
-      e.set();
-      return nullptr;
-    }
+    Type<IdlType>::cpp_to_python(sample, rv);
     return rv;
   }
 
