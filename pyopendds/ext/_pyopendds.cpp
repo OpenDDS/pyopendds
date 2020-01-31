@@ -10,8 +10,6 @@
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
 
-#include <vector>
-
 using namespace pyopendds;
 
 Ref Errors::pyopendds_ = Ref();
@@ -22,9 +20,6 @@ namespace {
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
-#if 0
-std::vector<DDS::DomainParticipant*> participants;
-#endif
 
 /**
  * init_opendds_impl(*args[str], **kw) -> None
@@ -109,28 +104,11 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
   Py_RETURN_NONE;
 }
 
-#if 0
-PyObject* finish_opendds(PyObject* self, PyObject* const args, ssize_t argn)
-{
-  for (auto participant : participants) {
-    participant->delete_contained_entities();
-    participant_factory->delete_participant(participant);
-  }
-  /* TheServiceParticipant->shutdown(); */
-
-  // return None
-  Py_RETURN_NONE;
-}
-#endif
-
 /**
  * Callback for Python to Call when the Python Participant is Deleted
  */
 void delete_participant_var(PyObject* part_capsule)
 {
-#if 0
-  printf("delete_participant_var\n");
-#endif
   if (PyCapsule_CheckExact(part_capsule)) {
     DDS::DomainParticipant_var participant = static_cast<DDS::DomainParticipant*>(
       PyCapsule_GetPointer(part_capsule, nullptr));
@@ -199,7 +177,6 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
  */
 void delete_topic_var(PyObject* topic_capsule)
 {
-  /* printf("delete_topic_var\n"); */
   if (PyCapsule_CheckExact(topic_capsule)) {
     DDS::Topic_var topic = static_cast<DDS::Topic*>(
       PyCapsule_GetPointer(topic_capsule, nullptr));
@@ -256,7 +233,6 @@ PyObject* create_topic(PyObject* self, PyObject* args)
  */
 void delete_subscriber_var(PyObject* subscriber_capsule)
 {
-  /* printf("delete_subscriber_var\n"); */
   if (PyCapsule_CheckExact(subscriber_capsule)) {
     DDS::Subscriber_var subscriber = static_cast<DDS::Subscriber*>(
       PyCapsule_GetPointer(subscriber_capsule, nullptr));
@@ -355,7 +331,6 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
  */
 void delete_datareader_var(PyObject* reader_capsule)
 {
-  /* printf("delete_reader_var\n"); */
   if (PyCapsule_CheckExact(reader_capsule)) {
     DDS::DataReader_var reader = static_cast<DDS::DataReader*>(
       PyCapsule_GetPointer(reader_capsule, nullptr));
@@ -450,10 +425,6 @@ PyMethodDef pyopendds_Methods[] = {
     "init_opendds_impl", reinterpret_cast<PyCFunction>(init_opendds_impl),
     METH_VARARGS | METH_KEYWORDS, internal_docstr
   },
-  /* { */
-  /*   "finish_opendds", reinterpret_cast<PyCFunction>(finish_opendds), */
-  /*   METH_FASTCALL, internal_docstr */
-  /* }, */
   {"create_participant", create_participant, METH_VARARGS, internal_docstr},
   {"participant_cleanup", participant_cleanup, METH_VARARGS, internal_docstr},
   {"create_subscriber", create_subscriber, METH_VARARGS, internal_docstr},
