@@ -79,7 +79,6 @@ class CMakeWrapperBuild(build_ext):
                     '-DPYOPENDDS_NATIVE_FILENAME=' + native_filename,
                     '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(
                         ext.cmake_build_type.upper(), str(build_temp)),
-                    '-DPYTHON_EXECUTABLE=' + sys.executable,
                 ] + ext.get_extra_vars(),
                 build_temp,
             )
