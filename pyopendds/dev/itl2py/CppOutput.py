@@ -51,9 +51,11 @@ class CppOutput(Output):
             pyopendds_type = ''
 
             if isinstance(field_node.type_node, PrimitiveType) and field_node.type_node.is_string():
-                to_lines.append('Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}, *field_value, "{default_encoding}");')
+                to_lines.append('Type<{pyopendds_type}>::cpp_to_python('
+                    'cpp.{field_name}, *field_value, "{default_encoding}");')
             else:
-                to_lines.append('Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}, *field_value);')
+                to_lines.append('Type<{pyopendds_type}>::cpp_to_python('
+                    'cpp.{field_name}, *field_value);')
 
             pyopendds_type = cpp_type_name(field_node.type_node)
 
