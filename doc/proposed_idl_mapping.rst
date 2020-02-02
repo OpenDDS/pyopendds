@@ -55,12 +55,10 @@ IDL-to-Python Mapping Plan
   - During serialization, if the IDL type is an array or bounded sequence, raise
     ``ValueError`` if the element count of the list is out of the valid range.
 
-- IDL structures map to `Python dataclasses
-    <https://docs.python.org/3/library/dataclasses.html>`_ or equivalent.
+- IDL structures map to `Python dataclasses <https://docs.python.org/3/library/dataclasses.html>`_
+  or equivalent.
 
-.. _enum.IntFlag: _https://docs.python.org/3/library/enum.html?highlight=enum#enum.IntFlag
-
-- IDL ``enum`` map to Python :ref:``enum.IntFlag``.
+- IDL ``enum`` map to `Python enum.IntFlag <https://docs.python.org/3/library/enum.html?highlight=enum#enum.IntFlag>`_
 
 - IDL ``union``: TODO
 
