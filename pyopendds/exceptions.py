@@ -48,37 +48,3 @@ class ReturnCodeError(PyOpenDDS_Error):
 
 
 ReturnCodeError.generate_subclasses()
-
-
-# TODO: Use or Remove These:
-class CppException(PyOpenDDS_Error):
-    '''Raised when a C++ exception was thrown in the native code.
-    '''
-
-    def __init__(self, what):
-        self.what = what
-
-    def __str__(self):
-        return 'Caught C++ Exception: ' + self.what
-
-
-class CreateEntityError(PyOpenDDS_Error):
-    '''Raised when a function for creating a DDS Entity returned nullptr.
-    '''
-
-    def __init__(self, what):
-        self.what = what
-
-    def __str__(self):
-        return 'Error while creating ' + self.what
-
-
-class TopicTypeError(PyOpenDDS_Error, TypeError):
-    '''Raised when an invalid type has been passed to PyOpenDDS
-    '''
-
-    def __init__(self, type):
-        self.type = type
-
-    def __str__(self):
-        return 'Not a valid PyOpenDDS type: ' + repr(self.type)
