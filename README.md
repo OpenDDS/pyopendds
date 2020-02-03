@@ -9,6 +9,7 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
 ## Requirements
 
+- Currently only Linux has been tested.
 - Python >= 3.7
   - This uses the C API of CPython, so PyPy or any other Python implementation
     is not supported.
@@ -18,12 +19,8 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
 ## Building PyOpenDDS and Running the Basic Test
 
-Assumptions:
-- Unix environment with requirements met
-  - When mature, PyOpenDDS should theoretically work on the intersection of all
-    platforms that OpenDDS and CPython Support. Right now it's only being
-    developed for Linux.
-- `$DDS_ROOT/setenv.sh` has been sourced or the equivalent.
+Once `$DDS_ROOT/setenv.sh` has been sourced or the equivalent, run these
+commands:
 
 ```sh
 # Build and Install PyOpenDDS
