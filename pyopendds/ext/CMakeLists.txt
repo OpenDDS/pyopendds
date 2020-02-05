@@ -11,6 +11,8 @@ find_package(OpenDDS REQUIRED)
 
 # Define _pyopendds
 add_library(_pyopendds SHARED _pyopendds.cpp)
+set_property(TARGET _pyopendds PROPERTY CXX_STANDARD 14)
+set_property(TARGET _pyopendds PROPERTY CXX_STANDARD_REQUIRED ON)
 target_include_directories(_pyopendds PRIVATE ${PYOPENDDS_INCLUDE})
 target_link_libraries(_pyopendds OpenDDS::Dcps)
 target_link_libraries(_pyopendds Python3::Python)

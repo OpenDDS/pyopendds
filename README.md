@@ -16,6 +16,7 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 - OpenDDS
   - Right now this is being developed using the master branch of OpenDDS.
 - CMake >= 3.12
+- A C++14 Compiler
 
 ## Building PyOpenDDS and Running the Basic Test
 
