@@ -5,11 +5,14 @@
 
 Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
-**WARNING: This project is still a work in progress!**
+This project is still a work in progress! It currently only supports what is
+necessary for `tests/basic_test` and little else. See the GitHub issues for
+limitations.
 
 ## Requirements
 
-- Currently only Linux has been tested.
+- Currently only Linux has been tested, but macOS should work and Windows might
+  work.
 - Python >= 3.7
   - This uses the C API of CPython, so PyPy or any other Python implementation
     is not supported.
@@ -20,8 +23,8 @@ Python Bindings for [OpenDDS](https://github.com/objectcomputing/OpenDDS).
 
 ## Building PyOpenDDS and Running the Basic Test
 
-Once `$DDS_ROOT/setenv.sh` has been sourced or the equivalent, run these
-commands:
+Once `$DDS_ROOT/setenv.sh` has been sourced or the equivalent, run the commands
+below in this directory.
 
 ```sh
 # Build and Install PyOpenDDS
@@ -34,7 +37,7 @@ cd build
 cmake ..
 make
 
-# Build and Install Basic Test Python Bindings
+# Build and Install Basic Test Python Type Support
 itl2py -o basic_output basic_idl basic.itl
 cd basic_output
 basic_idl_DIR=$(realpath ..) pip install .
