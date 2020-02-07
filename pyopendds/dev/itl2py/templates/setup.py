@@ -15,4 +15,7 @@ setup(
         },
     )],
     cmdclass={'build_ext': CMakeWrapperBuild},
+    install_requires=[
+        'pyopendds',
+    ],
 )
