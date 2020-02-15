@@ -1,7 +1,7 @@
 #ifndef PYOPENDDS_USER_HEADER
 #define PYOPENDDS_USER_HEADER
 
-#include "common.h"
+#include "common.hpp"
 
 #include <dds/DCPS/TypeSupportImpl.h>
 #include <dds/DdsDcpsDomainC.h>

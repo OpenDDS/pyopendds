@@ -1,4 +1,4 @@
-#include <pyopendds/common.h> // Must always be first include
+#include <pyopendds/common.hpp> // Must always be first include
 
 #include <dds/DCPS/transport/framework/TransportRegistry.h>
 #include <dds/DCPS/transport/framework/TransportConfig.h>
