@@ -10,6 +10,7 @@ Welcome to PyOpenDDS's documentation!
     :maxdepth: 2
     :caption: Contents:
 
+    getting_started
     proposed_idl_mapping
     modules
 
