@@ -1,4 +1,4 @@
-#include "AnotherFile.idl"
+#include "another_file.idl"
 
 struct NoModuleType {
   short value;

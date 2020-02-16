@@ -49,26 +49,28 @@ class PythonOutput(Output):
         self.submodules.append(submodule)
         submodule.visit_root_module(module)
 
+    def is_local_type(self, type_node):
+        return type_node in self.module.types.values()
+
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
-        elif field_type in self.module.types.values():
+        elif self.is_local_type(field_type):
             return field_type.local_name()
         else:
-            raise NotImplementedError
+            return field_type.name.join()
 
     def get_python_default_value_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][1]
-        elif field_type in self.module.types.values():
-            if isinstance(field_type, StructType):
-                return field_type.local_name() + '()'
-            elif isinstance(field_type, EnumType):
-                return field_type.local_name() + '.' + field_type.default_member
-            else:
-                raise NotImplementedError
         else:
-            raise NotImplementedError
+            type_name = self.get_python_type_string(field_type)
+            if isinstance(field_type, StructType):
+                return type_name + '()'
+            elif isinstance(field_type, EnumType):
+                return type_name + '.' + field_type.default_member
+            else:
+                raise NotImplementedError(repr(field_type) + " is not supported")
 
     def visit_struct(self, struct_type):
         self.context['has_struct'] = True
