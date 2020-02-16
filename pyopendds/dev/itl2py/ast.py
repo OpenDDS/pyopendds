@@ -19,8 +19,7 @@ class Name:
 
 class Node:
 
-    def __init__(self, note):
-        self.note = note
+    def __init__(self):
         self.name = None
         self.is_topic_type = False
 
@@ -47,7 +46,7 @@ class Node:
 class Module(Node):
 
     def __init__(self, parent, name):
-        super().__init__(None)
+        super().__init__()
         self.parent = parent
         name_parts = []
         if parent and name:
@@ -87,8 +86,8 @@ class PrimitiveType(Node):
         c8 = auto()
         s8 = auto()
 
-    def __init__(self, kind, note):
-        super().__init__(note)
+    def __init__(self, kind):
+        super().__init__()
         if kind not in self.Kind:
             raise ValueError('Invalid Primitive Kind: ' + repr(kind))
         self.kind = kind
@@ -115,7 +114,7 @@ class PrimitiveType(Node):
 class FieldType(Node):
 
     def __init__(self, name, type_node, optional):
-        super().__init__(None)
+        super().__init__()
         self.name = name
         self.type_node = type_node
         self.optional = optional
@@ -126,8 +125,8 @@ class FieldType(Node):
 
 class StructType(Node):
 
-    def __init__(self, note):
-        super().__init__(note)
+    def __init__(self):
+        super().__init__()
         self.fields = {}
 
     def add_field(self, name, type_node, optional):
@@ -139,8 +138,8 @@ class StructType(Node):
 
 class EnumType(Node):
 
-    def __init__(self, note):
-        super().__init__(note)
+    def __init__(self):
+        super().__init__()
         self.members = {}
         self.default_member = None
 

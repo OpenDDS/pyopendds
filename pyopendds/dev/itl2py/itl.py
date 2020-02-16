@@ -38,13 +38,13 @@ def parse_int(details):
     if char and kind == PrimitiveType.Kind.u8:
         kind = PrimitiveType.Kind.c8
     elif enum:
-        enum_type = EnumType(note)
+        enum_type = EnumType()
         for k, v in details['values'].items():
             enum_type.add_member(k, v)
         return enum_type
 
     if kind:
-        return PrimitiveType(kind, note)
+        return PrimitiveType(kind)
     else:
         raise ValueError('Can\'t decide what this int type is: ' + repr(details))
 
@@ -58,7 +58,7 @@ def parse_fixed(details):
 
 
 def parse_string(details):
-    return PrimitiveType(PrimitiveType.Kind.s8, details.get('note', {}))
+    return PrimitiveType(PrimitiveType.Kind.s8)
 
 
 def parse_sequence(types, details):
@@ -66,7 +66,7 @@ def parse_sequence(types, details):
 
 
 def parse_record(types, details):
-    struct_type = StructType(details.get('note', {}))
+    struct_type = StructType()
     for field_dict in details['fields']:
         struct_type.add_field(
             field_dict['name'], parse_type(types, field_dict['type']),
