@@ -35,7 +35,9 @@ and the name of the Python package.''')
     argparser.add_argument('--dry-run', action='store_true',
         help='Don\'t create any files or directories, print out what would be done.')
     argparser.add_argument('--dump-ast', action='store_true',
-        help='Print the AST before processing it')
+        help='Print the AST before processing it.')
+    argparser.add_argument('--just-dump-ast', action='store_true',
+        help='Just print the AST.')
     args = argparser.parse_args()
 
     # Fill in any missing arguments

@@ -35,6 +35,13 @@ module XModule {
     };
   };
 
+  typedef string<16> bounded_s8_t;
+  typedef wstring<16> bounded_s16_t;
+
+  typedef long i32_array_t[4];
+  typedef sequence<long> i32_unbounded_seq_t;
+  typedef sequence<long, 4> i32_bounded_seq_t;
+
   struct XTypeB {
     NoModuleType no_module;
     AnotherFileNoModuleType another_file_no_module;
@@ -42,11 +49,25 @@ module XModule {
 
     YModule::YTypeB value;
 
+    boolean bool_value;
+    octet octet_value;
     unsigned short u16_value;
     short i16_value;
     unsigned long u32_value;
     long i32_value;
     YModule::ZModule::EnumType enum_value;
-    char char_value;
+    char c8_value;
+    wchar c16_value;
+    string s8_value;
+    wstring s16_value;
+    bounded_s8_t bounded_s8_value;
+    bounded_s16_t bounded_s16_value;
+    float f32_value;
+    double f64_value;
+    long double f128_value;
+
+    i32_array_t i32_array;
+    i32_unbounded_seq_t i32_unbounded_seq;
+    i32_bounded_seq_t i32_bounded_seq;
   };
 };

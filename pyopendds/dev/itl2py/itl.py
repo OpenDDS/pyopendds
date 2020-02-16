@@ -1,56 +1,66 @@
-from .ast import PrimitiveType, StructType, EnumType
+# Currently ITL is missing the following functionality:
+# - No way to get annotations
+# - No constants
+# - Would not differentiate between octet and int8_t
+# - Does not differentiate between bounded and unbounded strings
+
+from .ast import PrimitiveType, PrimitiveTypeTraits, StructType, EnumType, ArrayType, SequenceType
+
+
+def get_detail(details, *keys, default=None):
+    try:
+        value = details
+        for key in keys:
+            value = value[key]
+        return value
+    except KeyError:
+        return default
 
 
 def parse_int(details):
-    note = details.get('note', {})
-    unsigned = 'unsigned' in details and details['unsigned']
-    enum = 'values' in details and 'constrained' in details and details['constrained']
-    char = False
+    # Get Traits of the Type
+    is_unsigned = bool(get_detail(details, 'unsigned'))
+    presentation = get_detail(details, 'note', 'presentation', 'type')
+    is_char = presentation == 'char'
+    size = get_detail(details, 'bits')
+    is_constrained = bool(get_detail(details, 'constrained'))
+    values = get_detail(details, 'values')
+    is_enum = is_constrained and values
+    is_bool = presentation == 'bool'
+    is_strict_int = not any([is_enum, is_char, is_bool])
+
+    # Account for ITL weirdness
+    if is_char and size is None and get_detail(details, 'note', 'idl', 'type') == 'wchar':
+        size = 16
+    elif is_bool:
+        size = 8
+
     try:
-        char = details['note']['presentation']['type'] == 'char'
-    except KeyError:
-        pass
-
-    kind = None
-    if 'bits' in details:
-        bits = details['bits']
-        if bits == 8:
-            if unsigned:
-                kind = PrimitiveType.Kind.u8
-            else:
-                kind = PrimitiveType.Kind.i8
-        elif bits == 16:
-            if unsigned:
-                kind = PrimitiveType.Kind.u16
-            else:
-                kind = PrimitiveType.Kind.i16
-        elif bits == 32:
-            if unsigned:
-                kind = PrimitiveType.Kind.u32
-            else:
-                kind = PrimitiveType.Kind.i32
-        elif bits == 64:
-            if unsigned:
-                kind = PrimitiveType.Kind.u64
-            else:
-                kind = PrimitiveType.Kind.i64
-
-    if char and kind == PrimitiveType.Kind.u8:
-        kind = PrimitiveType.Kind.c8
-    elif enum:
-        enum_type = EnumType()
-        for k, v in details['values'].items():
-            enum_type.add_member(k, v)
-        return enum_type
-
-    if kind:
-        return PrimitiveType(kind)
-    else:
+        if is_enum:
+            enum_type = EnumType(size)
+            for k, v in values.items():
+                enum_type.add_member(k, v)
+            return enum_type
+        else:
+            return PrimitiveType(PrimitiveTypeTraits(
+                element_size=size,
+                is_signed_int=is_strict_int and not is_unsigned,
+                is_unsigned_int=is_strict_int and is_unsigned,
+                is_text=is_char,
+                is_bool=is_bool))
+    except Exception:
         raise ValueError('Can\'t decide what this int type is: ' + repr(details))
 
 
 def parse_float(details):
-    raise NotImplementedError
+    size = {
+        'binary32': 32,
+        'binary64': 64,
+        'binary128': 128,
+    }.get(get_detail(details, 'model', default=None), None)
+    if size is None:
+        raise ValueError('Can\'t decide what this float type is: ' + repr(details))
+    return PrimitiveType(PrimitiveTypeTraits(is_float=True, element_size=size))
 
 
 def parse_fixed(details):
@@ -58,11 +68,19 @@ def parse_fixed(details):
 
 
 def parse_string(details):
-    return PrimitiveType(PrimitiveType.Kind.s8)
+    return PrimitiveType(PrimitiveTypeTraits(
+        element_size=16 if get_detail(details, 'note', 'idl', 'type') == 'wstring' else 8,
+        is_text=True, is_scalar=False))
 
 
 def parse_sequence(types, details):
-    raise NotImplementedError
+    base_type = parse_type(types, details["type"])
+    sequence_max_count = details.get("capacity", None)
+    array_dimensions = details.get("size", None)
+    if array_dimensions is not None:
+        return ArrayType(base_type, array_dimensions)
+    else:
+        return SequenceType(base_type, sequence_max_count)
 
 
 def parse_record(types, details):
@@ -81,8 +99,8 @@ def parse_union(types, details):
 def parse_alias(types, details):
     the_type = parse_type(types, details['type'])
     the_type.set_name(details['name'])
-    the_type.is_topic_type = \
-        details['note'].get("is_dcps_data_type", False) if 'note' in details else False
+    if not the_type.is_topic_type:
+        the_type.is_topic_type = bool(get_detail(details, 'note', 'is_dcps_data_type'))
     return the_type
 
 
@@ -106,7 +124,7 @@ def parse_typedef(types, details):
         return parse_alias(types, details)
     else:
         raise ValueError(
-            'Kind "{}" is not a valid type for parse_typedef()'.format(kind))
+            'Kind "{}" is not a valid type for parse_typedef()'.format(repr(kind)))
 
 
 def parse_type(types, details):

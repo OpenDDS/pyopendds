@@ -1,4 +1,5 @@
-from enum import Enum, auto
+from enum import Enum, unique
+from dataclasses import dataclass
 
 
 class Name:
@@ -39,8 +40,21 @@ class Node:
     def accept(self, visitor):
         raise NotImplementedError
 
+    def repr_name(self):
+        if self.name:
+            return '::' + self.name.join('::')
+
+    def repr_template(self, contents):
+        info = ''
+        name = self.repr_name()
+        if name:
+            info += ' ' + name
+        if contents:
+            info += ': ' + contents
+        return '<{}{}>'.format(self.__class__.__name__, info)
+
     def __repr__(self):
-        return '<{}: {}>'.format(self.__class__.__name__, self.name.join())
+        return self.repr_template(None)
 
 
 class Module(Node):
@@ -63,64 +77,80 @@ class Module(Node):
         for submodule in self.submodules.values():
             visitor.visit_module(submodule)
 
-    def __repr__(self):
+    def repr_name(self):
         if self.name.parts:
             return super().__repr__()
         else:
-            return '<Root Module>'
+            return ':: (Root Module)'
+
+
+@dataclass(frozen=True)
+class PrimitiveTypeTraits:
+    element_size: int = None
+    is_unsigned_int: bool = False
+    is_signed_int: bool = False
+    is_float: bool = False
+    is_text: bool = False
+    is_scalar: bool = True
+    is_bool: bool = False
+    is_raw: bool = False
 
 
 class PrimitiveType(Node):
 
+    @unique
     class Kind(Enum):
-        u8 = auto()
-        i8 = auto()
-        u16 = auto()
-        i16 = auto()
-        u32 = auto()
-        i32 = auto()
-        u64 = auto()
-        i64 = auto()
-        f32 = auto()
-        f64 = auto()
-        c8 = auto()
-        s8 = auto()
+        bool = PrimitiveTypeTraits(element_size=8, is_bool=True)
+        byte = PrimitiveTypeTraits(element_size=8, is_raw=True)
+        u8 = PrimitiveTypeTraits(element_size=8, is_unsigned_int=True)
+        i8 = PrimitiveTypeTraits(element_size=8, is_signed_int=True)
+        u16 = PrimitiveTypeTraits(element_size=16, is_unsigned_int=True)
+        i16 = PrimitiveTypeTraits(element_size=16, is_signed_int=True)
+        u32 = PrimitiveTypeTraits(element_size=32, is_unsigned_int=True)
+        i32 = PrimitiveTypeTraits(element_size=32, is_signed_int=True)
+        u64 = PrimitiveTypeTraits(element_size=64, is_unsigned_int=True)
+        i64 = PrimitiveTypeTraits(element_size=64, is_signed_int=True)
+        u128 = PrimitiveTypeTraits(element_size=128, is_unsigned_int=True)
+        i128 = PrimitiveTypeTraits(element_size=128, is_signed_int=True)
+        f32 = PrimitiveTypeTraits(element_size=32, is_float=True)
+        f64 = PrimitiveTypeTraits(element_size=64, is_float=True)
+        f128 = PrimitiveTypeTraits(element_size=128, is_float=True)
+        c8 = PrimitiveTypeTraits(element_size=8, is_text=True)
+        c16 = PrimitiveTypeTraits(element_size=16, is_text=True)
+        s8 = PrimitiveTypeTraits(element_size=8, is_text=True, is_scalar=False)
+        s16 = PrimitiveTypeTraits(element_size=16, is_text=True, is_scalar=False)
 
     def __init__(self, kind):
         super().__init__()
-        if kind not in self.Kind:
-            raise ValueError('Invalid Primitive Kind: ' + repr(kind))
-        self.kind = kind
+        self.kind = self.Kind(kind)
+        self.element_count_limit = None
+
+    def accept(self, visitor):
+        pass
 
     def is_int(self):
-        return self.kind in [
-            self.Kind.u8,
-            self.Kind.i8,
-            self.Kind.u16,
-            self.Kind.i16,
-            self.Kind.u32,
-            self.Kind.i32,
-            self.Kind.u64,
-            self.Kind.i64,
-        ]
+        return self.kind.value.is_unsigned_int or self.kind.value.is_signed_int
 
     def is_string(self):
-        return self.kind == self.Kind.s8
+        return self.kind.value.is_text and not self.kind.value.is_scalar
 
     def __repr__(self):
-        return '<{} PrimitiveType>'.format(self.kind.name)
+        contents = self.kind.name
+        if self.element_count_limit:
+            contents += ' max {}'.format(self.element_count_limit)
+        return self.repr_template(contents)
 
 
 class FieldType(Node):
 
     def __init__(self, name, type_node, optional):
         super().__init__()
-        self.name = name
+        self.set_name(parts=[name])
         self.type_node = type_node
         self.optional = optional
 
     def __repr__(self):
-        return '<FieldType: {}: {}>'.format(self.name, repr(self.type_node))
+        return self.repr_template(repr(self.type_node))
 
 
 class StructType(Node):
@@ -138,8 +168,9 @@ class StructType(Node):
 
 class EnumType(Node):
 
-    def __init__(self):
+    def __init__(self, size):
         super().__init__()
+        self.size = size
         self.members = {}
         self.default_member = None
 
@@ -150,6 +181,39 @@ class EnumType(Node):
 
     def accept(self, visitor):
         visitor.visit_enum(self)
+
+    def __repr__(self):
+        return self.repr_template('{} bits'.format(self.size))
+
+
+class ArrayType(Node):
+
+    def __init__(self, base_type, dimensions):
+        super().__init__()
+        self.base_type = base_type
+        self.dimensions = dimensions
+
+    def accept(self, visitor):
+        visitor.visit_array(self)
+
+    def __repr__(self):
+        return self.repr_template(
+            repr(self.base_type) + ''.join(["[{}]".format(i) for i in self.dimensions]))
+
+
+class SequenceType(Node):
+
+    def __init__(self, base_type, max_count):
+        super().__init__()
+        self.base_type = base_type
+        self.max_count = max_count
+
+    def accept(self, visitor):
+        visitor.visit_sequence(self)
+
+    def __repr__(self):
+        return self.repr_template(repr(self.base_type)
+            + ("max " + str(self.max_count) if self.max_count else "no max"))
 
 
 class NodeVisitor:
@@ -164,6 +228,12 @@ class NodeVisitor:
         raise NotImplementedError
 
     def visit_enum(self, enum_type):
+        raise NotImplementedError
+
+    def visit_array(self, array_type):
+        raise NotImplementedError
+
+    def visit_sequence(self, sequence_type):
         raise NotImplementedError
 
 

@@ -41,8 +41,9 @@ class PackageOutput(Output):
         if self.context['dump_ast']:
             print(repr(root_module))
             super().visit_root_module(root_module)
-        self.pyout.visit_root_module(root_module)
-        self.cppout.visit_root_module(root_module)
+        if not self.context['just_dump_ast']:
+            self.pyout.visit_root_module(root_module)
+            self.cppout.visit_root_module(root_module)
 
     def write(self):
         super().write()
@@ -59,6 +60,12 @@ class PackageOutput(Output):
         for name, value in enum_type.members.items():
             print('    ', name, ':', value)
 
+    def visit_array(self, array_type):
+        print(repr(array_type))
+
+    def visit_sequence(self, sequence_type):
+        print(repr(sequence_type))
+
 
 def generate(context: dict) -> None:
     '''Generate a Python IDL binding package given a dict of arguments. The
@@ -71,7 +78,11 @@ def generate(context: dict) -> None:
         - default_encoding
         - dry_run
         - dump_ast
+        - just_dump_ast
     '''
+
+    if context['just_dump_ast']:
+        context['dump_ast'] = True
 
     try:
         codecs.lookup(context['default_encoding'])
@@ -85,4 +96,5 @@ def generate(context: dict) -> None:
 
     out = PackageOutput(context)
     out.visit_root_module(parse_itl_files(context['itl_files']))
-    out.write()
+    if not context['just_dump_ast']:
+        out.write()
