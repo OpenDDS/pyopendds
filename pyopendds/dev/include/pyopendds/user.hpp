@@ -183,14 +183,15 @@ public:
         "Could not narrow reader implementation", Errors::PyOpenDDS_Error());
     }
 
-    DDS::ReturnCode_t rc;
     DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
       DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
     DDS::WaitSet_var ws = new DDS::WaitSet;
     ws->attach_condition(read_condition);
     DDS::ConditionSeq active;
     const DDS::Duration_t max_wait_time = {10, 0};
-    rc = ws->wait(active, max_wait_time);
+    if (Errors::check_rc(ws->wait(active, max_wait_time))) {
+      throw Exception();
+    }
     ws->detach_condition(read_condition);
     reader_impl->delete_readcondition(read_condition);
 
@@ -199,8 +200,10 @@ public:
     if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
       throw Exception();
     }
+
     PyObject* rv = nullptr;
     Type<IdlType>::cpp_to_python(sample, rv);
+
     return rv;
   }
 
