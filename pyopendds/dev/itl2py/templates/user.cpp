@@ -1,6 +1,5 @@
 #include <pyopendds/user.hpp> // Must always be first include
-
-/*{% for name in idl_names -%}*/
+/*{% for name in idl_names %}*/
 #include </*{{ name }}*/TypeSupportImpl.h>
 /*{%- endfor %}*/
 
