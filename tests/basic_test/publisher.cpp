@@ -92,9 +92,22 @@ int main(int argc, char* argv[]) {
     basic::ReadingDataWriter_var reading_writer =
       basic::ReadingDataWriter::_narrow(writer);
     basic::Reading reading;
-    reading.kind = basic::speed;
-    reading.value = -200;
-    reading.where = "Somewhere";
+    reading.kind
+#ifdef CPP11_IDL
+      () = basic::ReadingKind::speed;
+#else
+      = basic::speed;
+#endif
+    reading.value
+#ifdef CPP11_IDL
+      ()
+#endif
+      = -200;
+    reading.where
+#ifdef CPP11_IDL
+      ()
+#endif
+      = "Somewhere";
     rc = reading_writer->write(reading, DDS::HANDLE_NIL);
     if (rc != DDS::RETCODE_OK) {
       std::cerr << "Error: Failed to write: "

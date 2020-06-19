@@ -49,13 +49,17 @@ class CppOutput(Output):
             to_lines = []
             from_lines = []
             pyopendds_type = ''
+            is_string = isinstance(field_node.type_node, PrimitiveType) and \
+                field_node.type_node.is_string()
 
-            if isinstance(field_node.type_node, PrimitiveType) and field_node.type_node.is_string():
-                to_lines.append('Type<{pyopendds_type}>::cpp_to_python('
-                    'cpp.{field_name}, *field_value, "{default_encoding}");')
-            else:
-                to_lines.append('Type<{pyopendds_type}>::cpp_to_python('
-                    'cpp.{field_name}, *field_value);')
+            to_lines = [
+                'Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}',
+                '#ifdef CPP11_IDL',
+                '    ()',
+                '#endif',
+                '    , *field_value' +
+                    (', "{default_encoding}"' if is_string else '') + ');',
+            ]
 
             pyopendds_type = cpp_type_name(field_node.type_node)
 
@@ -100,7 +104,7 @@ class CppOutput(Output):
             'local_name': enum_type.local_name(),
             'to_replace': True,
             'new_lines': '\n'.join([
-                'args = PyTuple_Pack(1, PyLong_FromLong(cpp));',
+                'args = PyTuple_Pack(1, PyLong_FromLong(static_cast<long>(cpp)));',
             ]),
             'to_lines': '',
             'from_lines': '\n'.join([

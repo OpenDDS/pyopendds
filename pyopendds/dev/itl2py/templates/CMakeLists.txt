@@ -18,3 +18,9 @@ set_target_properties({{ native_package_name }} PROPERTIES
   LIBRARY_OUTPUT_NAME ${PYOPENDDS_NATIVE_FILENAME}
   SUFFIX ""
 )
+get_property(idl_mappings TARGET {{ idl_library_cmake_name }}
+    PROPERTY OPENDDS_LANGUAGE_MAPPINGS)
+if("C++11" IN_LIST idl_mappings)
+    set_target_properties({{ native_package_name }} PROPERTIES
+        COMPILE_DEFINITIONS "CPP11_IDL")
+endif()

@@ -65,6 +65,26 @@ template<> class Type<i32>: public IntegerType<i32> {};
 
 // TODO: Put Other Integer Types Here
 
+const char* string_data(const std::string& cpp)
+{
+  return cpp.data();
+}
+
+const char* string_data(const char* cpp)
+{
+  return cpp;
+}
+
+size_t string_length(const std::string& cpp)
+{
+  return cpp.size();
+}
+
+size_t string_length(const char* cpp)
+{
+  return std::strlen(cpp);
+}
+
 template<typename T>
 class StringType {
 public:
@@ -75,7 +95,8 @@ public:
 
   static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
   {
-    PyObject* o = PyUnicode_Decode(cpp, std::strlen(cpp), encoding, "strict");
+    PyObject* o = PyUnicode_Decode(
+      string_data(cpp), string_length(cpp), encoding, "strict");
     if (!o) throw Exception();
     py = o;
   }
@@ -88,9 +109,15 @@ public:
 
 // TODO: Add seperate RawStringType where get_python_class returns PyBytes_Type
 
-typedef ::TAO::String_Manager s8;
+typedef
+#ifdef CPP11_IDL
+  std::string
+#else
+  ::TAO::String_Manager
+#endif
+  s8;
 template<> class Type<s8>: public StringType<s8> {};
-// TODO: Put Other String/Chare Types Here
+// TODO: Put Other String/Char Types Here
 
 // TODO: FloatingType for floating point type
 
