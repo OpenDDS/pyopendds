@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-18.04
 
     strategy:
+      fail-fast: false
       matrix:
         python-version: [3.7, 3.8]
 
@@ -37,8 +38,6 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo dpkg -i OpenDDS-Debian/opendds.deb
-        sudo wget -O '/usr/share/ace/bin/generate_export_file.pl' 'https://raw.githubusercontent.com/DOCGroup/ACE_TAO/master/ACE/bin/generate_export_file.pl'
-        sudo chmod +x '/usr/share/ace/bin/generate_export_file.pl'
 
     - name: Install PyOpenDDS
       run: |
@@ -59,6 +58,22 @@ jobs:
       run: |
         cd tests/basic_test
         bash run_test.sh
+
+    - name: Build Basic C++11 Test
+      run: |
+        cd tests/basic_test
+        mkdir build_cpp11
+        cd build_cpp11
+        cmake -DCPP11_IDL=ON ..
+        make
+        itl2py -o basic_output basic_idl basic.itl
+        cd basic_output
+        basic_idl_DIR=$(realpath ..) python -m pip --verbose install .
+
+    - name: Run Basic C++11 Test
+      run: |
+        cd tests/basic_test
+        bash run_test.sh _cpp11
 
     - name: Lint with flake8
       run: |

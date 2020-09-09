@@ -1,7 +1,8 @@
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:build" python3 subscriber.py &
+dir="build$1"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$dir" python3 subscriber.py &
 sub=$!
 
-cd build
+cd $dir
 ./publisher -DCPSConfigFile ../rtps.ini &
 pub=$!
 

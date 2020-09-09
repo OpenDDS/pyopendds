@@ -5,7 +5,6 @@ project(PyOpenDDS_Test)
 list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS REQUIRED)
 
-
 add_library(basic_idl SHARED)
 if(${CPP11_IDL})
     set(opendds_idl_mapping_option "-Lc++11")
