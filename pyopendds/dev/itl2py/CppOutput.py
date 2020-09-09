@@ -57,8 +57,8 @@ class CppOutput(Output):
                 '#ifdef CPP11_IDL',
                 '    ()',
                 '#endif',
-                '    , *field_value' +
-                    (', "{default_encoding}"' if is_string else '') + ');',
+                '    , *field_value'
+                    + (', "{default_encoding}"' if is_string else '') + ');',
             ]
 
             pyopendds_type = cpp_type_name(field_node.type_node)
