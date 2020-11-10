@@ -1,5 +1,10 @@
+##########################
 IDL-to-Python Mapping Plan
-==========================
+##########################
+
+***************
+Primitive Types
+***************
 
 - IDL ``boolean`` maps to Python ``bool``.
 - All IDL integer types map to Python ``int``.
@@ -9,13 +14,17 @@ IDL-to-Python Mapping Plan
 
 - IDL ``float`` and ``double`` map to Python ``float``. IDL ``long double`` and
   ``fixed`` map to Python ``decimal.Decimal``.
-- All IDL characters and strings map to Python ``str``.
 
-  - Unlike C strings, Python ``str`` requires the encoding to be known. To help
-    facilitate this, by default characters and strings will be assumed to be
-    UTF-8 and wide characters and strings will be assumed to be UTF-16. The
-    encoding will be able to be specified either using a global implementation
-    option or manually using this IDL annotation:
+Character Types
+===============
+
+All IDL characters and strings map to Python ``str``.
+
+Unlike C strings, Python ``str`` requires the encoding to be known. To help
+facilitate this, by default characters and strings will be assumed to be
+UTF-8 and wide characters and strings will be assumed to be UTF-16. The
+encoding will be able to be specified either using a global implementation
+option or manually using this IDL annotation:
 
 .. code-block:: omg-idl
 
@@ -50,9 +59,13 @@ annotation was adopted in other implementation. For Python this will change
 the type from ``str`` to ``bytes``, which better represents the idea of
 string of bytes of uncertain encoding.
 
-  - During serialization, raise a ``ValueError`` if the size of the encoded data
-    is larger than the limits of the IDL type. For example: assigning Python
-    ``"more than a byte"`` to a IDL field of type ``char``.
+During serialization, raise a ``ValueError`` if the size of the encoded data
+is larger than the limits of the IDL type. For example: assigning Python
+``"more than a byte"`` to a IDL field of type ``char``.
+
+***************
+Composite Types
+***************
 
 - IDL arrays and sequences map to Python ``list``
 
@@ -64,7 +77,8 @@ string of bytes of uncertain encoding.
 
 - IDL ``enum`` map to `Python enum.IntFlag <https://docs.python.org/3/library/enum.html?highlight=enum#enum.IntFlag>`_
 
-- IDL ``union``: TODO
+Unions
+======
 
 This IDL:
 
