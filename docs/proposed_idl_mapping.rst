@@ -15,7 +15,9 @@ IDL-to-Python Mapping Plan
     facilitate this, by default characters and strings will be assumed to be
     UTF-8 and wide characters and strings will be assumed to be UTF-16. The
     encoding will be able to be specified either using a global implementation
-    option or manually using this IDL annotation::
+    option or manually using this IDL annotation:
+
+.. code-block:: omg-idl
 
       @annotion encoding {
           string platform default "*";
@@ -28,7 +30,9 @@ IDL-to-Python Mapping Plan
     <https://docs.python.org/3.7/library/codecs.html#standard-encodings>`_. As
     an example, if you wanted to use `ISO-8859-10
     <https://en.wikipedia.org/wiki/ISO/IEC_8859-10>`_ "on the wire", you could
-    write something like this::
+    write something like this:
+
+.. code-block:: omg-idl
 
       struct Data {
           @encoding(platform="python", value="latin6")
@@ -62,7 +66,9 @@ IDL-to-Python Mapping Plan
 
 - IDL ``union``: TODO
 
-  This IDL::
+  This IDL:
+
+.. code-block:: omg-idl
 
     enum EnumType {
         A, B, C
