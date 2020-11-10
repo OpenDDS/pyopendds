@@ -19,36 +19,36 @@ IDL-to-Python Mapping Plan
 
 .. code-block:: omg-idl
 
-      @annotion encoding {
-          string platform default "*";
-          string value;
-      };
+    @annotion encoding {
+        string platform default "*";
+        string value;
+    };
 
-    For Python, ``platform`` can be left to default or set to ``python`` and
-    ``value`` should be a valid Python codec. `Here is the list of codecs for
-    Python 3.7
-    <https://docs.python.org/3.7/library/codecs.html#standard-encodings>`_. As
-    an example, if you wanted to use `ISO-8859-10
-    <https://en.wikipedia.org/wiki/ISO/IEC_8859-10>`_ "on the wire", you could
-    write something like this:
+For Python, ``platform`` can be left to default or set to ``python`` and
+``value`` should be a valid Python codec. `Here is the list of codecs for
+Python 3.7
+<https://docs.python.org/3.7/library/codecs.html#standard-encodings>`_. As
+an example, if you wanted to use `ISO-8859-10
+<https://en.wikipedia.org/wiki/ISO/IEC_8859-10>`_ "on the wire", you could
+write something like this:
 
 .. code-block:: omg-idl
 
-      struct Data {
-          @encoding(platform="python", value="latin6")
-          string put_swedish_here;
-      };
+    struct Data {
+        @encoding(platform="python", value="latin6")
+        string put_swedish_here;
+    };
 
-    During serialization and deserialization, encoding will be handled
-    automatically, but will be subject to ``UnicodeError`` if there is a
-    problem with the encoding.
+During serialization and deserialization, encoding will be handled
+automatically, but will be subject to ``UnicodeError`` if there is a
+problem with the encoding.
 
-    Alternatively ``value`` can be set to ``"none"`` to represent that no
-    automatic encoding and decoding should be done. This is probably the
-    behavior many other IDL mappings and would probably be the default if the
-    annotation was adopted in other implementation. For Python this will change
-    the type from ``str`` to ``bytes``, which better represents the idea of
-    string of bytes of uncertain encoding.
+Alternatively ``value`` can be set to ``"none"`` to represent that no
+automatic encoding and decoding should be done. This is probably the
+behavior many other IDL mappings and would probably be the default if the
+annotation was adopted in other implementation. For Python this will change
+the type from ``str`` to ``bytes``, which better represents the idea of
+string of bytes of uncertain encoding.
 
   - During serialization, raise a ``ValueError`` if the size of the encoded data
     is larger than the limits of the IDL type. For example: assigning Python
@@ -66,7 +66,7 @@ IDL-to-Python Mapping Plan
 
 - IDL ``union``: TODO
 
-  This IDL:
+This IDL:
 
 .. code-block:: omg-idl
 
@@ -82,7 +82,7 @@ IDL-to-Python Mapping Plan
         char character;
     };
 
-  Will produce Python like::
+Will produce Python like::
 
     class UnionType:
         def __init__(self):
@@ -98,4 +98,3 @@ IDL-to-Python Mapping Plan
         def number(self, value: int):
             self._d = EnumType.A
             self._number = value
-
