@@ -367,6 +367,59 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 }
 
 /**
+ * Callback for Python to Call when the DataWriter Capsule is Deleted
+ */
+void delete_datawriter_var(PyObject* writer_capsule)
+{
+  if (PyCapsule_CheckExact(writer_capsule)) {
+    DDS::DataWriter_var writer = static_cast<DDS::DataWriter*>(
+      PyCapsule_GetPointer(writer_capsule, nullptr));
+    writer = nullptr;
+  }
+}
+
+/**
+ * create_datawriter(datawriter: DataWriter, publisher: Publisher, topic: Topic) -> None
+ */
+PyObject* create_datawriter(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  Ref pypublisher;
+  Ref pytopic;
+  if (!PyArg_ParseTuple(args, "OOO",
+      &*pydatawriter, &*pypublisher, &*pytopic)) {
+    return nullptr;
+  }
+  pydatawriter++;
+  pypublisher++;
+  pytopic++;
+
+  // Get Publisher
+  DDS::Publisher* publisher = get_capsule<DDS::Publisher>(*pypublisher);
+  if (!publisher) return nullptr;
+
+  // Get Topic
+  DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
+  if (!topic) return nullptr;
+
+  // Create DataWriter
+  DDS::DataWriter* datawriter = publisher->create_datawriter(
+    topic, DATAWRITER_QOS_DEFAULT, nullptr,
+    OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+  if (!datawriter) {
+    PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataWriter");
+    return nullptr;
+  }
+
+  // Attach OpenDDS DataWriter to DataWriter Python Object
+  if (set_capsule(*pydatawriter, datawriter, delete_datawriter_var)) {
+    return nullptr;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/**
  * datareader_wait_for(
  *     datareader: DataReader, status: StatusKind,
  *     seconds: int, nanoseconds: int) -> None
@@ -400,6 +453,40 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
   Py_RETURN_NONE;
 }
 
+/**
+ * datawriter_wait_for(
+ *     datawriter: DataWriter, status: StatusKind,
+ *     seconds: int, nanoseconds: int) -> None
+ */
+PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  unsigned status;
+  int seconds;
+  unsigned nanoseconds;
+  if (!PyArg_ParseTuple(args, "OIiI",
+      &*pydatawriter, &status, &seconds, &nanoseconds)) {
+    return nullptr;
+  }
+  pydatawriter++;
+
+  // Get DataWriter
+  DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(*pydatawriter);
+  if (!writer) return nullptr;
+
+  // Wait
+  DDS::StatusCondition_var condition = writer->get_statuscondition();
+  condition->set_enabled_statuses(status);
+  DDS::WaitSet_var waitset = new DDS::WaitSet;
+  if (!waitset) return PyErr_NoMemory();
+  waitset->attach_condition(condition);
+  DDS::ConditionSeq active;
+  DDS::Duration_t max_duration = {seconds, nanoseconds};
+  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
+
+  Py_RETURN_NONE;
+}
+
 /// Documentation for Internal Python Objects
 const char* internal_docstr = "Internal to PyOpenDDS, not for use directly!";
 
@@ -414,7 +501,9 @@ PyMethodDef pyopendds_Methods[] = {
   {"create_publisher", create_publisher, METH_VARARGS, internal_docstr},
   {"create_topic", create_topic, METH_VARARGS, internal_docstr},
   {"create_datareader", create_datareader, METH_VARARGS, internal_docstr},
+  {"create_datawriter", create_datawriter, METH_VARARGS, internal_docstr},
   {"datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr},
+  {"datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr},
   {nullptr, nullptr, 0, nullptr}
 };
 

@@ -3,7 +3,7 @@ from .Subscriber import Subscriber
 from .Publisher import Publisher
 
 
-class DomainParticipant:
+class DomainParticipant(object):
 
     def __init__(self, domain: int, qos=None, listener=None):
         self.domain = int(domain)
