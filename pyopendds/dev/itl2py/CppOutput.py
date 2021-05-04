@@ -44,7 +44,9 @@ class CppOutput(Output):
         struct_to_lines = [
             'Ref field_value;',
         ]
-        struct_from_lines = []
+        struct_from_lines = [
+            'Ref field_value;',
+        ]
         for field_name, field_node in struct_type.fields.items():
             to_lines = []
             from_lines = []
@@ -61,14 +63,33 @@ class CppOutput(Output):
                     + (', "{default_encoding}"' if is_string else '') + ');',
             ]
 
+            from_lines = [
+                'if (PyObject_HasAttrString(py, "{field_name}")) {{',
+                '    *field_value = PyObject_GetAttrString(py, "{field_name}");',
+                '}}',
+                'if (!field_value) {{',
+                '  throw Exception();',
+                '}}'
+            ]
+
             pyopendds_type = cpp_type_name(field_node.type_node)
 
             if to_lines:
                 to_lines.extend([
-                    'if (!field_value || PyObject_SetAttrString('
+                    'if (!field_value || PyObject_SetAttrString(',
                     'py, "{field_name}", *field_value)) {{',
                     '  throw Exception();',
                     '}}'
+                ])
+
+            if from_lines:
+                from_lines.extend([
+                    'Type<{pyopendds_type}>::python_to_cpp(*field_value, cpp.{field_name}',
+                    '#ifdef CPP11_IDL',
+                    '    ()',
+                    '#endif',
+                    '    '
+                    + (', "{default_encoding}"' if is_string else '') + ');'
                 ])
 
             def line_process(lines):
@@ -107,9 +128,6 @@ class CppOutput(Output):
                 'args = PyTuple_Pack(1, PyLong_FromLong(static_cast<long>(cpp)));',
             ]),
             'to_lines': '',
-            'from_lines': '\n'.join([
-                '',
-                '// left unimplemented'
-            ]),
+            'from_lines': '',
             'is_topic_type': False,
         })

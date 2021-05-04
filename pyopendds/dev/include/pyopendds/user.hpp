@@ -30,7 +30,7 @@ public:
 
   static PyObject* get_python_class()
   {
-    return PyLong_Type;
+    return PyLong_FromLong(0);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
@@ -45,23 +45,22 @@ public:
 
   static void python_to_cpp(PyObject* py, T& cpp)
   {
-    LongType value;
+    long value;
     if (limits::is_signed) {
-      value = PyLong_AsLong(py);
+        value = PyLong_AsLong(py);
     } else {
-      value = PyLong_AsUnsignedLong(py);
+        value = PyLong_AsUnsignedLong(py);
     }
-    if (value < limits::min() || value > limits::max()) {
-      throw Exception(
-        "Integer Value is Out of Range for IDL Type", PyExc_ValueError);
-    }
-    if (value == -1 && PyErr_Occurred()) throw Exception();
-    cpp = value;
+    cpp = T(value);
   }
+
 };
 
 typedef ::CORBA::Long i32;
 template<> class Type<i32>: public IntegerType<i32> {};
+
+typedef ::CORBA::Short i16;
+template<> class Type<i16>: public IntegerType<i16> {};
 
 // TODO: Put Other Integer Types Here
 
@@ -90,7 +89,7 @@ class StringType {
 public:
   static PyObject* get_python_class()
   {
-    return PyUnicode_Type;
+    return PyUnicode_FromString("");
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
@@ -101,9 +100,14 @@ public:
     py = o;
   }
 
-  static void python_to_cpp(PyObject* py, T& cpp)
+  static void python_to_cpp(PyObject* py, T& cpp, const char* encoding)
   {
-    // TODO: Encode or Throw Unicode Error
+    PyObject* repr = PyObject_Repr(py);
+    PyObject* str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+    const char *bytes = PyBytes_AS_STRING(str);
+    cpp = T(bytes);
+    Py_XDECREF(repr);
+    Py_XDECREF(str);
   }
 };
 
@@ -127,6 +131,7 @@ public:
   virtual const char* type_name() = 0;
   virtual void register_type(PyObject* pyparticipant) = 0;
   virtual PyObject* take_next_sample(PyObject* pyreader) = 0;
+  virtual PyObject* write(PyObject* pywriter, PyObject* pysample) = 0;
 
   typedef std::shared_ptr<TopicTypeBase> Ptr;
   typedef std::map<PyObject*, Ptr> TopicTypes;
@@ -215,7 +220,7 @@ public:
     DDS::WaitSet_var ws = new DDS::WaitSet;
     ws->attach_condition(read_condition);
     DDS::ConditionSeq active;
-    const DDS::Duration_t max_wait_time = {10, 0};
+    const DDS::Duration_t max_wait_time = {60, 0};
     if (Errors::check_rc(ws->wait(active, max_wait_time))) {
       throw Exception();
     }
@@ -232,6 +237,30 @@ public:
     Type<IdlType>::cpp_to_python(sample, rv);
 
     return rv;
+  }
+
+  PyObject* write(PyObject* pywriter, PyObject* pysample)
+  {
+    DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(pywriter);
+    if (!writer) PyErr_SetString(PyExc_Exception, "writer is a NULL pointer");
+
+    DataWriter* writer_impl = DataWriter::_narrow(writer);
+    if (!writer_impl) {
+      throw Exception(
+        "Could not narrow writer implementation", Errors::PyOpenDDS_Error());
+    }
+
+    IdlType rv;
+    Type<IdlType>::python_to_cpp(pysample, rv);
+
+    DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
+    throw Exception(
+        "ERROR", Errors::PyOpenDDS_Error());
+    if (Errors::check_rc(rc)) {
+      throw Exception();
+    }
+
+    return pysample;
   }
 
   PyObject* get_python_class()

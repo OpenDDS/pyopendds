@@ -23,3 +23,10 @@ if(${CPP11_IDL})
     set_target_properties(publisher PROPERTIES
         COMPILE_DEFINITIONS "CPP11_IDL")
 endif()
+
+add_executable(subscriber subscriber.cpp DataReaderListenerImpl.cpp)
+target_link_libraries(subscriber OpenDDS::OpenDDS basic_idl)
+if(${CPP11_IDL})
+    set_target_properties(subscriber PROPERTIES
+        COMPILE_DEFINITIONS "CPP11_IDL")
+endif()
