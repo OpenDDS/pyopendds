@@ -74,7 +74,7 @@ def parse_string(details):
 
 
 def parse_sequence(types, details):
-    base_type = parse_type(types, details["type"])
+    base_type = parse_type(types, list(types)[0])
     sequence_max_count = details.get("capacity", None)
     array_dimensions = details.get("size", None)
     if array_dimensions is not None:
@@ -86,9 +86,16 @@ def parse_sequence(types, details):
 def parse_record(types, details):
     struct_type = StructType()
     for field_dict in details['fields']:
-        struct_type.add_field(
-            field_dict['name'], parse_type(types, field_dict['type']),
-            field_dict.get('optional', False))
+        if 'sequence' in field_dict['type']:
+            sequence = parse_sequence(types, {'type': field_dict['type'], 'capacity': 1, 'size': None})
+            sequence.set_name(itl_name=sequence.base_type.name.itl_name)
+            struct_type.add_field(
+                field_dict['name'], sequence,
+                field_dict.get('optional', False))
+        else:
+            struct_type.add_field(
+                field_dict['name'], parse_type(types, field_dict['type']),
+                field_dict.get('optional', False))
     return struct_type
 
 
@@ -132,6 +139,8 @@ def parse_type(types, details):
     if details_type is str:
         if details in types:
             return types[details]
+        elif 'sequence' in details :
+            return parse_sequence(types, {'type':types, 'capacity': 1, 'size': None})
         else:
             raise ValueError("Invalid Type: " + details)
     elif details_type is dict:
