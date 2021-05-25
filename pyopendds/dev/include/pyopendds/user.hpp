@@ -254,10 +254,14 @@ public:
     Type<IdlType>::python_to_cpp(pysample, rv);
 
     DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
-    throw Exception(
-        "ERROR", Errors::PyOpenDDS_Error());
     if (Errors::check_rc(rc)) {
       throw Exception();
+    }
+    // Wait for samples to be acknowledged
+    DDS::Duration_t timeout = { 30, 0 };
+    if (writer_impl->wait_for_acknowledgments(timeout) != DDS::RETCODE_OK) {
+      throw Exception(
+        "wait_for_acknowledgments error : ", Errors::PyOpenDDS_Error());
     }
 
     return pysample;

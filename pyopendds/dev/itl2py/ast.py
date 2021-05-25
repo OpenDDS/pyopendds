@@ -215,6 +215,9 @@ class SequenceType(Node):
         return self.repr_template(repr(self.base_type)
             + ("max " + str(self.max_count) if self.max_count else "no max"))
 
+    def repr_name(self):
+        if self.name:
+            return '::' + self.name.join('::') + '::_tao_seq_' + self.base_type + '_'
 
 class NodeVisitor:
 

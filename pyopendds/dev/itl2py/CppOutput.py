@@ -1,6 +1,6 @@
 from jinja2 import Environment
 
-from .ast import PrimitiveType, StructType, EnumType
+from .ast import PrimitiveType, StructType, EnumType, SequenceType
 from .Output import Output
 
 
@@ -13,6 +13,8 @@ def cpp_type_name(type_node):
         return type_node.kind.name
     elif isinstance(type_node, (StructType, EnumType)):
         return cpp_name(type_node.name.parts)
+    elif isinstance(type_node, (SequenceType)):
+        return cpp_name(type_node.name.parts);
     else:
         raise NotImplementedError
 
@@ -53,15 +55,32 @@ class CppOutput(Output):
             pyopendds_type = ''
             is_string = isinstance(field_node.type_node, PrimitiveType) and \
                 field_node.type_node.is_string()
+            is_sequence = isinstance(field_node.type_node, SequenceType)
 
-            to_lines = [
-                'Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}',
-                '#ifdef CPP11_IDL',
-                '    ()',
-                '#endif',
-                '    , *field_value'
-                    + (', "{default_encoding}"' if is_string else '') + ');',
-            ]
+            if is_sequence:
+                to_lines = [
+                    'Ref field_elem;',
+                    'field_value = PyList_New(0);',
+                    'for (int i = 0; i < cpp.{field_name}.length(); i++) {{',
+                    '    {pyopendds_type} elem = cpp.{field_name}[i];',
+                    '    field_elem = nullptr;',
+                    '    Type<{pyopendds_type}>::cpp_to_python(elem',
+                    '    #ifdef CPP11_IDL',
+                    '        ()',
+                    '    #endif',
+                    '        , *field_elem' + (', "{default_encoding}"' if is_string else '') + ');',
+                    '    PyList_Append(*field_value, *field_elem);',
+                    '}}'
+                ]
+            else:
+                to_lines = [
+                    'Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}',
+                    '#ifdef CPP11_IDL',
+                    '    ()',
+                    '#endif',
+                    '    , *field_value'
+                        + (', "{default_encoding}"' if is_string else '') + ');',
+                ]
 
             from_lines = [
                 'if (PyObject_HasAttrString(py, "{field_name}")) {{',
@@ -83,14 +102,28 @@ class CppOutput(Output):
                 ])
 
             if from_lines:
-                from_lines.extend([
-                    'Type<{pyopendds_type}>::python_to_cpp(*field_value, cpp.{field_name}',
-                    '#ifdef CPP11_IDL',
-                    '    ()',
-                    '#endif',
-                    '    '
-                    + (', "{default_encoding}"' if is_string else '') + ');'
-                ])
+                if is_sequence:
+                    from_lines.extend([
+                        'cpp.{field_name}.length(PyList_Size(*field_value));',
+                        'for (int i = 0; i < PyList_Size(*field_value); i++) {{',
+                        '    ::ContTrajSegment elem = cpp.{field_name}[i];',
+                        '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(*field_value, i), elem',
+                        '#ifdef CPP11_IDL',
+                        '    ()',
+                        '#endif',
+                        '    ' + (', "{default_encoding}"' if is_string else '') + ');',
+                        '    cpp.{field_name}[i] = elem;',
+                        '}}'
+                    ])
+                else:
+                    from_lines.extend([
+                        'Type<{pyopendds_type}>::python_to_cpp(*field_value, cpp.{field_name}',
+                        '#ifdef CPP11_IDL',
+                        '    ()',
+                        '#endif',
+                        '    '
+                        + (', "{default_encoding}"' if is_string else '') + ');'
+                    ])
 
             def line_process(lines):
                 return [''] + [
