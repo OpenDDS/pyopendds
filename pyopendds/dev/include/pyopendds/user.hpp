@@ -130,6 +130,39 @@ typedef
 template<> class Type<s8>: public StringType<s8> {};
 // TODO: Put Other String/Char Types Here
 
+template<typename T>
+class FloatingType {
+public:
+  typedef std::numeric_limits<T> limits;
+
+  static PyObject* get_python_class()
+  {
+    return PyFloat_FromDouble(0);
+  }
+
+  static void cpp_to_python(const T& cpp, PyObject*& py)
+  {
+      py = PyFloat_FromDouble(cpp);
+      if (!py) throw Exception();
+  }
+
+  static void python_to_cpp(PyObject* py, T& cpp)
+  {
+    double value;
+    value = PyFloat_AsDouble(py);
+    if (value < limits::min() || value > limits::max()) {
+      throw Exception(
+        "Floating Value is Out of Range for IDL Type", PyExc_ValueError);
+    }
+    if (value == -1 && PyErr_Occurred()) throw Exception();
+    cpp = value;
+  }
+};
+
+typedef ::CORBA::Float f32;
+typedef ::CORBA::Double f64;
+template<> class Type<f32>: public FloatingType<f32> {};
+template<> class Type<f64>: public FloatingType<f64> {};
 // TODO: FloatingType for floating point type
 
 class TopicTypeBase {
