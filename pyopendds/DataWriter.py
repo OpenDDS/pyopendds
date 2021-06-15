@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .Publisher import Publisher
 
 
-class DataWriter(object):
+class DataWriter:
 
     def __init__(self, publisher: Publisher, topic: Topic, qos=None, listener=None):
         self.topic = topic

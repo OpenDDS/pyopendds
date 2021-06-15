@@ -45,12 +45,17 @@ public:
 
   static void python_to_cpp(PyObject* py, T& cpp)
   {
-    long value;
+    LongType value;
     if (limits::is_signed) {
-        value = PyLong_AsLong(py);
+      value = PyLong_AsLong(py);
     } else {
-        value = PyLong_AsUnsignedLong(py);
+      value = PyLong_AsUnsignedLong(py);
     }
+    if (value < limits::min() || value > limits::max()) {
+      throw Exception(
+        "Integer Value is Out of Range for IDL Type", PyExc_ValueError);
+    }
+    if (value == -1 && PyErr_Occurred()) throw Exception();
     cpp = T(value);
   }
 
@@ -102,8 +107,10 @@ public:
 
   static void python_to_cpp(PyObject* py, T& cpp, const char* encoding)
   {
-    PyObject* repr = PyObject_Repr(py);
-    PyObject* str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+    PyObject* repr = PyObject_Str(py);
+    if (!repr) throw Exception();
+    PyObject* str = PyUnicode_AsEncodedString(repr, encoding, NULL);
+    if (!str) throw Exception();
     const char *bytes = PyBytes_AS_STRING(str);
     cpp = T(bytes);
     Py_XDECREF(repr);
@@ -228,7 +235,7 @@ public:
     reader_impl->delete_readcondition(read_condition);
 
     IdlType sample;
-    DDS::SampleInfo info;
+        DDS::SampleInfo info;
     if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
       throw Exception();
     }
@@ -242,7 +249,7 @@ public:
   PyObject* write(PyObject* pywriter, PyObject* pysample)
   {
     DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(pywriter);
-    if (!writer) PyErr_SetString(PyExc_Exception, "writer is a NULL pointer");
+    if (!writer) throw Exception();
 
     DataWriter* writer_impl = DataWriter::_narrow(writer);
     if (!writer_impl) {
