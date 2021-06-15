@@ -15,7 +15,7 @@ if __name__ == "__main__":
         publisher = domain.create_publisher()
         writer = publisher.create_datawriter(topic)
 
-        # Wait for Publisher to Connect
+        # Wait for Subscriber to Connect
         print('Waiting for Subscriber...')
         writer.wait_for(StatusKind.PUBLICATION_MATCHED, timedelta(seconds=60))
         print('Found subscriber!')
