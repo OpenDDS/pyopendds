@@ -18,8 +18,9 @@ class DataReader:
         self.subscriber = subscriber
         subscriber.readers.append(self)
 
+        print(str(listener))
         from _pyopendds import create_datareader
-        create_datareader(self, subscriber, topic)
+        create_datareader(self, subscriber, topic, self.onDataAvailCallback)
 
     def wait_for(self, status: StatusKind, timeout: TimeDurationType):
         from _pyopendds import datareader_wait_for
@@ -27,3 +28,9 @@ class DataReader:
 
     def take_next_sample(self):
         return self.topic._ts_package.take_next_sample(self)
+
+    def onDataAvailCallback(self):
+        print("Python Callback")
+        sample = self.topic._ts_package.take_next_sample(self)
+        self.listener(sample)
+

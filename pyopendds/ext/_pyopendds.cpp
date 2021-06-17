@@ -17,6 +17,78 @@ PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
 namespace {
+class DataReaderListenerImpl : public virtual OpenDDS::DCPS::LocalObject<DDS::DataReaderListener> {
+public:
+
+  DataReaderListenerImpl(PyObject * self, PyObject *callback);
+
+  virtual void on_requested_deadline_missed(
+    DDS::DataReader_ptr reader,
+    const DDS::RequestedDeadlineMissedStatus& status) {}
+
+  virtual void on_requested_incompatible_qos(
+    DDS::DataReader_ptr reader,
+    const DDS::RequestedIncompatibleQosStatus& status) {}
+
+  virtual void on_sample_rejected(
+    DDS::DataReader_ptr reader,
+    const DDS::SampleRejectedStatus& status) {}
+
+  virtual void on_liveliness_changed(
+    DDS::DataReader_ptr reader,
+    const DDS::LivelinessChangedStatus& status) {}
+
+  virtual void on_data_available(
+    DDS::DataReader_ptr reader);
+
+  virtual void on_subscription_matched(
+    DDS::DataReader_ptr reader,
+    const DDS::SubscriptionMatchedStatus& status) {}
+
+  virtual void on_sample_lost(
+    DDS::DataReader_ptr reader,
+    const DDS::SampleLostStatus& status) {}
+
+    private:
+  PyObject *_callback;
+  PyObject * _self;
+};
+
+DataReaderListenerImpl::DataReaderListenerImpl(PyObject * self, PyObject *callback): OpenDDS::DCPS::LocalObject<DDS::DataReaderListener>() {
+  _self = self;
+  Py_XINCREF(_self);
+  _callback = callback;
+  Py_XINCREF(_callback);
+}
+
+void
+DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
+{
+    PyObject *callable = _callback;
+    //PyObject *arglist = NULL;
+    PyObject *result = NULL;
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    if(PyCallable_Check(callable)) {
+        std::cerr << "function is callback" << std::endl;
+        //arglist = Py_BuildValue("()", null);
+        //result = PyEval_CallObject(callable, nullptr);
+        result = PyObject_CallFunctionObjArgs(callable,nullptr);
+        //Py_DECREF(arglist);
+
+        if(result == NULL)
+            PyErr_Print();
+
+        Py_XDECREF(result);
+    } else {
+        std::cerr << "function is not a callback" << std::endl;
+    }
+
+    Py_XDECREF(callable);
+    PyGILState_Release(gstate);
+}
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
@@ -326,15 +398,19 @@ void delete_datareader_var(PyObject* reader_capsule)
 }
 
 /**
- * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic) -> None
+ * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic, listener: pyObject) -> None
  */
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
-  if (!PyArg_ParseTuple(args, "OOO",
-      &*pydatareader, &*pysubscriber, &*pytopic)) {
+  PyObject *pycallback;
+
+  std::cout<<"create_datareader function" << std::endl;
+
+  if (!PyArg_ParseTuple(args, "OOOO",
+      &*pydatareader, &*pysubscriber, &*pytopic, &pycallback)) {
     return nullptr;
   }
   pydatareader++;
@@ -349,9 +425,22 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
   if (!topic) return nullptr;
 
+  
+
+  DataReaderListenerImpl * listener = nullptr;
+  if(pycallback != Py_None) {
+    if(PyCallable_Check(pycallback)) {
+      listener = new DataReaderListenerImpl(*pydatareader, pycallback);
+    }
+    else {
+      throw Exception("Callback provided is not a callable object", PyExc_TypeError);
+    }
+    
+  }
+
   // Create DataReader
   DDS::DataReader* datareader = subscriber->create_datareader(
-    topic, DATAREADER_QOS_DEFAULT, nullptr,
+    topic, DATAREADER_QOS_DEFAULT, listener,
     OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
