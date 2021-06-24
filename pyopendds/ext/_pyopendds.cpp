@@ -65,28 +65,25 @@ void
 DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 {
     PyObject *callable = _callback;
-    //PyObject *arglist = NULL;
     PyObject *result = NULL;
 
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
-
+    try{
     if(PyCallable_Check(callable)) {
-        std::cerr << "function is callback" << std::endl;
-        //arglist = Py_BuildValue("()", null);
-        //result = PyEval_CallObject(callable, nullptr);
         result = PyObject_CallFunctionObjArgs(callable,nullptr);
-        //Py_DECREF(arglist);
-
         if(result == NULL)
             PyErr_Print();
-
         Py_XDECREF(result);
     } else {
-        std::cerr << "function is not a callback" << std::endl;
+        throw Exception("function is not a callback", PyExc_TypeError);
     }
 
     Py_XDECREF(callable);
+    } catch (Exception& e ) {
+        PyGILState_Release(gstate);
+        throw e;
+    }
     PyGILState_Release(gstate);
 }
 
@@ -393,6 +390,9 @@ void delete_datareader_var(PyObject* reader_capsule)
   if (PyCapsule_CheckExact(reader_capsule)) {
     DDS::DataReader_var reader = static_cast<DDS::DataReader*>(
       PyCapsule_GetPointer(reader_capsule, nullptr));
+      DDS::DataReaderListener_ptr listener = DDS::DataReader::_narrow(reader)->get_listener();
+      free(listener);
+      listener = nullptr;
     reader = nullptr;
   }
 }
@@ -405,17 +405,18 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
-  PyObject *pycallback;
+  Ref pycallback;
 
   std::cout<<"create_datareader function" << std::endl;
 
   if (!PyArg_ParseTuple(args, "OOOO",
-      &*pydatareader, &*pysubscriber, &*pytopic, &pycallback)) {
+      &*pydatareader, &*pysubscriber, &*pytopic, &*pycallback)) {
     return nullptr;
   }
   pydatareader++;
   pysubscriber++;
   pytopic++;
+  pycallback++;
 
   // Get Subscriber
   DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(*pysubscriber);
@@ -425,12 +426,10 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
   if (!topic) return nullptr;
 
-  
-
   DataReaderListenerImpl * listener = nullptr;
-  if(pycallback != Py_None) {
-    if(PyCallable_Check(pycallback)) {
-      listener = new DataReaderListenerImpl(*pydatareader, pycallback);
+  if(*pycallback != Py_None) {
+    if(PyCallable_Check(*pycallback)) {
+      listener = new DataReaderListenerImpl(*pydatareader, *pycallback);
     }
     else {
       throw Exception("Callback provided is not a callable object", PyExc_TypeError);

@@ -274,7 +274,10 @@ public:
     }
 
     PyObject* rv = nullptr;
-    Type<IdlType>::cpp_to_python(sample, rv);
+    if (info.valid_data)
+        Type<IdlType>::cpp_to_python(sample, rv);
+    else
+        rv = Py_None;
 
     return rv;
   }
@@ -295,7 +298,9 @@ public:
 
     DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
     if (Errors::check_rc(rc)) {
-      throw Exception();
+        std::cerr << "write return error " << rc << std::endl;
+        throw Exception(
+            "WRITE ERROR", Errors::PyOpenDDS_Error());
     }
     // Wait for samples to be acknowledged
     DDS::Duration_t timeout = { 30, 0 };

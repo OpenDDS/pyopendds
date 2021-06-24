@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from .Topic import Topic
 from .constants import StatusKind
 from .util import TimeDurationType, normalize_time_duration
@@ -18,7 +20,6 @@ class DataReader:
         self.subscriber = subscriber
         subscriber.readers.append(self)
 
-        print(str(listener))
         from _pyopendds import create_datareader
         create_datareader(self, subscriber, topic, self.onDataAvailCallback)
 
@@ -30,7 +31,13 @@ class DataReader:
         return self.topic._ts_package.take_next_sample(self)
 
     def onDataAvailCallback(self):
-        print("Python Callback")
-        sample = self.topic._ts_package.take_next_sample(self)
-        self.listener(sample)
+        sample = None
+        if hasattr(self, 'topic'):
+            sample = self.take_next_sample()
+        else:
+            print("Error, no topic in self => " + self.__qualname__, file=sys.stderr)
+        if sample is not None:
+            self.listener(sample)
+        else:
+            print("Error, data not valid", file=sys.stderr)
 
