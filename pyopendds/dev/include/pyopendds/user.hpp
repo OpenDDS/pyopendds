@@ -289,27 +289,20 @@ public:
 
     DataWriter* writer_impl = DataWriter::_narrow(writer);
     if (!writer_impl) {
-      throw Exception(
-        "Could not narrow writer implementation", Errors::PyOpenDDS_Error());
+      throw Exception("Could not narrow writer implementation", Errors::PyOpenDDS_Error());
     }
 
     IdlType rv;
     Type<IdlType>::python_to_cpp(pysample, rv);
 
     DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
-    if (Errors::check_rc(rc)) {
-        std::cerr << "write return error " << rc << std::endl;
+    if (rc != DDS::RETCODE_OK) {
         throw Exception(
             "WRITE ERROR", Errors::PyOpenDDS_Error());
     }
-    // Wait for samples to be acknowledged
-    DDS::Duration_t timeout = { 30, 0 };
-    if (writer_impl->wait_for_acknowledgments(timeout) != DDS::RETCODE_OK) {
-      throw Exception(
-        "wait_for_acknowledgments error : ", Errors::PyOpenDDS_Error());
-    }
+    if (Errors::check_rc(rc)) return nullptr;
 
-    return pysample;
+    return PyLong_FromLong(rc);
   }
 
   PyObject* get_python_class()

@@ -70,20 +70,20 @@ DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
     try{
-    if(PyCallable_Check(callable)) {
-        result = PyObject_CallFunctionObjArgs(callable,nullptr);
-        if(result == NULL)
-            PyErr_Print();
-        Py_XDECREF(result);
-    } else {
-        throw Exception("function is not a callback", PyExc_TypeError);
-    }
-
-    Py_XDECREF(callable);
+        if(PyCallable_Check(callable)) {
+            result = PyObject_CallFunctionObjArgs(callable,nullptr);
+            if(result == NULL)
+                PyErr_Print();
+            Py_XDECREF(result);
+        } else {
+            throw Exception("function is not a callback", PyExc_TypeError);
+        }
     } catch (Exception& e ) {
+    //    Py_XDECREF(callable);
         PyGILState_Release(gstate);
         throw e;
     }
+    //Py_XDECREF(callable);
     PyGILState_Release(gstate);
 }
 
@@ -406,8 +406,6 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   Ref pysubscriber;
   Ref pytopic;
   Ref pycallback;
-
-  std::cout<<"create_datareader function" << std::endl;
 
   if (!PyArg_ParseTuple(args, "OOOO",
       &*pydatareader, &*pysubscriber, &*pytopic, &*pycallback)) {
