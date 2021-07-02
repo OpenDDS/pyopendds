@@ -22,6 +22,40 @@ public:
   static void python_to_cpp(PyObject* py, T& cpp);
 }*/;
 
+
+template<typename T>
+class BooleanType {
+public:
+  static PyObject* get_python_class()
+  {
+    return Py_False;
+  }
+
+  static void cpp_to_python(const T& cpp, PyObject*& py)
+  {
+    if ( ! cpp ) {
+       py = Py_False;
+     } else {
+       py = Py_True;
+     }
+  }
+
+  static void python_to_cpp(PyObject* py, T& cpp)
+  {
+    if (PyBool_Check(py)) {
+      throw Exception("Not a boolean", PyExc_ValueError);
+    }
+    if(py) {
+        cpp = true;
+    } else {
+        cpp = false;
+    }
+  }
+};
+
+//typedef ::CORBA::Boolean bool;
+template<> class Type<bool>: public BooleanType<bool> {};
+
 template<typename T>
 class IntegerType {
 public:
