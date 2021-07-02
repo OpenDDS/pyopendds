@@ -43,6 +43,10 @@ public:
     /*{{ type.new_lines | indent(4) }}*/
     py = PyObject_CallObject(cls, args);
     /*{% else %}*/
+    /*{% if type.sequence %}*/
+    if (py) Py_DECREF(py);
+    py = nullptr;
+    /*{% endif %}*/
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
         throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
@@ -63,7 +67,6 @@ public:
     cpp = static_cast</*{{ type.cpp_name }}*/>(PyLong_AsLong(py));
     /*{% else %}*/
     if (py) {
-
       if (PyObject_IsInstance(py, cls) != 1) {
         throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
       }

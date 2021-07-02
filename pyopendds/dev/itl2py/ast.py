@@ -195,6 +195,7 @@ class ArrayType(Node):
 
     def accept(self, visitor):
         visitor.visit_array(self)
+        pass
 
     def __repr__(self):
         return self.repr_template(
@@ -210,6 +211,7 @@ class SequenceType(Node):
 
     def accept(self, visitor):
         visitor.visit_sequence(self)
+        pass
 
     def __repr__(self):
         return self.repr_template(repr(self.base_type)
@@ -234,10 +236,12 @@ class NodeVisitor:
         raise NotImplementedError
 
     def visit_array(self, array_type):
-        raise NotImplementedError
+        pass
+        #array_type.accept(self)
 
     def visit_sequence(self, sequence_type):
         raise NotImplementedError
+        #sequence_type.accept(self)
 
 
 def get_ast(types: dict) -> Module:

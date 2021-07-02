@@ -1,0 +1,14 @@
+struct ContTrajSegment {
+ double altitude;
+ double CAStgt;
+ double centerLLat;
+ double centerLLong;
+};
+
+
+
+struct ContingencyTrajectory {
+ string dest;
+ sequence<ContTrajSegment> traj;
+ long trajIndex;
+};

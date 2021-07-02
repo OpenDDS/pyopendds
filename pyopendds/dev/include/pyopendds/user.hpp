@@ -79,7 +79,7 @@ public:
 
   static void python_to_cpp(PyObject* py, T& cpp)
   {
-    LongType value;
+    int value; //todo: change to LongType
     if (limits::is_signed) {
       value = PyLong_AsLong(py);
     } else {

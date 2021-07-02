@@ -5,10 +5,18 @@ module basic {
     acceleration
   };
 
+  struct Sample {
+    long value;
+    string where;
+  };
+
+  typedef sequence<Sample> seqSample;
+
   @topic
   struct Reading {
     ReadingKind kind;
     long value;
     string where;
+    seqSample sampleSeq;
   };
 };

@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from pyopendds import \
     init_opendds, DomainParticipant, StatusKind, PyOpenDDS_Error
-from pybasic.basic import Reading
+from pybasic.basic import *
 
 
 class TestClass:
