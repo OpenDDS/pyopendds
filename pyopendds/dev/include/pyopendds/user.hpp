@@ -101,6 +101,8 @@ template<> class Type<i32>: public IntegerType<i32> {};
 typedef ::CORBA::Short i16;
 template<> class Type<i16>: public IntegerType<i16> {};
 
+typedef ::CORBA::Char c8;
+template<> class Type<c8>: public IntegerType<c8> {};
 // TODO: Put Other Integer Types Here
 
 const char* string_data(const std::string& cpp)
