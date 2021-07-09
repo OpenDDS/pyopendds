@@ -70,20 +70,36 @@ public:
   static void cpp_to_python(const T& cpp, PyObject*& py)
   {
     if (limits::is_signed) {
-      py = PyLong_FromLong(cpp);
+        if (sizeof(cpp) > sizeof(long)) {
+            py = PyLong_FromLongLong(cpp);
+        } else {
+            py = PyLong_FromLong(cpp);
+        }
     } else {
-      py = PyLong_FromUnsignedLong(cpp);
+        if (sizeof(cpp) > sizeof(long)) {
+            py = PyLong_FromUnsignedLongLong(cpp);
+        } else {
+            py = PyLong_FromUnsignedLong(cpp);
+        }
     }
     if (!py) throw Exception();
   }
 
   static void python_to_cpp(PyObject* py, T& cpp)
   {
-    int value; //todo: change to LongType
+    T value; //todo: change to LongType
     if (limits::is_signed) {
-      value = PyLong_AsLong(py);
+        if (sizeof(cpp) > sizeof(long)) {
+            value = PyLong_AsLongLong(py);
+        } else {
+            value = PyLong_AsLong(py);
+        }
     } else {
-      value = PyLong_AsUnsignedLong(py);
+        if (sizeof(cpp) > sizeof(long)) {
+            value = PyLong_AsUnsignedLongLong(py);
+        } else {
+            value = PyLong_AsUnsignedLong(py);
+        }
     }
     if (value < limits::min() || value > limits::max()) {
       throw Exception(
@@ -94,6 +110,9 @@ public:
   }
 
 };
+
+typedef ::CORBA::LongLong i64;
+template<> class Type<i64>: public IntegerType<i64> {};
 
 typedef ::CORBA::Long i32;
 template<> class Type<i32>: public IntegerType<i32> {};
@@ -178,7 +197,7 @@ public:
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
   {
-      py = PyFloat_FromDouble(cpp);
+      py = PyFloat_FromDouble((double)cpp);
       if (!py) throw Exception();
   }
 
