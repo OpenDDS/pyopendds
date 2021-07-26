@@ -573,6 +573,153 @@ PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
   Py_RETURN_NONE;
 }
 
+PyObject* update_writer_qos(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  Ref pyQos;
+
+  Ref pydurability;
+  Ref pyreliability;
+  Ref pyhistory;
+  Ref pydurabilityKind;
+  Ref pyreliabilityKind;
+  Ref pyhistoryKind;
+
+  if (!PyArg_ParseTuple(args, "OO",
+      &*pydatawriter, &*pyQos)) {
+    return nullptr;
+  }
+  pydatawriter++;
+  pyQos++;
+
+  // Get DataWriter
+  DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(*pydatawriter);
+  if (!writer) return nullptr;
+
+  std::cerr << "get default qos" << std::endl;
+  // Create Qos for the data writer according to the spec
+  DDS::DataWriterQos qos;
+  writer->get_publisher()->get_default_datawriter_qos(qos);
+
+
+  std::cerr << "get durability" << std::endl;
+  pydurability = PyObject_GetAttrString(*pyQos, "durability");
+  if (!pydurability) return nullptr;
+  pydurability ++;
+
+  std::cerr << "get reliability" << std::endl;
+  pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+  if (!pyreliability) return nullptr;
+  pyreliability ++;
+
+  std::cerr << "get history" << std::endl;
+  pyhistory = PyObject_GetAttrString(*pyQos, "history");
+  if (!pyhistory) return nullptr;
+  pyhistory ++;
+
+
+  std::cerr << "get dura kind" << std::endl;
+  pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
+  if (!pydurabilityKind) return nullptr;
+  pydurabilityKind ++;
+  std::cerr << "AsLong" << std::endl;
+  qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
+
+  std::cerr << "get rela kind" << std::endl;
+  pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
+  if (!pyreliabilityKind) return nullptr;
+  pyreliabilityKind ++;
+  std::cerr << "AsLong" << std::endl;
+  qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
+
+  std::cerr << "get histo kind" << std::endl;
+  pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
+  if (!pyhistoryKind) return nullptr;
+  pyhistoryKind ++;
+
+  std::cerr << "AsLong" << std::endl;
+  qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
+
+  std::cerr << "set QOS" << std::endl;
+  writer->set_qos (qos);
+
+  std::cerr << "return" << std::endl;
+  Py_RETURN_NONE;
+}
+
+PyObject* update_reader_qos(PyObject* self, PyObject* args)
+{
+  Ref pydatareader;
+  Ref pyQos;
+
+  Ref pydurability;
+  Ref pyreliability;
+  Ref pyhistory;
+  Ref pydurabilityKind;
+  Ref pyreliabilityKind;
+  Ref pyhistoryKind;
+  Ref pyhistorydepth;
+  Ref pyreliabilitymax;
+
+  if (!PyArg_ParseTuple(args, "OO",
+      &*pydatareader, &*pyQos)) {
+    return nullptr;
+  }
+  pydatareader++;
+  pyQos++;
+
+  // Get DataReader
+  DDS::DataReader* reader = get_capsule<DDS::DataReader>(*pydatareader);
+  if (!reader) return nullptr;
+
+  // Create Qos for the data writer according to the spec
+  DDS::DataReaderQos qos;
+  reader->get_subscriber()->get_default_datareader_qos(qos);
+
+  pydurability = PyObject_GetAttrString(*pyQos, "durability");
+  if (!pydurability) return nullptr;
+  pydurability ++;
+
+  pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+  if (!pyreliability) return nullptr;
+  pyreliability ++;
+
+  pyhistory = PyObject_GetAttrString(*pyQos, "history");
+  if (!pyhistory) return nullptr;
+  pyhistory ++;
+
+
+  pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
+  if (!pydurabilityKind) return nullptr;
+  pydurabilityKind ++;
+  qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
+
+  pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
+  if (!pyreliabilityKind) return nullptr;
+  pyreliabilityKind ++;
+  qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
+
+  pyreliabilitymax = PyObject_GetAttrString(*pyreliability, "max_blocking_time");
+  if (!pyreliabilitymax) return nullptr;
+  pyreliabilitymax ++;
+  qos.history.depth =  PyLong_AsLong(*pyreliabilitymax);
+
+
+  pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
+  if (!pyhistoryKind) return nullptr;
+  pyhistoryKind ++;
+
+  qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
+
+  pyhistorydepth = PyObject_GetAttrString(*pyhistory, "depth");
+  if (!pyhistorydepth) return nullptr;
+  pyhistorydepth ++;
+  qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
+
+  reader->set_qos (qos);
+  Py_RETURN_NONE;
+}
+
 /// Documentation for Internal Python Objects
 const char* internal_docstr = "Internal to PyOpenDDS, not for use directly!";
 
@@ -590,6 +737,8 @@ PyMethodDef pyopendds_Methods[] = {
   {"create_datawriter", create_datawriter, METH_VARARGS, internal_docstr},
   {"datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr},
   {"datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr},
+  {"update_writer_qos", update_writer_qos, METH_VARARGS, internal_docstr},
+  {"update_reader_qos", update_reader_qos, METH_VARARGS, internal_docstr},
   {nullptr, nullptr, 0, nullptr}
 };
 

@@ -15,7 +15,6 @@ class DataReader:
 
     def __init__(self, subscriber: Subscriber, topic: Topic, qos=None, listener=None):
         self.topic = topic
-        self.qos = qos
         self.listener = listener
         self.subscriber = subscriber
         subscriber.readers.append(self)
@@ -32,12 +31,17 @@ class DataReader:
 
     def onDataAvailCallback(self):
         sample = None
+        #print(f"------ onDataAvailCallback")
         if hasattr(self, 'topic'):
             sample = self.take_next_sample()
+            #print(f"---------- Sample {sample}")
         else:
-            print("Error, no topic in self => " + self.__qualname__, file=sys.stderr)
+            print("------ Error, no topic in self => " + self.__qualname__)
         if sample is not None:
             self.listener(sample)
         else:
-            print("Error, data not valid", file=sys.stderr)
+            print("------ Error, data not valid")
 
+    def update_reader_qos(self, qos: DataReaderQos):
+        from _pyopendds import update_reader_qos
+        return update_reader_qos(self, qos)

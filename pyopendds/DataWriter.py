@@ -13,7 +13,6 @@ class DataWriter:
 
     def __init__(self, publisher: Publisher, topic: Topic, qos=None, listener=None):
         self.topic = topic
-        self.qos = qos
         self.listener = listener
         self.publisher = publisher
         publisher.writers.append(self)
@@ -27,3 +26,7 @@ class DataWriter:
 
     def write(self, sample):
         return self.topic._ts_package.write(self, sample)
+
+    def update_writer_qos(self, qos: DataWriterQos):
+        from _pyopendds import update_writer_qos
+        return update_writer_qos(self, qos)
