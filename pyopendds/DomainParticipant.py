@@ -22,7 +22,7 @@ class DomainParticipant:
         participant_cleanup(self)
 
     def create_topic(self,
-            name: str, topic_type: type, qos=None, listener=None) -> Topic:
+                     name: str, topic_type: type, qos=None, listener=None) -> Topic:
         return Topic(self, name, topic_type, qos, listener)
 
     def create_subscriber(self, qos=None, listener=None) -> Subscriber:

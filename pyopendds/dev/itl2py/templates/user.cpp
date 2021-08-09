@@ -43,6 +43,10 @@ public:
     /*{{ type.new_lines | indent(4) }}*/
     py = PyObject_CallObject(cls, args);
     /*{% else %}*/
+    /*{% if type.sequence %}*/
+    if (py) Py_DECREF(py);
+    py = nullptr;
+    /*{% endif %}*/
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
         throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
@@ -59,7 +63,20 @@ public:
   static void python_to_cpp(PyObject* py, /*{{ type.cpp_name }}*/& cpp)
   {
     PyObject* cls = get_python_class();
-    /*{{ type.from_lines | indent(4) }}*/
+    /*{% if type.to_replace %}*/
+    cpp = static_cast</*{{ type.cpp_name }}*/>(PyLong_AsLong(py));
+    /*{% else %}*/
+    if (py) {
+      if (PyObject_IsInstance(py, cls) != 1) {
+        throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
+      }
+    } else {
+      PyObject* args;
+      /*{{ type.new_lines | indent(6) }}*/
+      py = PyObject_CallObject(cls, args);
+    }
+    /*{% if type.from_lines %}*//*{{ type.from_lines | indent(4) }}*//*{% endif %}*/
+    /*{% endif %}*/
   }
 };
 
@@ -119,9 +136,31 @@ PyObject* pytake_next_sample(PyObject* self, PyObject* args)
   }
 }
 
+PyObject* pywrite(PyObject* self, PyObject* args)
+{
+  Ref pywriter;
+  Ref pysample;
+  if (!PyArg_ParseTuple(args, "OO", &*pywriter, &*pysample)) return nullptr;
+  pywriter++;
+  pysample++;
+
+  // Try to Get Reading Type and Do write
+  Ref pytopic = PyObject_GetAttrString(*pywriter, "topic");
+  if (!pytopic) return nullptr;
+  Ref pytype = PyObject_GetAttrString(*pytopic, "type");
+  if (!pytype) return nullptr;
+
+  try {
+    return TopicTypeBase::find(*pytype)->write(*pywriter, *pysample);
+  } catch (const Exception& e) {
+    return e.set();
+  }
+}
+
 PyMethodDef /*{{ native_package_name }}*/_Methods[] = {
   {"register_type", pyregister_type, METH_VARARGS, ""},
   {"type_name", pytype_name, METH_VARARGS, ""},
+  {"write", pywrite, METH_VARARGS, ""},
   {"take_next_sample", pytake_next_sample, METH_VARARGS, ""},
   {nullptr, nullptr, 0, nullptr}
 };

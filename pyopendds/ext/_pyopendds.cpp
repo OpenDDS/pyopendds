@@ -17,6 +17,75 @@ PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
 namespace {
+class DataReaderListenerImpl : public virtual OpenDDS::DCPS::LocalObject<DDS::DataReaderListener> {
+public:
+
+  DataReaderListenerImpl(PyObject * self, PyObject *callback);
+
+  virtual void on_requested_deadline_missed(
+    DDS::DataReader_ptr reader,
+    const DDS::RequestedDeadlineMissedStatus& status) {}
+
+  virtual void on_requested_incompatible_qos(
+    DDS::DataReader_ptr reader,
+    const DDS::RequestedIncompatibleQosStatus& status) {}
+
+  virtual void on_sample_rejected(
+    DDS::DataReader_ptr reader,
+    const DDS::SampleRejectedStatus& status) {}
+
+  virtual void on_liveliness_changed(
+    DDS::DataReader_ptr reader,
+    const DDS::LivelinessChangedStatus& status) {}
+
+  virtual void on_data_available(
+    DDS::DataReader_ptr reader);
+
+  virtual void on_subscription_matched(
+    DDS::DataReader_ptr reader,
+    const DDS::SubscriptionMatchedStatus& status) {}
+
+  virtual void on_sample_lost(
+    DDS::DataReader_ptr reader,
+    const DDS::SampleLostStatus& status) {}
+
+    private:
+  PyObject *_callback;
+  PyObject * _self;
+};
+
+DataReaderListenerImpl::DataReaderListenerImpl(PyObject * self, PyObject *callback): OpenDDS::DCPS::LocalObject<DDS::DataReaderListener>() {
+  _self = self;
+  Py_XINCREF(_self);
+  _callback = callback;
+  Py_XINCREF(_callback);
+}
+
+void
+DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
+{
+    PyObject *callable = _callback;
+    PyObject *result = NULL;
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+    try{
+        if(PyCallable_Check(callable)) {
+            result = PyObject_CallFunctionObjArgs(callable,nullptr);
+            if(result == NULL)
+                PyErr_Print();
+            Py_XDECREF(result);
+        } else {
+            throw Exception("function is not a callback", PyExc_TypeError);
+        }
+    } catch (Exception& e ) {
+    //    Py_XDECREF(callable);
+        PyGILState_Release(gstate);
+        throw e;
+    }
+    //Py_XDECREF(callable);
+    PyGILState_Release(gstate);
+}
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
@@ -321,25 +390,31 @@ void delete_datareader_var(PyObject* reader_capsule)
   if (PyCapsule_CheckExact(reader_capsule)) {
     DDS::DataReader_var reader = static_cast<DDS::DataReader*>(
       PyCapsule_GetPointer(reader_capsule, nullptr));
+      DDS::DataReaderListener_ptr listener = DDS::DataReader::_narrow(reader)->get_listener();
+      free(listener);
+      listener = nullptr;
     reader = nullptr;
   }
 }
 
 /**
- * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic) -> None
+ * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic, listener: pyObject) -> None
  */
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
-  if (!PyArg_ParseTuple(args, "OOO",
-      &*pydatareader, &*pysubscriber, &*pytopic)) {
+  Ref pycallback;
+
+  if (!PyArg_ParseTuple(args, "OOOO",
+      &*pydatareader, &*pysubscriber, &*pytopic, &*pycallback)) {
     return nullptr;
   }
   pydatareader++;
   pysubscriber++;
   pytopic++;
+  pycallback++;
 
   // Get Subscriber
   DDS::Subscriber* subscriber = get_capsule<DDS::Subscriber>(*pysubscriber);
@@ -349,9 +424,20 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
   if (!topic) return nullptr;
 
+  DataReaderListenerImpl * listener = nullptr;
+  if(*pycallback != Py_None) {
+    if(PyCallable_Check(*pycallback)) {
+      listener = new DataReaderListenerImpl(*pydatareader, *pycallback);
+    }
+    else {
+      throw Exception("Callback provided is not a callable object", PyExc_TypeError);
+    }
+    
+  }
+
   // Create DataReader
   DDS::DataReader* datareader = subscriber->create_datareader(
-    topic, DATAREADER_QOS_DEFAULT, nullptr,
+    topic, DATAREADER_QOS_DEFAULT, listener,
     OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
@@ -360,6 +446,59 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 
   // Attach OpenDDS DataReader to DataReader Python Object
   if (set_capsule(*pydatareader, datareader, delete_datareader_var)) {
+    return nullptr;
+  }
+
+  Py_RETURN_NONE;
+}
+
+/**
+ * Callback for Python to Call when the DataWriter Capsule is Deleted
+ */
+void delete_datawriter_var(PyObject* writer_capsule)
+{
+  if (PyCapsule_CheckExact(writer_capsule)) {
+    DDS::DataWriter_var writer = static_cast<DDS::DataWriter*>(
+      PyCapsule_GetPointer(writer_capsule, nullptr));
+    writer = nullptr;
+  }
+}
+
+/**
+ * create_datawriter(datawriter: DataWriter, publisher: Publisher, topic: Topic) -> None
+ */
+PyObject* create_datawriter(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  Ref pypublisher;
+  Ref pytopic;
+  if (!PyArg_ParseTuple(args, "OOO",
+      &*pydatawriter, &*pypublisher, &*pytopic)) {
+    return nullptr;
+  }
+  pydatawriter++;
+  pypublisher++;
+  pytopic++;
+
+  // Get Publisher
+  DDS::Publisher* publisher = get_capsule<DDS::Publisher>(*pypublisher);
+  if (!publisher) return nullptr;
+
+  // Get Topic
+  DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
+  if (!topic) return nullptr;
+
+  // Create DataWriter
+  DDS::DataWriter* datawriter = publisher->create_datawriter(
+    topic, DATAWRITER_QOS_DEFAULT, nullptr,
+    OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+  if (!datawriter) {
+    PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataWriter");
+    return nullptr;
+  }
+
+  // Attach OpenDDS DataWriter to DataWriter Python Object
+  if (set_capsule(*pydatawriter, datawriter, delete_datawriter_var)) {
     return nullptr;
   }
 
@@ -400,6 +539,187 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
   Py_RETURN_NONE;
 }
 
+/**
+ * datawriter_wait_for(
+ *     datawriter: DataWriter, status: StatusKind,
+ *     seconds: int, nanoseconds: int) -> None
+ */
+PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  unsigned status;
+  int seconds;
+  unsigned nanoseconds;
+  if (!PyArg_ParseTuple(args, "OIiI",
+      &*pydatawriter, &status, &seconds, &nanoseconds)) {
+    return nullptr;
+  }
+  pydatawriter++;
+
+  // Get DataWriter
+  DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(*pydatawriter);
+  if (!writer) return nullptr;
+
+  // Wait
+  DDS::StatusCondition_var condition = writer->get_statuscondition();
+  condition->set_enabled_statuses(status);
+  DDS::WaitSet_var waitset = new DDS::WaitSet;
+  if (!waitset) return PyErr_NoMemory();
+  waitset->attach_condition(condition);
+  DDS::ConditionSeq active;
+  DDS::Duration_t max_duration = {seconds, nanoseconds};
+  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
+
+  Py_RETURN_NONE;
+}
+
+PyObject* update_writer_qos(PyObject* self, PyObject* args)
+{
+  Ref pydatawriter;
+  Ref pyQos;
+
+  Ref pydurability;
+  Ref pyreliability;
+  Ref pyhistory;
+  Ref pydurabilityKind;
+  Ref pyreliabilityKind;
+  Ref pyhistoryKind;
+
+  if (!PyArg_ParseTuple(args, "OO",
+      &*pydatawriter, &*pyQos)) {
+    return nullptr;
+  }
+  pydatawriter++;
+  pyQos++;
+
+  // Get DataWriter
+  DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(*pydatawriter);
+  if (!writer) return nullptr;
+
+  std::cerr << "get default qos" << std::endl;
+  // Create Qos for the data writer according to the spec
+  DDS::DataWriterQos qos;
+  writer->get_publisher()->get_default_datawriter_qos(qos);
+
+
+  std::cerr << "get durability" << std::endl;
+  pydurability = PyObject_GetAttrString(*pyQos, "durability");
+  if (!pydurability) return nullptr;
+  pydurability ++;
+
+  std::cerr << "get reliability" << std::endl;
+  pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+  if (!pyreliability) return nullptr;
+  pyreliability ++;
+
+  std::cerr << "get history" << std::endl;
+  pyhistory = PyObject_GetAttrString(*pyQos, "history");
+  if (!pyhistory) return nullptr;
+  pyhistory ++;
+
+
+  std::cerr << "get dura kind" << std::endl;
+  pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
+  if (!pydurabilityKind) return nullptr;
+  pydurabilityKind ++;
+  std::cerr << "AsLong" << std::endl;
+  qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
+
+  std::cerr << "get rela kind" << std::endl;
+  pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
+  if (!pyreliabilityKind) return nullptr;
+  pyreliabilityKind ++;
+  std::cerr << "AsLong" << std::endl;
+  qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
+
+  std::cerr << "get histo kind" << std::endl;
+  pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
+  if (!pyhistoryKind) return nullptr;
+  pyhistoryKind ++;
+
+  std::cerr << "AsLong" << std::endl;
+  qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
+
+  std::cerr << "set QOS" << std::endl;
+  writer->set_qos (qos);
+
+  std::cerr << "return" << std::endl;
+  Py_RETURN_NONE;
+}
+
+PyObject* update_reader_qos(PyObject* self, PyObject* args)
+{
+  Ref pydatareader;
+  Ref pyQos;
+
+  Ref pydurability;
+  Ref pyreliability;
+  Ref pyhistory;
+  Ref pydurabilityKind;
+  Ref pyreliabilityKind;
+  Ref pyhistoryKind;
+  Ref pyhistorydepth;
+  Ref pyreliabilitymax;
+
+  if (!PyArg_ParseTuple(args, "OO",
+      &*pydatareader, &*pyQos)) {
+    return nullptr;
+  }
+  pydatareader++;
+  pyQos++;
+
+  // Get DataReader
+  DDS::DataReader* reader = get_capsule<DDS::DataReader>(*pydatareader);
+  if (!reader) return nullptr;
+
+  // Create Qos for the data writer according to the spec
+  DDS::DataReaderQos qos;
+  reader->get_subscriber()->get_default_datareader_qos(qos);
+
+  pydurability = PyObject_GetAttrString(*pyQos, "durability");
+  if (!pydurability) return nullptr;
+  pydurability ++;
+
+  pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+  if (!pyreliability) return nullptr;
+  pyreliability ++;
+
+  pyhistory = PyObject_GetAttrString(*pyQos, "history");
+  if (!pyhistory) return nullptr;
+  pyhistory ++;
+
+
+  pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
+  if (!pydurabilityKind) return nullptr;
+  pydurabilityKind ++;
+  qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
+
+  pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
+  if (!pyreliabilityKind) return nullptr;
+  pyreliabilityKind ++;
+  qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
+
+  pyreliabilitymax = PyObject_GetAttrString(*pyreliability, "max_blocking_time");
+  if (!pyreliabilitymax) return nullptr;
+  pyreliabilitymax ++;
+  qos.history.depth =  PyLong_AsLong(*pyreliabilitymax);
+
+
+  pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
+  if (!pyhistoryKind) return nullptr;
+  pyhistoryKind ++;
+
+  qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
+
+  pyhistorydepth = PyObject_GetAttrString(*pyhistory, "depth");
+  if (!pyhistorydepth) return nullptr;
+  pyhistorydepth ++;
+  qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
+
+  reader->set_qos (qos);
+  Py_RETURN_NONE;
+}
+
 /// Documentation for Internal Python Objects
 const char* internal_docstr = "Internal to PyOpenDDS, not for use directly!";
 
@@ -414,7 +734,11 @@ PyMethodDef pyopendds_Methods[] = {
   {"create_publisher", create_publisher, METH_VARARGS, internal_docstr},
   {"create_topic", create_topic, METH_VARARGS, internal_docstr},
   {"create_datareader", create_datareader, METH_VARARGS, internal_docstr},
+  {"create_datawriter", create_datawriter, METH_VARARGS, internal_docstr},
   {"datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr},
+  {"datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr},
+  {"update_writer_qos", update_writer_qos, METH_VARARGS, internal_docstr},
+  {"update_reader_qos", update_reader_qos, METH_VARARGS, internal_docstr},
   {nullptr, nullptr, 0, nullptr}
 };
 

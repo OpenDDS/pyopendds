@@ -1,6 +1,6 @@
 from jinja2 import Environment
 
-from .ast import PrimitiveType, StructType, EnumType
+from .ast import PrimitiveType, StructType, EnumType, SequenceType, ArrayType
 from .Output import Output
 
 
@@ -13,6 +13,10 @@ def cpp_type_name(type_node):
         return type_node.kind.name
     elif isinstance(type_node, (StructType, EnumType)):
         return cpp_name(type_node.name.parts)
+    elif isinstance(type_node, (SequenceType)):
+        return cpp_name(type_node.name.parts);
+    elif isinstance(type_node, (ArrayType)):
+        return cpp_name(type_node.name.parts);
     else:
         raise NotImplementedError
 
@@ -44,13 +48,16 @@ class CppOutput(Output):
         struct_to_lines = [
             'Ref field_value;',
         ]
-        struct_from_lines = []
+        struct_from_lines = [
+            'Ref field_value;',
+        ]
         for field_name, field_node in struct_type.fields.items():
             to_lines = []
             from_lines = []
             pyopendds_type = ''
             is_string = isinstance(field_node.type_node, PrimitiveType) and \
                 field_node.type_node.is_string()
+            is_sequence = isinstance(field_node.type_node, SequenceType)
 
             to_lines = [
                 'Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}',
@@ -61,14 +68,33 @@ class CppOutput(Output):
                     + (', "{default_encoding}"' if is_string else '') + ');',
             ]
 
+            from_lines = [
+                'if (PyObject_HasAttrString(py, "{field_name}")) {{',
+                '    *field_value = PyObject_GetAttrString(py, "{field_name}");',
+                '}}',
+                'if (!field_value) {{',
+                '  throw Exception();',
+                '}}'
+            ]
+
             pyopendds_type = cpp_type_name(field_node.type_node)
 
             if to_lines:
                 to_lines.extend([
-                    'if (!field_value || PyObject_SetAttrString('
+                    'if (!field_value || PyObject_SetAttrString(',
                     'py, "{field_name}", *field_value)) {{',
                     '  throw Exception();',
                     '}}'
+                ])
+
+            if from_lines:
+                from_lines.extend([
+                    'Type<{pyopendds_type}>::python_to_cpp(*field_value, cpp.{field_name}',
+                    '#ifdef CPP11_IDL',
+                    '    ()',
+                    '#endif',
+                    '    '
+                    + (', "{default_encoding}"' if is_string else '') + ');'
                 ])
 
             def line_process(lines):
@@ -107,9 +133,65 @@ class CppOutput(Output):
                 'args = PyTuple_Pack(1, PyLong_FromLong(static_cast<long>(cpp)));',
             ]),
             'to_lines': '',
-            'from_lines': '\n'.join([
-                '',
-                '// left unimplemented'
-            ]),
+            'from_lines': '',
             'is_topic_type': False,
+        })
+
+    def visit_sequence(self, sequence_type):
+        sequence_to_lines = [
+            'Ref field_value;',
+        ]
+        sequence_from_lines = []
+        to_lines = [
+            'Ref field_elem;',
+            'field_value = PyList_New(0);',
+            'for (int i = 0; i < cpp.length(); i++) {{',
+            '    {pyopendds_type} elem = cpp[i];',
+            '    field_elem = nullptr;',
+            '    Type<{pyopendds_type}>::cpp_to_python(elem',
+            '    #ifdef CPP11_IDL',
+            '        ()',
+            '    #endif',
+            '        , *field_elem);',
+            '    PyList_Append(py, *field_elem);',
+            '}}'
+        ]
+
+        pyopendds_type = cpp_type_name(sequence_type.base_type)
+        from_lines = [
+            'cpp.length(PyList_Size(py));',
+            'for (int i = 0; i < PyList_Size(py); i++) {{',
+            '    {pyopendds_type} elem = cpp[i];',
+            '    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem',
+            '#ifdef CPP11_IDL',
+            '    ()',
+            '#endif',
+            '    );',
+            '    cpp[i] = elem;',
+            '}}'
+        ]
+
+        def line_process(lines):
+            return [''] + [
+                s.format(
+                    default_encoding=self.context['default_encoding'],
+                    pyopendds_type=pyopendds_type,
+                ) for s in lines
+            ]
+
+        sequence_to_lines.extend(line_process(to_lines))
+        sequence_from_lines.extend(line_process(from_lines))
+
+        self.context['types'].append({
+            'cpp_name': cpp_name(sequence_type.name.parts),
+            'name_parts': sequence_type.parent_name().parts,
+            'local_name': sequence_type.local_name(),
+            'to_lines': '\n'.join(sequence_to_lines),
+            'from_lines': '\n'.join(sequence_from_lines),
+            'new_lines': '\n'.join([
+                'args = nullptr;'
+            ]),
+            'is_topic_type': sequence_type.is_topic_type,
+            'sequence': True,
+            'to_replace': False,
         })

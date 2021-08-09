@@ -1,4 +1,4 @@
-from .ast import PrimitiveType, StructType, EnumType
+from .ast import PrimitiveType, StructType, EnumType, SequenceType, ArrayType
 from .Output import Output
 
 
@@ -72,6 +72,10 @@ class PythonOutput(Output):
                 return type_name + '()'
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
+            elif isinstance(field_type, SequenceType):
+                return 'field(default_factory=list)'
+            elif isinstance(field_type, ArrayType):
+                return 'field(default_factory=list)'
             else:
                 raise NotImplementedError(repr(field_type) + " is not supported")
 
@@ -97,5 +101,16 @@ class PythonOutput(Output):
                 members=[
                     dict(name=name, value=value) for name, value in enum_type.members.items()
                 ],
+            ),
+        ))
+
+    def visit_sequence(self, sequence_type):
+        self.context['has_sequence'] = True
+        self.context['types'].append(dict(
+            local_name=sequence_type.local_name(),
+            type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
+            sequence=dict(
+                type=sequence_type.base_type,
+                len=sequence_type.max_count,
             ),
         ))

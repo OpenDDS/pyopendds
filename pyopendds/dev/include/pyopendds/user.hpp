@@ -22,6 +22,40 @@ public:
   static void python_to_cpp(PyObject* py, T& cpp);
 }*/;
 
+
+template<typename T>
+class BooleanType {
+public:
+  static PyObject* get_python_class()
+  {
+    return Py_False;
+  }
+
+  static void cpp_to_python(const T& cpp, PyObject*& py)
+  {
+    if ( ! cpp ) {
+       py = Py_False;
+     } else {
+       py = Py_True;
+     }
+  }
+
+  static void python_to_cpp(PyObject* py, T& cpp)
+  {
+    if (PyBool_Check(py)) {
+      throw Exception("Not a boolean", PyExc_ValueError);
+    }
+    if(py) {
+        cpp = true;
+    } else {
+        cpp = false;
+    }
+  }
+};
+
+//typedef ::CORBA::Boolean bool;
+template<> class Type<bool>: public BooleanType<bool> {};
+
 template<typename T>
 class IntegerType {
 public:
@@ -30,39 +64,64 @@ public:
 
   static PyObject* get_python_class()
   {
-    return PyLong_Type;
+    return PyLong_FromLong(0);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
   {
     if (limits::is_signed) {
-      py = PyLong_FromLong(cpp);
+        if (sizeof(cpp) > sizeof(long)) {
+            py = PyLong_FromLongLong(cpp);
+        } else {
+            py = PyLong_FromLong(cpp);
+        }
     } else {
-      py = PyLong_FromUnsignedLong(cpp);
+        if (sizeof(cpp) > sizeof(long)) {
+            py = PyLong_FromUnsignedLongLong(cpp);
+        } else {
+            py = PyLong_FromUnsignedLong(cpp);
+        }
     }
     if (!py) throw Exception();
   }
 
   static void python_to_cpp(PyObject* py, T& cpp)
   {
-    LongType value;
+    T value; //todo: change to LongType
     if (limits::is_signed) {
-      value = PyLong_AsLong(py);
+        if (sizeof(cpp) > sizeof(long)) {
+            value = PyLong_AsLongLong(py);
+        } else {
+            value = PyLong_AsLong(py);
+        }
     } else {
-      value = PyLong_AsUnsignedLong(py);
+        if (sizeof(cpp) > sizeof(long)) {
+            value = PyLong_AsUnsignedLongLong(py);
+        } else {
+            value = PyLong_AsUnsignedLong(py);
+        }
     }
     if (value < limits::min() || value > limits::max()) {
       throw Exception(
         "Integer Value is Out of Range for IDL Type", PyExc_ValueError);
     }
     if (value == -1 && PyErr_Occurred()) throw Exception();
-    cpp = value;
+    cpp = T(value);
   }
+
 };
+
+typedef ::CORBA::LongLong i64;
+template<> class Type<i64>: public IntegerType<i64> {};
 
 typedef ::CORBA::Long i32;
 template<> class Type<i32>: public IntegerType<i32> {};
 
+typedef ::CORBA::Short i16;
+template<> class Type<i16>: public IntegerType<i16> {};
+
+typedef ::CORBA::Char c8;
+template<> class Type<c8>: public IntegerType<c8> {};
 // TODO: Put Other Integer Types Here
 
 const char* string_data(const std::string& cpp)
@@ -90,7 +149,7 @@ class StringType {
 public:
   static PyObject* get_python_class()
   {
-    return PyUnicode_Type;
+    return PyUnicode_FromString("");
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
@@ -101,9 +160,16 @@ public:
     py = o;
   }
 
-  static void python_to_cpp(PyObject* py, T& cpp)
+  static void python_to_cpp(PyObject* py, T& cpp, const char* encoding)
   {
-    // TODO: Encode or Throw Unicode Error
+    PyObject* repr = PyObject_Str(py);
+    if (!repr) throw Exception();
+    PyObject* str = PyUnicode_AsEncodedString(repr, encoding, NULL);
+    if (!str) throw Exception();
+    const char *bytes = PyBytes_AS_STRING(str);
+    cpp = T(bytes);
+    Py_XDECREF(repr);
+    Py_XDECREF(str);
   }
 };
 
@@ -119,6 +185,39 @@ typedef
 template<> class Type<s8>: public StringType<s8> {};
 // TODO: Put Other String/Char Types Here
 
+template<typename T>
+class FloatingType {
+public:
+  typedef std::numeric_limits<T> limits;
+
+  static PyObject* get_python_class()
+  {
+    return PyFloat_FromDouble(0);
+  }
+
+  static void cpp_to_python(const T& cpp, PyObject*& py)
+  {
+      py = PyFloat_FromDouble((double)cpp);
+      if (!py) throw Exception();
+  }
+
+  static void python_to_cpp(PyObject* py, T& cpp)
+  {
+    double value;
+    value = PyFloat_AsDouble(py);
+    if (value < limits::min() || value > limits::max()) {
+      throw Exception(
+        "Floating Value is Out of Range for IDL Type", PyExc_ValueError);
+    }
+    if (value == -1 && PyErr_Occurred()) throw Exception();
+    cpp = value;
+  }
+};
+
+typedef ::CORBA::Float f32;
+typedef ::CORBA::Double f64;
+template<> class Type<f32>: public FloatingType<f32> {};
+template<> class Type<f64>: public FloatingType<f64> {};
 // TODO: FloatingType for floating point type
 
 class TopicTypeBase {
@@ -127,6 +226,7 @@ public:
   virtual const char* type_name() = 0;
   virtual void register_type(PyObject* pyparticipant) = 0;
   virtual PyObject* take_next_sample(PyObject* pyreader) = 0;
+  virtual PyObject* write(PyObject* pywriter, PyObject* pysample) = 0;
 
   typedef std::shared_ptr<TopicTypeBase> Ptr;
   typedef std::map<PyObject*, Ptr> TopicTypes;
@@ -215,7 +315,7 @@ public:
     DDS::WaitSet_var ws = new DDS::WaitSet;
     ws->attach_condition(read_condition);
     DDS::ConditionSeq active;
-    const DDS::Duration_t max_wait_time = {10, 0};
+    const DDS::Duration_t max_wait_time = {60, 0};
     if (Errors::check_rc(ws->wait(active, max_wait_time))) {
       throw Exception();
     }
@@ -223,15 +323,41 @@ public:
     reader_impl->delete_readcondition(read_condition);
 
     IdlType sample;
-    DDS::SampleInfo info;
+        DDS::SampleInfo info;
     if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
       throw Exception();
     }
 
     PyObject* rv = nullptr;
-    Type<IdlType>::cpp_to_python(sample, rv);
+    if (info.valid_data)
+        Type<IdlType>::cpp_to_python(sample, rv);
+    else
+        rv = Py_None;
 
     return rv;
+  }
+
+  PyObject* write(PyObject* pywriter, PyObject* pysample)
+  {
+    DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(pywriter);
+    if (!writer) throw Exception();
+
+    DataWriter* writer_impl = DataWriter::_narrow(writer);
+    if (!writer_impl) {
+      throw Exception("Could not narrow writer implementation", Errors::PyOpenDDS_Error());
+    }
+
+    IdlType rv;
+    Type<IdlType>::python_to_cpp(pysample, rv);
+
+    DDS::ReturnCode_t rc = writer_impl->write(rv, DDS::HANDLE_NIL);
+    if (rc != DDS::RETCODE_OK) {
+        throw Exception(
+            "WRITE ERROR", Errors::PyOpenDDS_Error());
+    }
+    if (Errors::check_rc(rc)) return nullptr;
+
+    return PyLong_FromLong(rc);
   }
 
   PyObject* get_python_class()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .DataWriter import DataWriter
 from .Topic import Topic
 
 from typing import TYPE_CHECKING
@@ -18,5 +19,5 @@ class Publisher:
         from _pyopendds import create_publisher
         create_publisher(self, participant)
 
-    def create_datawriter(self, topic: Topic, qos=None, listener=None):
-        pass
+    def create_datawriter(self, topic: Topic, listener=None) -> DataWriter:
+        return DataWriter(self, topic, listener)

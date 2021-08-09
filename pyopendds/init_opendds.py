@@ -1,6 +1,7 @@
 '''Manage the initialization of OpenDDS and related functionality.
 '''
 
+import sys
 
 def init_opendds(*args,
         default_rtps=True,
@@ -19,7 +20,7 @@ def init_opendds(*args,
     verbose). It is printed to stdout.
     '''
 
-    args = list(args)
+    args = list(sys.argv[1:])
 
     if opendds_debug_level > 0:
         if not (1 <= opendds_debug_level <= 10):
