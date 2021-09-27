@@ -454,9 +454,15 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
         }
     }
 
+    // TODO : forced qos to RELIABLE_RELIABILITY_QOS
+    // Create QoS
+    DDS::DataReaderQos qos;
+    subscriber->get_default_datareader_qos(qos);
+    qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
+
     // Create DataReader
     DDS::DataReader* datareader = subscriber->create_datareader(
-        topic, DATAREADER_QOS_DEFAULT, listener,
+        topic, qos, listener,
         OpenDDS::DCPS::DEFAULT_STATUS_MASK);
 
     if (!datareader) {
@@ -508,9 +514,15 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
     if (!topic) return nullptr;
 
+    // TODO : force qos to DDS::RELIABLE_RELIABILITY_QOS
+    // Create QoS
+    DDS::DataWriterQos qos;
+    publisher->get_default_datawriter_qos(qos);
+    qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
+
     // Create DataWriter
     DDS::DataWriter* datawriter = publisher->create_datawriter(
-        topic, DATAWRITER_QOS_DEFAULT, nullptr,
+        topic, qos, nullptr,
         OpenDDS::DCPS::DEFAULT_STATUS_MASK);
 
     if (!datawriter) {
