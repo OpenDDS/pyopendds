@@ -1,12 +1,11 @@
-'''Manage the initialization of OpenDDS and related functionality.
-'''
+""" Manage the initialization of OpenDDS and related functionality.
+"""
 
 import sys
 
-def init_opendds(*args,
-        default_rtps=True,
-        opendds_debug_level=0):
-    '''Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
+
+def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
+    """ Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
     passing the positional arguments in.
 
     default_rtps
@@ -18,7 +17,7 @@ def init_opendds(*args,
     opendds_debug_level
     Debug logging level in OpenDDS which goes from 0 (off) to 10 (most
     verbose). It is printed to stdout.
-    '''
+    """
 
     args = list(sys.argv[1:])
 
@@ -27,5 +26,5 @@ def init_opendds(*args,
             raise ValueError('OpenDDS debug level must be between 0 and 10!')
         args.extend(['-DCPSDebugLevel', str(opendds_debug_level)])
 
-    from _pyopendds import init_opendds_impl
+    from _pyopendds import init_opendds_impl # noqa
     init_opendds_impl(*args, default_rtps=default_rtps)

@@ -20,4 +20,4 @@ def normalize_time_duration(duration: TimeDurationType):
             except Exception:
                 raise TypeError('Could not extract time from value')
 
-    return (seconds, nanoseconds)
+    return seconds, nanoseconds

@@ -3,6 +3,7 @@ from __future__ import annotations
 from .Topic import Topic
 from .constants import StatusKind
 from .util import TimeDurationType, normalize_time_duration
+from .Qos import DataWriterQos
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -15,22 +16,20 @@ class DataWriter:
         self.topic = topic
         self.publisher = publisher
         self.qos = qos
+        self.update_qos(qos)
         publisher.writers.append(self)
 
-        from _pyopendds import create_datawriter
+        from _pyopendds import create_datawriter # noqa
         create_datawriter(self, publisher, topic)
-        self.update_qos(qos)
 
     def update_qos(self, qos: DataWriterQos):
-        # from _pyopendds import update_writer_qos
+        # TODO: Call cpp binding to implement QoS
         # return update_writer_qos(self, qos)
-
-        # print("DataWriterr.update_qos() not implemented")
         pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.PUBLICATION_MATCHED):
-        from _pyopendds import datawriter_wait_for
+        from _pyopendds import datawriter_wait_for # noqa
         datawriter_wait_for(self, status, *normalize_time_duration(timeout))
 
     def write(self, sample):
-        return self.topic._ts_package.write(self, sample)
+        return self.topic.ts_package.write(self, sample)

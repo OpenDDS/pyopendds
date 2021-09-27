@@ -15,7 +15,7 @@ class Publisher:
         self.qos = qos
         self.writers = []
 
-        from _pyopendds import create_publisher
+        from _pyopendds import create_publisher # noqa
         create_publisher(self, participant)
 
     def create_datawriter(self, topic: Topic, qos=None) -> DataWriter:
