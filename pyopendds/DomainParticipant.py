@@ -28,5 +28,5 @@ class DomainParticipant:
     def create_subscriber(self, qos=None, listener=None) -> Subscriber:
         return Subscriber(self, qos, listener)
 
-    def create_publisher(self, qos=None, listener=None) -> Publisher:
-        return Publisher(self, qos, listener)
+    def create_publisher(self, qos=None) -> Publisher:
+        return Publisher(self, qos)
