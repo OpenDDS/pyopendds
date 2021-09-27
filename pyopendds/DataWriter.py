@@ -14,6 +14,7 @@ class DataWriter:
     def __init__(self, publisher: Publisher, topic: Topic, qos=None):
         self.topic = topic
         self.publisher = publisher
+        self.qos = qos
         publisher.writers.append(self)
 
         from _pyopendds import create_datawriter
@@ -23,7 +24,8 @@ class DataWriter:
     def update_qos(self, qos: DataWriterQos):
         # from _pyopendds import update_writer_qos
         # return update_writer_qos(self, qos)
-        print("DataWriterr.update_qos() not implemented")
+
+        # print("DataWriterr.update_qos() not implemented")
         pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.PUBLICATION_MATCHED):

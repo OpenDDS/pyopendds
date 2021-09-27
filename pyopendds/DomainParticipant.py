@@ -1,6 +1,7 @@
 from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
+from _pyopendds import participant_cleanup, create_participant
 
 
 class DomainParticipant:
@@ -14,11 +15,9 @@ class DomainParticipant:
         self.publishers = []
         self._registered_typesupport = []
 
-        from _pyopendds import create_participant
         create_participant(self, domain)
 
     def __del__(self):
-        from _pyopendds import participant_cleanup
         participant_cleanup(self)
 
     def create_topic(self,

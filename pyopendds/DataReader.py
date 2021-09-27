@@ -15,6 +15,7 @@ class DataReader:
         self.topic = topic
         self.listener = listener
         self.subscriber = subscriber
+        self.qos = qos
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader
@@ -24,7 +25,8 @@ class DataReader:
     def update_qos(self, qos: DataReaderQos):
         # from _pyopendds import update_reader_qos
         # return update_reader_qos(self, qos)
-        print("DataReader.update_qos() not implemented")
+
+        # print("DataReader.update_qos() not implemented")
         pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):
@@ -37,6 +39,7 @@ class DataReader:
     def on_data_available_callback(self):
         sample = self.take_next_sample()
         if sample is None:
-            print("on_data_available_callback error: sample is None")
+            # print("on_data_available_callback error: sample is None")
+            pass
         elif self.listener is not None:
             self.listener(sample)
