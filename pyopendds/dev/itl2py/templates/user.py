@@ -1,7 +1,7 @@
 {% if has_struct -%}
 from dataclasses import dataclass as _pyopendds_struct
 from dataclasses import field
-import pyDragonfly.Dragonfly
+import {{ package_name }}
 {%- endif %}
 {% if has_enum -%}
 from enum import IntFlag as _pyopendds_enum
