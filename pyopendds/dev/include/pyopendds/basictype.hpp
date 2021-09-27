@@ -33,9 +33,10 @@ public:
 
     static void python_to_cpp(PyObject* py, T& cpp)
     {
-        if (PyBool_Check(py)) throw Exception("Not a boolean", PyExc_ValueError);
+        // PyBool_Check always return true
+        //if (PyBool_Check(py)) throw Exception("Not a boolean", PyExc_ValueError);
 
-        if (py) {
+        if (py == Py_True) {
             cpp = true;
         } else {
             cpp = false;
