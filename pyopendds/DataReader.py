@@ -5,7 +5,7 @@ from .constants import StatusKind
 from .util import TimeDurationType, normalize_time_duration
 from .Qos import DataReaderQos
 
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Any
 if TYPE_CHECKING:
     from .Subscriber import Subscriber
 
@@ -32,7 +32,7 @@ class DataReader:
         from _pyopendds import datareader_wait_for # noqa
         datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
-    def take_next_sample(self):
+    def take_next_sample(self) -> Any:
         return self.topic.ts_package.take_next_sample(self)
 
     def on_data_available_callback(self):

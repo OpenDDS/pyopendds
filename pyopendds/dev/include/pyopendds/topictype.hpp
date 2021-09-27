@@ -135,6 +135,7 @@ public:
             throw Exception("Could not narrow reader implementation", Errors::PyOpenDDS_Error());
         }
 
+#ifndef __APPLE__
         // TODO: wait causes segmentation fault
         //    DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
         //      DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
@@ -150,15 +151,24 @@ public:
         //    ws->detach_condition(read_condition);
         //    reader_impl->delete_readcondition(read_condition);
 
+        //    IdlType sample;
+        //    DDS::SampleInfo info;
+        //    if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
+        //        throw Exception();
+        //    }
+#else
+
         // TODO: fallback to naive implementation
         IdlType sample;
         DDS::SampleInfo info;
         DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
         if (rc != DDS::RETCODE_OK) {
-            PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
-            return nullptr;
+            // TODO: Temporarily inhibit this error and let the user check for its return code
+            // PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
+            return Py_None;
         }
 
+#endif
         PyObject* rv = nullptr;
         if (info.valid_data) {
             Type<IdlType>::cpp_to_python(sample, rv);

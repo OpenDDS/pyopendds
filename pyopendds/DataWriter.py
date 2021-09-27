@@ -31,5 +31,5 @@ class DataWriter:
         from _pyopendds import datawriter_wait_for # noqa
         datawriter_wait_for(self, status, *normalize_time_duration(timeout))
 
-    def write(self, sample):
+    def write(self, sample) -> int:
         return self.topic.ts_package.write(self, sample)
