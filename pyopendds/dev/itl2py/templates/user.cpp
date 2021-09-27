@@ -2,6 +2,8 @@
 /*{% for name in idl_names %}*/
 #include </*{{ name }}*/TypeSupportImpl.h>
 /*{%- endfor %}*/
+#include <iostream>
+#include <sstream>
 
 namespace pyopendds {
 
@@ -24,10 +26,9 @@ public:
       if (!module)
         throw Exception("Could not import module /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
 
-
       python_class = PyObject_GetAttrString(*module, "/*{{ type.local_name }}*/");
       if (!python_class)
-        throw Exception("It seems that /*{{ type.local_name }}*/ does not exist in /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
+        throw Exception("/*{{ type.local_name }}*/ does not exist in /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
     }
     return python_class;
   }
@@ -35,7 +36,7 @@ public:
   static void cpp_to_python(const /*{{ type.cpp_name }}*/& cpp, PyObject*& py)
   {
     PyObject* cls = get_python_class();
-    /*{% if type.to_replace %}*/
+    /*{%- if type.to_replace %}*/
     if (py) Py_DECREF(py);
     PyObject* args;
     /*{{ type.new_lines | indent(4) }}*/
@@ -45,17 +46,11 @@ public:
     if (py) Py_DECREF(py);
     py = nullptr;
     /*{% endif %}*/
-    if (py) {
-      if (PyObject_IsInstance(cls, py) != 1) {
-        //throw Exception("PyObject is not a /*{{ type.py_name }}*/", PyExc_TypeError);
-      }
-    } else {
-      PyObject* args;
-      /*{{ type.new_lines | indent(6) }}*/
-      py = PyObject_CallObject(cls, args);
-    }
+    PyObject* args;
+    /*{{ type.new_lines | indent(6) }}*/
+    py = PyObject_CallObject(cls, args);
     /*{% if type.to_lines %}*//*{{ type.to_lines | indent(4) }}*//*{% endif %}*/
-    /*{% endif %}*/
+    /*{%- endif %}*/
   }
 
   static void python_to_cpp(PyObject* py, /*{{ type.cpp_name }}*/& cpp)
@@ -65,8 +60,11 @@ public:
     cpp = static_cast</*{{ type.cpp_name }}*/>(PyLong_AsLong(py));
     /*{% else %}*/
     if (py) {
-      if (PyObject_IsInstance(py, cls) != 1) {
-        //throw Exception("PyObject is not of type: /*{{ type.py_name }}*/", PyExc_TypeError);
+      if (PyObject_IsInstance(py, cls) != 1 && PyObject_IsSubclass(cls, PyObject_Type(py)) != 1) {
+        const char * actual_type = PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__"));
+        std::stringstream msg;
+        msg << "python_to_cpp: PyObject(" << actual_type << ") is not of type /*{{ type.local_name }}*/ nor is not parent class.";
+        throw Exception(msg.str().c_str(), PyExc_TypeError);
       }
     } else {
       PyObject* args;
