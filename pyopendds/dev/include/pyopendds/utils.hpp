@@ -88,6 +88,30 @@ namespace pyopendds {
         return error;
     }
 
+    template<typename T>
+    class Singleton
+    {
+    public:
+        static T& getInstance();
+
+        // so we cannot accidentally delete it via pointers
+        Singleton(){};
+
+        // no copies
+        Singleton(const Singleton&) = delete;
+
+        // no self-assignments
+        Singleton& operator=(const Singleton&) = delete;
+    };
+
+    template<typename T>
+    T& Singleton<T>::getInstance() {
+
+        // Guaranteed to be destroyed. Instantiated on first use. Thread safe in C++11
+        static T instance;
+        return instance;
+    }
+
 } // namesapce pyopendds
 
 #endif // PYOPENDDS_UTILS_HEADER

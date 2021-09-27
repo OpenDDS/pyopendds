@@ -11,7 +11,7 @@ PyObject* Errors::pyopendds_ = nullptr;
 PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
-TopicTypeBase::TopicTypes TopicTypeBase::topic_types_;
+//TopicTypeBase::TopicTypes TopicTypeBase::topic_types_;
 
 /*{%- for type in types %}*/
 

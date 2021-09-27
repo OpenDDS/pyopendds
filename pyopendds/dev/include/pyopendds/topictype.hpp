@@ -3,6 +3,8 @@
 
 #include <Python.h>
 
+#include "utils.hpp"
+
 #include <dds/DCPS/TypeSupportImpl.h>
 #include <dds/DCPS/WaitSet.h>
 #include <dds/DdsDcpsDomainC.h>
@@ -15,6 +17,18 @@ namespace pyopendds {
 
 template<typename T>
 class Type;
+class TopicTypeBase;
+
+class Global {
+public:
+    typedef std::shared_ptr<TopicTypeBase> Ptr;
+    typedef std::map<PyObject*, Ptr> TopicTypes;
+
+    TopicTypes& topic_types_() { return _d; }
+
+private:
+    TopicTypes _d;
+};
 
 class TopicTypeBase {
 public:
@@ -33,15 +47,14 @@ public:
 
     static TopicTypeBase* find(PyObject* pytype)
     {
-        TopicTypes::iterator i = topic_types_.find(pytype);
-        if (i == topic_types_.end()) {
+        Global* global = &Singleton<Global>::getInstance();
+
+        TopicTypes::iterator i = global->topic_types_().find(pytype);
+        if (i == global->topic_types_().end()) {
             throw Exception("Not a Valid PyOpenDDS Type", PyExc_TypeError);
         }
         return i->second.get();
     }
-
-protected:
-    static TopicTypes topic_types_;
 };
 
 template<typename T>
@@ -59,8 +72,10 @@ public:
 
     static void init()
     {
+        Global* global = &Singleton<Global>::getInstance();
+
         Ptr type{ new TopicType<IdlType> };
-        topic_types_.insert(TopicTypes::value_type(Type<IdlType>::get_python_class(), type));
+        global->topic_types_().insert(TopicTypes::value_type(Type<IdlType>::get_python_class(), type));
     }
 
     PyObject* get_python_class()
