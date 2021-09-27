@@ -215,10 +215,10 @@ public:
 };
 
 typedef ::CORBA::Float f32;
-typedef ::CORBA::Double f64;
 template<> class Type<f32>: public FloatingType<f32> {};
+
+typedef ::CORBA::Double f64;
 template<> class Type<f64>: public FloatingType<f64> {};
-// TODO: FloatingType for floating point type
 
 class TopicTypeBase {
 public:
@@ -310,22 +310,28 @@ public:
         "Could not narrow reader implementation", Errors::PyOpenDDS_Error());
     }
 
-    DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
-      DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
-    DDS::WaitSet_var ws = new DDS::WaitSet;
-    ws->attach_condition(read_condition);
-    DDS::ConditionSeq active;
-    const DDS::Duration_t max_wait_time = {60, 0};
-    if (Errors::check_rc(ws->wait(active, max_wait_time))) {
-      throw Exception();
-    }
-    ws->detach_condition(read_condition);
-    reader_impl->delete_readcondition(read_condition);
+    // TODO: wait causes segmentation fault
+//    DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
+//      DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
+//    DDS::WaitSet_var ws = new DDS::WaitSet;
+//    ws->attach_condition(read_condition);
 
+//    DDS::ConditionSeq active;
+//    const DDS::Duration_t max_wait_time = {60, 0};
+
+//    if (Errors::check_rc(ws->wait(active, max_wait_time))) {
+//      throw Exception();
+//    }
+//    ws->detach_condition(read_condition);
+//    reader_impl->delete_readcondition(read_condition);
+
+    // TODO: fallback to naive implementation
     IdlType sample;
-        DDS::SampleInfo info;
-    if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
-      throw Exception();
+    DDS::SampleInfo info;
+    DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
+    if (rc != DDS::RETCODE_OK) {
+      PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
+      return nullptr;
     }
 
     PyObject* rv = nullptr;
@@ -355,7 +361,7 @@ public:
         throw Exception(
             "WRITE ERROR", Errors::PyOpenDDS_Error());
     }
-    if (Errors::check_rc(rc)) return nullptr;
+//    if (Errors::check_rc(rc)) return nullptr;
 
     return PyLong_FromLong(rc);
   }

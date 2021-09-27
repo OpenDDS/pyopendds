@@ -10,6 +10,9 @@
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
 
+#include <chrono>
+#include <thread>
+
 using namespace pyopendds;
 
 PyObject* Errors::pyopendds_ = nullptr;
@@ -432,7 +435,7 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
     else {
       throw Exception("Callback provided is not a callable object", PyExc_TypeError);
     }
-    
+
   }
 
   // Create DataReader
@@ -524,18 +527,42 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 
   // Get DataReader
   DDS::DataReader* reader = get_capsule<DDS::DataReader>(*pydatareader);
-  if (!reader) return nullptr;
+  if (!reader) {
+    PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to retrieve DataReader Capsule");
+    return nullptr;
+  }
 
   // Wait
   DDS::StatusCondition_var condition = reader->get_statuscondition();
   condition->set_enabled_statuses(status);
-  DDS::WaitSet_var waitset = new DDS::WaitSet;
-  if (!waitset) return PyErr_NoMemory();
-  waitset->attach_condition(condition);
-  DDS::ConditionSeq active;
-  DDS::Duration_t max_duration = {seconds, nanoseconds};
-  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
 
+  // TODO: wait() causes segmentation fault
+//  DDS::WaitSet_var waitset = new DDS::WaitSet;
+//  if (!waitset) return PyErr_NoMemory();
+//  waitset->attach_condition(condition);
+//  DDS::ConditionSeq active;
+//  DDS::Duration_t max_duration = {seconds, nanoseconds};
+//  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
+
+  // TODO: fallback to naive implementation
+  auto t_now = std::chrono::steady_clock::now();
+  auto t_secs = std::chrono::seconds(seconds);
+  auto t_nanosecs = std::chrono::nanoseconds(nanoseconds);
+  auto t_timeout = t_now + t_secs + t_nanosecs;
+
+  while (t_now < t_timeout) {
+    DDS::SubscriptionMatchedStatus matches;
+    if (reader->get_subscription_matched_status(matches) != DDS::RETCODE_OK) {
+      PyErr_SetString(Errors::PyOpenDDS_Error(), "get_subscription_matched_status failed");
+      return nullptr;
+    }
+    if (matches.current_count >= 1) {
+      break;
+    }
+    // wait for 1 second anyway, and update clock
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    t_now = std::chrono::steady_clock::now();
+  }
   Py_RETURN_NONE;
 }
 
@@ -558,18 +585,42 @@ PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
 
   // Get DataWriter
   DDS::DataWriter* writer = get_capsule<DDS::DataWriter>(*pydatawriter);
-  if (!writer) return nullptr;
+  if (!writer) {
+    PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to retrieve DataWriter Capsule");
+    return nullptr;
+  }
 
   // Wait
   DDS::StatusCondition_var condition = writer->get_statuscondition();
   condition->set_enabled_statuses(status);
-  DDS::WaitSet_var waitset = new DDS::WaitSet;
-  if (!waitset) return PyErr_NoMemory();
-  waitset->attach_condition(condition);
-  DDS::ConditionSeq active;
-  DDS::Duration_t max_duration = {seconds, nanoseconds};
-  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
 
+  // TODO: wait() causes segmentation fault
+//  DDS::WaitSet_var waitset = new DDS::WaitSet;
+//  if (!waitset) return PyErr_NoMemory();
+//  waitset->attach_condition(condition);
+//  DDS::ConditionSeq active;
+//  DDS::Duration_t max_duration = {seconds, nanoseconds};
+//  if (Errors::check_rc(waitset->wait(active, max_duration))) return nullptr;
+
+  // TODO: fallback to naive implementation
+  auto t_now = std::chrono::steady_clock::now();
+  auto t_secs = std::chrono::seconds(seconds);
+  auto t_nanosecs = std::chrono::nanoseconds(nanoseconds);
+  auto t_timeout = t_now + t_secs + t_nanosecs;
+
+  while (t_now < t_timeout) {
+    DDS::PublicationMatchedStatus matches;
+    if (writer->get_publication_matched_status(matches) != DDS::RETCODE_OK) {
+      PyErr_SetString(Errors::PyOpenDDS_Error(), "get_publication_matched_status failed");
+      return nullptr;
+    }
+    if (matches.current_count >= 1) {
+      break;
+    }
+    // wait for 1 second anyway, and update clock
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    t_now = std::chrono::steady_clock::now();
+  }
   Py_RETURN_NONE;
 }
 
