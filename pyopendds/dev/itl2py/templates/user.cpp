@@ -21,10 +21,13 @@ public:
     PyObject* python_class = nullptr;
     if (!python_class) {
       Ref module = PyImport_ImportModule("/*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/");
-      if (!module) throw Exception();
+      if (!module)
+        throw Exception("Could not import module /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
+
 
       python_class = PyObject_GetAttrString(*module, "/*{{ type.local_name }}*/");
-      if (!python_class) throw Exception();
+      if (!python_class)
+        throw Exception("It seems that /*{{ type.local_name }}*/ does not exist in /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
     }
     return python_class;
   }
@@ -44,7 +47,7 @@ public:
     /*{% endif %}*/
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
-        throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
+        //throw Exception("PyObject is not a /*{{ type.py_name }}*/", PyExc_TypeError);
       }
     } else {
       PyObject* args;
@@ -63,7 +66,7 @@ public:
     /*{% else %}*/
     if (py) {
       if (PyObject_IsInstance(py, cls) != 1) {
-        throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
+        //throw Exception("PyObject is not of type: /*{{ type.py_name }}*/", PyExc_TypeError);
       }
     } else {
       PyObject* args;
