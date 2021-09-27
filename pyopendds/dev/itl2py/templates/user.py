@@ -1,6 +1,7 @@
 {% if has_struct -%}
 from dataclasses import dataclass as _pyopendds_struct
 from dataclasses import field
+from pyopendds.util import Byte, UByte
 import {{ package_name }}
 {%- endif %}
 {% if has_enum -%}
