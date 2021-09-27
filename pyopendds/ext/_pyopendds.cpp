@@ -181,9 +181,11 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
 void delete_participant_var(PyObject* part_capsule)
 {
   if (PyCapsule_CheckExact(part_capsule)) {
-    DDS::DomainParticipant_var participant = static_cast<DDS::DomainParticipant*>(
+    DDS::DomainParticipant* participant = static_cast<DDS::DomainParticipant*>(
       PyCapsule_GetPointer(part_capsule, nullptr));
-    participant = nullptr;
+    if(participant) {
+      participant_factory->delete_participant(participant);
+    }
   }
 }
 
