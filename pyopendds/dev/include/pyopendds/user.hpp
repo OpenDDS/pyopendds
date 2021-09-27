@@ -101,7 +101,7 @@ public:
             value = PyLong_AsUnsignedLong(py);
         }
     }
-    if (value < limits::min() || value > limits::max()) {
+    if (value < limits::lowest() || value > limits::max()) {
       throw Exception(
         "Integer Value is Out of Range for IDL Type", PyExc_ValueError);
     }
@@ -192,7 +192,7 @@ public:
 
   static PyObject* get_python_class()
   {
-    return PyFloat_FromDouble(0);
+    return PyFloat_FromDouble(0.0);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
@@ -205,7 +205,7 @@ public:
   {
     double value;
     value = PyFloat_AsDouble(py);
-    if (value < limits::min() || value > limits::max()) {
+    if (value < limits::lowest() || value > limits::max()) {
       throw Exception(
         "Floating Value is Out of Range for IDL Type", PyExc_ValueError);
     }
