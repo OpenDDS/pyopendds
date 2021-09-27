@@ -2,6 +2,13 @@ from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
 
+try:
+    from _pyopendds import participant_cleanup  # noqa
+except ImportError as e:
+    def participant_cleanup(*args):
+        pass
+    pass
+
 
 class DomainParticipant:
 
@@ -18,7 +25,6 @@ class DomainParticipant:
         create_participant(self, domain)
 
     def __del__(self):
-        from _pyopendds import participant_cleanup  # noqa
         participant_cleanup(self)
 
     def create_topic(self, name: str, topic_type: type, qos=None, listener=None) -> Topic:

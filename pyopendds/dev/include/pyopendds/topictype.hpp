@@ -78,8 +78,10 @@ public:
     */
     static void delete_typesupport(PyObject* capsule)
     {
-        if (PyCapsule_CheckExact(capsule))
-            delete static_cast<TypeSupportImpl*>( PyCapsule_GetPointer(capsule, nullptr) );
+        if (PyCapsule_CheckExact(capsule)) {
+            DDS::TypeSupport_var ts = static_cast<TypeSupport*>(PyCapsule_GetPointer(capsule, nullptr));
+            if (ts) ts = nullptr;
+        }
     }
 
     void register_type(PyObject* pyparticipant)
@@ -95,7 +97,7 @@ public:
         TypeSupportImpl* type_support = new TypeSupportImpl;
         if (type_support->register_type(participant, "") != DDS::RETCODE_OK) {
             delete type_support;
-            type_support = 0;
+            type_support = nullptr;
             throw Exception("Could not create register type", Errors::PyOpenDDS_Error());
         }
 
@@ -103,8 +105,9 @@ public:
         Ref capsule = PyCapsule_New(type_support, nullptr, delete_typesupport);
         if (!capsule) throw Exception();
 
-        Ref list {PyObject_GetAttrString(pyparticipant, "_registered_typesupport")};
-        if (!list || PyList_Append(*list, *capsule)) throw Exception();
+        Ref list { PyObject_GetAttrString(pyparticipant, "_registered_typesupport") };
+        if (!list || PyList_Append(*list, *capsule))
+            throw Exception();
     }
 
     PyObject* take_next_sample(PyObject* pyreader)
