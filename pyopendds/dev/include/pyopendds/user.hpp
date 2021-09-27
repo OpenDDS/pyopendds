@@ -53,8 +53,8 @@ public:
   }
 };
 
-//typedef ::CORBA::Boolean bool;
-template<> class Type<bool>: public BooleanType<bool> {};
+typedef ::CORBA::Boolean b;
+template<> class Type<b>: public BooleanType<b> {};
 
 template<typename T>
 class IntegerType {
@@ -240,7 +240,7 @@ public:
     return i->second.get();
   }
 
-private:
+protected:
   static TopicTypes topic_types_;
 };
 

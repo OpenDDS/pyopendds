@@ -22,7 +22,7 @@ class DataWriter:
 
     def wait_for(self, status: StatusKind, timeout: TimeDurationType):
         from _pyopendds import datareader_wait_for
-        return datareader_wait_for(self, status, *normalize_time_duration(timeout))
+        datawriter_wait_for(self, status, *normalize_time_duration(timeout))
 
     def write(self, sample):
         return self.topic._ts_package.write(self, sample)
