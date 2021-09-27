@@ -219,7 +219,7 @@ class SequenceType(Node):
 
     def repr_name(self):
         if self.name:
-            return '::' + self.name.join('::') + '::_tao_seq_' + self.base_type + '_'
+            return '::' + self.name.join('::') + '::_tao_seq_' + repr(self.base_type) + '_'
 
 class NodeVisitor:
 

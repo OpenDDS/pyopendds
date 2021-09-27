@@ -20,13 +20,8 @@ public:
   {
     PyObject* python_class = nullptr;
     if (!python_class) {
-      Ref module = PyImport_ImportModule("/*{{ package_name }}*/");
+      Ref module = PyImport_ImportModule("/*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/");
       if (!module) throw Exception();
-
-      /*{% for name in type.name_parts -%}*/
-      module = PyObject_GetAttrString(*module, "/*{{ name }}*/");
-      if (!module) throw Exception();
-      /*{%- endfor %}*/
 
       python_class = PyObject_GetAttrString(*module, "/*{{ type.local_name }}*/");
       if (!python_class) throw Exception();
