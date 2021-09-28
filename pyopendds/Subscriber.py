@@ -15,8 +15,7 @@ class Subscriber:
         self.qos = qos
         self.listener = listener
         self.readers = []
-
-        from _pyopendds import create_subscriber # noqa
+        from _pyopendds import create_subscriber  # noqa
         create_subscriber(self, participant)
 
     def create_datareader(self, topic: Topic, qos=None, listener=None) -> DataReader:

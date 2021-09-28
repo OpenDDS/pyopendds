@@ -166,7 +166,6 @@ public:
             // PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
             return Py_None;
         }
-
 #endif
         PyObject* rv = nullptr;
         if (info.valid_data) {

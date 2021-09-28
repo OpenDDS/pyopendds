@@ -155,4 +155,3 @@ def parse_itl(types, itl):
         # just use the first definition we found.
         if parsed_type.name.itl_name not in types:
             types[parsed_type.name.itl_name] = parsed_type
-

@@ -6,6 +6,7 @@ from .util import TimeDurationType, normalize_time_duration
 from .Qos import DataReaderQos
 
 from typing import TYPE_CHECKING, Callable, Optional, Any
+
 if TYPE_CHECKING:
     from .Subscriber import Subscriber
 
@@ -20,7 +21,7 @@ class DataReader:
         self.update_qos(qos)
         subscriber.readers.append(self)
 
-        from _pyopendds import create_datareader # noqa
+        from _pyopendds import create_datareader  # noqa
         create_datareader(self, subscriber, topic, self.on_data_available_callback)
 
     def update_qos(self, qos: DataReaderQos):
@@ -29,7 +30,7 @@ class DataReader:
         pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):
-        from _pyopendds import datareader_wait_for # noqa
+        from _pyopendds import datareader_wait_for  # noqa
         datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
     def take_next_sample(self) -> Any:

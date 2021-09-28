@@ -44,6 +44,7 @@ public:
     }
 };
 
+
 PyObject* pyopendds_mod_str = NULL;
 PyObject* pyopendds_mod = NULL;
 PyObject* pyopendds_byte_func = NULL;

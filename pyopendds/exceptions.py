@@ -47,5 +47,4 @@ class ReturnCodeError(PyOpenDDS_Error):
             repr(self.unknown_code)
 
 
-
 ReturnCodeError.generate_subclasses()
