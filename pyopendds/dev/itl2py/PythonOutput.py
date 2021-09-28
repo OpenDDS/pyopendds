@@ -10,10 +10,10 @@ class PythonOutput(Output):
     '''
 
     primitive_types = {  # (Python Type, Default Default Value)
+        PrimitiveType.Kind.bool: ('bool', 'False'),
         PrimitiveType.Kind.byte: ('UByte', '0x00'),
         PrimitiveType.Kind.u8: ('UByte', '0x00'),
         PrimitiveType.Kind.i8: ('Byte', '0x00'),
-        PrimitiveType.Kind.i8: ('int', '0'),
         PrimitiveType.Kind.u16: ('int', '0'),
         PrimitiveType.Kind.i16: ('int', '0'),
         PrimitiveType.Kind.u32: ('int', '0'),

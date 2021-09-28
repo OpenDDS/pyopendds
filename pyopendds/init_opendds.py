@@ -26,5 +26,5 @@ def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
             raise ValueError('OpenDDS debug level must be between 0 and 10!')
         args.extend(['-DCPSDebugLevel', str(opendds_debug_level)])
 
-    from _pyopendds import init_opendds_impl # noqa
+    from _pyopendds import init_opendds_impl  # noqa
     init_opendds_impl(*args, default_rtps=default_rtps)
