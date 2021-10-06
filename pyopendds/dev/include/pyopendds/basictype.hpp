@@ -54,7 +54,7 @@ template<typename T>
 class IntegerType {
 public:
     typedef std::numeric_limits<T> limits;
-    typedef std::conditional<limits::is_signed, long, unsigned long> LongType;
+//    typedef std::conditional<limits::is_signed, long, unsigned long> LongType;
 
     static PyObject* get_python_class()
     {
@@ -126,20 +126,20 @@ public:
     {
         T value;
         if (limits::is_signed) {
-            if (sizeof(cpp) > sizeof(long)) {
+            if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsLongLong(py);
             } else {
-                if (sizeof(cpp) <= sizeof(int8_t)) {
+                if (sizeof(T) <= sizeof(int8_t)) {
                     value = static_cast<int8_t>(PyByte_AsLong(py));
                 } else {
                     value = PyLong_AsLong(py);
                 }
             }
         } else {
-            if (sizeof(cpp) > sizeof(long)) {
+            if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsUnsignedLongLong(py);
             } else {
-                if (sizeof(cpp) <= sizeof(uint8_t)) {
+                if (sizeof(T) <= sizeof(uint8_t)) {
                     value = static_cast<uint8_t>(PyUByte_AsUnsignedLong(py));
                 } else {
                     value = PyLong_AsUnsignedLong(py);
@@ -264,18 +264,29 @@ template<> class Type<b>: public BooleanType<b> {};
 typedef ::CORBA::LongLong i64;
 template<> class Type<i64>: public IntegerType<i64> {};
 
+typedef ::CORBA::ULongLong u64;
+template<> class Type<u64>: public IntegerType<u64> {};
+
 typedef ::CORBA::Long i32;
 template<> class Type<i32>: public IntegerType<i32> {};
+
+typedef ::CORBA::ULong u32;
+template<> class Type<u32>: public IntegerType<u32> {};
 
 typedef ::CORBA::Short i16;
 template<> class Type<i16>: public IntegerType<i16> {};
 
+typedef ::CORBA::UShort u16;
+template<> class Type<u16>: public IntegerType<u16> {};
+
 typedef ::CORBA::Char c8;
 template<> class Type<c8>: public IntegerType<c8> {};
 
+typedef ::CORBA::WChar c16;
+template<> class Type<c16>: public IntegerType<c16> {};
+
 typedef ::CORBA::Octet u8;
 template<> class Type<u8>: public IntegerType<u8> {};
-// TODO: Put Other Integer Types Here
 
 typedef ::CORBA::Float f32;
 template<> class Type<f32>: public FloatingType<f32> {};
