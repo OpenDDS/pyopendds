@@ -1,4 +1,4 @@
-# NOTE: This CMake files should not be built on it's own. It's meant to be
+# NOTE: This CMake files should not be built on its own. It's meant to be
 # built as part of the Python package.
 cmake_minimum_required(VERSION 3.12)
 project({{ native_package_name }} CXX)

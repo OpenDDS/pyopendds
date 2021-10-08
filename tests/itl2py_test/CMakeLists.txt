@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
+project(pyopendds_itl2py_test CXX)
 
-project(pyopendds_itl2py_test)
-
-list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS REQUIRED)
 
 add_library(itl2py_test_idl SHARED)
