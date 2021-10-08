@@ -57,28 +57,19 @@ class CMakeWrapperBuild(build_ext):
 
         # Build Each Extension
         for ext in self.extensions:
-            # Get Location
-            extdir = Path(self.get_ext_fullpath(ext.name)).parent.resolve()
-
-            # We need to give the name Python is expecting to CMake
-            try:
-                native_filename = ext._file_name
-            except AttributeError:
-                raise DistutilsSetupError(
-                    'PLEASE REPORT THIS ERROR IF IT OCCURS: '
-                    'Extension does not have _file_name!'
-                )
-
             # Configure
+            extdir = Path(self.get_ext_fullpath(ext.name)).parent.resolve()
+            python_version = '.'.join([str(getattr(sys.version_info, n))
+              for n in ('major', 'minor', 'micro')])
             ext.cmake(
                 [
                     str(ext.cmakelists_dir),
                     '-DCMAKE_BUILD_TYPE=' + ext.cmake_build_type,
                     '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
                         ext.cmake_build_type.upper(), extdir),
-                    '-DPYOPENDDS_NATIVE_FILENAME=' + native_filename,
                     '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(
                         ext.cmake_build_type.upper(), str(build_temp)),
+                    '-DPYOPENDDS_PYTHON_VERSION=' + python_version,
                 ] + ext.get_extra_vars(),
                 build_temp,
             )
