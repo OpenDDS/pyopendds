@@ -1,4 +1,4 @@
-from .ast import PrimitiveType, StructType, EnumType, SequenceType, ArrayType
+from .ast import PrimitiveType, StructType, EnumType, SequenceType
 from .Output import Output
 
 
@@ -75,8 +75,6 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                return 'field(default_factory=list)'
-            elif isinstance(field_type, ArrayType):
                 return 'field(default_factory=list)'
             else:
                 raise NotImplementedError(repr(field_type) + " is not supported")
