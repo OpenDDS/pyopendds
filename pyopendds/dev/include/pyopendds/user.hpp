@@ -115,13 +115,16 @@ typedef ::CORBA::LongLong i64;
 template<> class Type<i64>: public IntegerType<i64> {};
 
 typedef ::CORBA::Long i32;
+typedef ::CORBA::Long u32;
 template<> class Type<i32>: public IntegerType<i32> {};
 
 typedef ::CORBA::Short i16;
 template<> class Type<i16>: public IntegerType<i16> {};
 
 typedef ::CORBA::Char c8;
+typedef ::CORBA::Char u8;
 template<> class Type<c8>: public IntegerType<c8> {};
+
 // TODO: Put Other Integer Types Here
 
 const char* string_data(const std::string& cpp)
