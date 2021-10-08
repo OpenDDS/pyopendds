@@ -18,7 +18,7 @@ class Type</*{{ type.cpp_name }}*/> {
 public:
   static PyObject* get_python_class()
   {
-    PyObject* python_class = nullptr;
+    static PyObject* python_class = nullptr;
     if (!python_class) {
       Ref module = PyImport_ImportModule("/*{{ package_name }}*/");
       if (!module) throw Exception();
@@ -36,7 +36,7 @@ public:
 
   static void cpp_to_python(const /*{{ type.cpp_name }}*/& cpp, PyObject*& py)
   {
-    PyObject* cls = get_python_class();
+    PyObject* const cls = get_python_class();
     /*{% if type.to_replace %}*/
     if (py) Py_DECREF(py);
     PyObject* args;
@@ -45,7 +45,7 @@ public:
     /*{% else %}*/
     if (py) {
       if (PyObject_IsInstance(cls, py) != 1) {
-        throw Exception("Not a {{ type.py_name }}", PyExc_TypeError);
+        throw Exception("Not a /*{{ type.py_name }}*/", PyExc_TypeError);
       }
     } else {
       PyObject* args;
@@ -58,7 +58,7 @@ public:
 
   static void python_to_cpp(PyObject* py, /*{{ type.cpp_name }}*/& cpp)
   {
-    PyObject* cls = get_python_class();
+    PyObject* const cls = get_python_class();
     /*{{ type.from_lines | indent(4) }}*/
   }
 };

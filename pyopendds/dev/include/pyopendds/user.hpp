@@ -30,7 +30,7 @@ public:
 
   static PyObject* get_python_class()
   {
-    return PyLong_Type;
+    return dynamic_cast<PyObject*>(&PyLong_Type);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
@@ -90,7 +90,7 @@ class StringType {
 public:
   static PyObject* get_python_class()
   {
-    return PyUnicode_Type;
+    return dynamic_cast<PyObject*>(&PyUnicode_Type);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
