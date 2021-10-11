@@ -22,13 +22,28 @@ public:
   {
     PyObject* python_class = nullptr;
     if (!python_class) {
-      Ref module = PyImport_ImportModule("/*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/");
-      if (!module)
-        throw Exception("Could not import module /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
+      std::stringstream mod_ss;
+      mod_ss << "/*{{ package_name }}*/";
+      /*{% for name in type.name_parts -%}*/
+      mod_ss << "./*{{name}}*/";
+      /*{% endfor -%}*/
+      Ref module = PyImport_ImportModule(mod_ss.str().c_str());
+
+      if (!module) {
+        std::stringstream msg;
+        msg << "Could not import module ";
+        msg << mod_ss.str();
+        throw Exception(msg.str().c_str(), PyExc_ImportError);
+      }
 
       python_class = PyObject_GetAttrString(*module, "/*{{ type.local_name }}*/");
-      if (!python_class)
-        throw Exception("/*{{ type.local_name }}*/ does not exist in /*{{ package_name }}*//*{% for name in type.name_parts -%}*/./*{{name}}*//*{%- endfor %}*/", PyExc_ImportError);
+      if (!python_class) {
+        std::stringstream msg;
+        msg << "/*{{ type.local_name }}*/ ";
+        msg << "does not exist in ";
+        msg << mod_ss.str();
+        throw Exception(msg.str().c_str(), PyExc_ImportError);
+      }
     }
     return python_class;
   }
@@ -63,7 +78,10 @@ public:
       if (PyObject_IsInstance(py, cls) != 1 && PyObject_IsSubclass(cls, PyObject_Type(py)) != 1) {
         const char * actual_type = PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__"));
         std::stringstream msg;
-        msg << "python_to_cpp: PyObject(" << actual_type << ") is not of type /*{{ type.local_name }}*/ nor is not parent class.";
+        msg << "python_to_cpp: PyObject(";
+        msg << actual_type;
+        msg << ") is not of type";
+        msg << "/*{{ type.local_name }}*/ nor is not parent class.";
         throw Exception(msg.str().c_str(), PyExc_TypeError);
       }
     } else {
