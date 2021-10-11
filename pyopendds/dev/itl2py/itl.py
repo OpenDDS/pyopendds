@@ -74,7 +74,7 @@ def parse_string(details):
 
 
 def parse_sequence(types, details):
-    base_type = parse_type(types, list(types)[0])
+    base_type = parse_type(types, details["type"])
     sequence_max_count = details.get("capacity", None)
     array_dimensions = details.get("size", None)
     if array_dimensions is not None:
@@ -139,8 +139,6 @@ def parse_type(types, details):
     if details_type is str:
         if details in types:
             return types[details]
-        elif 'sequence' in details :
-            return parse_sequence(types, {'type':types, 'capacity': 1, 'size': None})
         else:
             raise ValueError("Invalid Type: " + details)
     elif details_type is dict:
