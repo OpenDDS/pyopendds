@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
 
 
-class Publisher:
+class Publisher(object):
 
     def __init__(self, participant: DomainParticipant, qos=None):
         participant.publishers.append(self)

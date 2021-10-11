@@ -157,7 +157,7 @@ PyObject* pywrite(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "OO", &*pywriter, &*pysample)) return nullptr;
   pywriter++;
   pysample++;
-
+  
   // Try to Get Reading Type and Do write
   Ref pytopic = PyObject_GetAttrString(*pywriter, "topic");
   if (!pytopic) return nullptr;

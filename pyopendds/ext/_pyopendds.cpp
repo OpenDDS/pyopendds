@@ -409,7 +409,8 @@ void delete_datareader_var(PyObject* reader_capsule)
             PyCapsule_GetPointer(reader_capsule, nullptr));
 
         if (reader) {
-            DDS::DataReaderListener_ptr listener = reader->get_listener();/*DDS::DataReader::_narrow(reader)->get_listener();*/
+            DDS::DataReaderListener_ptr listener = reader->get_listener();
+            /*DDS::DataReader::_narrow(reader)->get_listener();*/
             free(listener);
             listener = nullptr;
             reader = nullptr;
