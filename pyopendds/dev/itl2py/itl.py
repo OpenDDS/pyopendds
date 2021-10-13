@@ -86,9 +86,16 @@ def parse_sequence(types, details):
 def parse_record(types, details):
     struct_type = StructType()
     for field_dict in details['fields']:
-        struct_type.add_field(
-            field_dict['name'], parse_type(types, field_dict['type']),
-            field_dict.get('optional', False))
+        if 'sequence' in field_dict['type']:
+            sequence = parse_sequence(types, {'type': field_dict['type'], 'capacity': 1, 'size': None})
+            sequence.set_name(itl_name=sequence.base_type.name.itl_name)
+            struct_type.add_field(
+                field_dict['name'], sequence,
+                field_dict.get('optional', False))
+        else:
+            struct_type.add_field(
+                field_dict['name'], parse_type(types, field_dict['type']),
+                field_dict.get('optional', False))
     return struct_type
 
 

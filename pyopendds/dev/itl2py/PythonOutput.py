@@ -1,4 +1,4 @@
-from .ast import PrimitiveType, StructType, EnumType
+from .ast import PrimitiveType, StructType, EnumType, SequenceType, ArrayType
 from .Output import Output
 
 
@@ -11,8 +11,9 @@ class PythonOutput(Output):
 
     primitive_types = {  # (Python Type, Default Default Value)
         PrimitiveType.Kind.bool: ('bool', 'False'),
-        PrimitiveType.Kind.u8: ('int', '0'),
-        PrimitiveType.Kind.i8: ('int', '0'),
+        PrimitiveType.Kind.byte: ('UByte', 'UByte(0x00)'),
+        PrimitiveType.Kind.u8: ('UByte', 'UByte(0x00)'),
+        PrimitiveType.Kind.i8: ('Byte', 'Byte(0x00)'),
         PrimitiveType.Kind.u16: ('int', '0'),
         PrimitiveType.Kind.i16: ('int', '0'),
         PrimitiveType.Kind.u32: ('int', '0'),
@@ -61,7 +62,8 @@ class PythonOutput(Output):
         elif self.is_local_type(field_type):
             return field_type.local_name()
         else:
-            return field_type.name.join()
+            return self.context['package_name'] + '.' + field_type.name.join()
+            # return field_type.name.join()
 
     def get_python_default_value_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
@@ -72,6 +74,10 @@ class PythonOutput(Output):
                 return type_name + '()'
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
+            elif isinstance(field_type, SequenceType):
+                return 'field(default_factory=list)'
+            elif isinstance(field_type, ArrayType):
+                return 'field(default_factory=list)'
             else:
                 raise NotImplementedError(repr(field_type) + " is not supported")
 
@@ -97,5 +103,16 @@ class PythonOutput(Output):
                 members=[
                     dict(name=name, value=value) for name, value in enum_type.members.items()
                 ],
+            ),
+        ))
+
+    def visit_sequence(self, sequence_type):
+        self.context['has_sequence'] = True
+        self.context['types'].append(dict(
+            local_name=sequence_type.local_name(),
+            type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
+            sequence=dict(
+                type=sequence_type.base_type,
+                len=sequence_type.max_count,
             ),
         ))

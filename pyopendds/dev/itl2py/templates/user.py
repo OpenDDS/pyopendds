@@ -1,10 +1,16 @@
 {% if has_struct -%}
 from dataclasses import dataclass as _pyopendds_struct
+from dataclasses import field
+from pyopendds.util import Byte, UByte
+import {{ package_name }}
 {%- endif %}
 {% if has_enum -%}
 from enum import IntFlag as _pyopendds_enum
 {%- endif %}
+{% if has_sequence -%}
+{%- endif %}
 {% for type in types -%}
+
 {%- if type.struct %}
 
 @_pyopendds_struct
@@ -20,6 +26,10 @@ class {{ type.local_name }}(_pyopendds_enum):
 {%- for member in type.enum.members %}
     {{ member.name }} = {{ member.value }}
 {%- endfor %}
+{%- elif type.sequence %}
+
+class {{ type.local_name }}(list):
+    pass
 {%- else %}
 # {{ type.local_name }} was left unimplmented
 {% endif -%}
