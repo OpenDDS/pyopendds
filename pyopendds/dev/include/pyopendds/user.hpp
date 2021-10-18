@@ -30,7 +30,7 @@ public:
 
   static PyObject* get_python_class()
   {
-    return dynamic_cast<PyObject*>(&PyLong_Type);
+    return reinterpret_cast<PyObject*>(&PyLong_Type);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py)
@@ -90,7 +90,7 @@ class StringType {
 public:
   static PyObject* get_python_class()
   {
-    return dynamic_cast<PyObject*>(&PyUnicode_Type);
+    return reinterpret_cast<PyObject*>(&PyUnicode_Type);
   }
 
   static void cpp_to_python(const T& cpp, PyObject*& py, const char* encoding)
@@ -140,7 +140,7 @@ public:
     return i->second.get();
   }
 
-private:
+protected:
   static TopicTypes topic_types_;
 };
 
