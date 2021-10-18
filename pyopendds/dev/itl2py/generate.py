@@ -4,7 +4,7 @@ from typing import List
 import codecs
 import json
 
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from .itl import parse_itl
 from .ast import get_ast, Module
@@ -93,6 +93,7 @@ def generate(context: dict) -> None:
     context['jinja_loader'] = PackageLoader('pyopendds.dev.itl2py', 'templates')
     context['jinja'] = Environment(
         loader=context['jinja_loader'],
+        undefined=StrictUndefined,
     )
 
     out = PackageOutput(context)

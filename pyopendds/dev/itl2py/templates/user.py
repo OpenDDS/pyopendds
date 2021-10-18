@@ -5,7 +5,7 @@ from dataclasses import dataclass as _pyopendds_struct
 from enum import IntFlag as _pyopendds_enum
 {%- endif %}
 {% for type in types -%}
-{%- if type.struct %}
+{%- if type.struct is defined %}
 
 @_pyopendds_struct
 class {{ type.local_name }}:
@@ -15,7 +15,7 @@ class {{ type.local_name }}:
 {%- for field in type.struct.fields %}
     {{ field.name }}: {{ field.type }} = {{ field.default_value }}
 {%- endfor %}
-{%- elif type.enum %}
+{%- elif type.enum is defined %}
 class {{ type.local_name }}(_pyopendds_enum):
 {%- for member in type.enum.members %}
     {{ member.name }} = {{ member.value }}

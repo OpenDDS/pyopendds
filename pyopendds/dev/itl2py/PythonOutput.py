@@ -33,7 +33,9 @@ class PythonOutput(Output):
         new_context = context.copy()
         new_context.update(dict(
             output=context['output'] / name,
-            types=[]
+            types=[],
+            has_struct=False,
+            has_enum=False,
         ))
         super().__init__(new_context, new_context['output'],
             {'__init__.py': 'user.py'})
