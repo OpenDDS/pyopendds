@@ -5,6 +5,7 @@ https://martinopilia.com/posts/2018/09/15/building-python-extension.html
 import sys
 from pathlib import Path
 import subprocess
+import sysconfig
 
 from distutils.errors import DistutilsSetupError
 from setuptools import Extension
@@ -55,6 +56,8 @@ class CMakeWrapperBuild(build_ext):
         build_temp = Path(self.build_temp)
         build_temp.mkdir(parents=True, exist_ok=True)
 
+        native_ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
+
         # Build Each Extension
         for ext in self.extensions:
             # Configure
@@ -70,6 +73,7 @@ class CMakeWrapperBuild(build_ext):
                     '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(
                         ext.cmake_build_type.upper(), str(build_temp)),
                     '-DPYOPENDDS_PYTHON_VERSION=' + python_version,
+                    '-DPYOPENDDS_NATIVE_EXT_SUFFIX=' + native_ext_suffix,
                 ] + ext.get_extra_vars(),
                 build_temp,
             )
