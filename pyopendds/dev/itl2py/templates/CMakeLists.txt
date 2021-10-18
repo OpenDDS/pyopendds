@@ -8,6 +8,7 @@ find_package(Python3 ${PYOPENDDS_PYTHON_VERSION} EXACT
   REQUIRED
 )
 find_package(OpenDDS REQUIRED)
+set({{ idl_library_cmake_name }}_DIR {{ idl_library_build_dir }})
 find_package({{ idl_library_cmake_name }} REQUIRED)
 
 Python3_add_library({{ native_package_name }} MODULE {{ native_package_name }}.cpp)

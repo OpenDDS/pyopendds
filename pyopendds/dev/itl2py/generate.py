@@ -71,6 +71,7 @@ def generate(context: dict) -> None:
     '''Generate a Python IDL binding package given a dict of arguments. The
     arguments are the following:
         - idl_library_cmake_name
+        - idl_library_build_dir
         - itl_files
         - output
         - package_name

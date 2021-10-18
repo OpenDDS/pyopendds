@@ -16,8 +16,7 @@ limitations.
 - Python >= 3.7
   - This uses the C API of CPython, so PyPy or any other Python implementation
     is not supported.
-- OpenDDS
-  - Right now this is being developed using the master branch of OpenDDS.
+- OpenDDS >= 3.16
 - CMake >= 3.12
 - A C++14 Compiler
 
@@ -40,7 +39,7 @@ make
 # Build and Install Basic Test Python Type Support
 itl2py -o basic_output basic_idl basic.itl
 cd basic_output
-basic_idl_DIR=$(realpath ..) pip install .
+pip install .
 
 # Run Basic Test
 cd ../..

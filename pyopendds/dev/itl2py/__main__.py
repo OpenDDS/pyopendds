@@ -29,6 +29,12 @@ then this option becomes required.''')
         help='''\
 Name of the native Python extension package to create. By default this is \'_\'
 and the name of the Python package.''')
+    argparser.add_argument('--idl-library-build-dir',
+        metavar='IDL_LIBRARY_BUILD_DIR', type=Path,
+        help='''\
+Location of the CMake config file to use. By default this will be the location
+of all the input ITL files if they are in the same location. If they are not or
+the exepcted config file is not there, then this option becomes required.'''),
     argparser.add_argument('--default-encoding',
         type=str, default='utf_8',
         help='Default encoding of strings. By default this is UTF-8.')
@@ -47,6 +53,20 @@ and the name of the Python package.''')
         args.package_name = 'py' + args.itl_files[0].stem
     if args.native_package_name is None:
         args.native_package_name = '_' + args.package_name
+    if args.idl_library_build_dir is None:
+        args.idl_library_build_dir = args.itl_files[0].resolve().parent
+        for path in args.itl_files[1:]:
+            if path.resolve().parent != args.idl_library_build_dir:
+                sys.exit('''\
+--idl-library-build-dir is required when ITL files are in different directories''')
+    else:
+        args.idl_library_build_dir = args.idl_library_build_dir.resolve()
+    config_filename = '{}Config.cmake'.format(args.idl_library_cmake_name)
+    config_path = args.idl_library_build_dir / config_filename
+    if not config_path.is_file():
+        sys.exit('''\
+Native IDL library CMake config file {} does not exist, please pass the
+directory for it (where cmake was ran) using --idl-library-build-dir'''.format(config_path))
 
     # Generate The Python Package
     generate(vars(args))
