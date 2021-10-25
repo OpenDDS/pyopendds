@@ -29,7 +29,6 @@ setup(
         ],
     },
     install_requires=[
-        'Jinja2',
-        'MarkupSafe',
+        'Jinja2'
     ],
 )
