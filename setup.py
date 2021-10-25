@@ -17,6 +17,7 @@ setup(
     entry_points={
         'console_scripts': [
             'itl2py=pyopendds.dev.itl2py.__main__:main',
+            'pyidl=pyopendds.dev.pyidl.__main__:run',
         ],
     },
     package_data={
@@ -28,6 +29,7 @@ setup(
         ],
     },
     install_requires=[
-        'jinja2',
+        'Jinja2',
+        'MarkupSafe',
     ],
 )
