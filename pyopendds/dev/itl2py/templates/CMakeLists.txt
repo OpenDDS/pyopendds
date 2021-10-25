@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project({{ native_package_name }})
 
 find_package(Python3 COMPONENTS Development REQUIRED)
