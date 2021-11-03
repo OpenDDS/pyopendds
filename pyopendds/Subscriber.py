@@ -19,6 +19,7 @@ class Subscriber:
         create_subscriber(self, participant)
 
     def create_datareader(self, topic: Topic, qos=None, listener=None) -> DataReader:
+        print(f"i creat data reader from subscriber")
         reader = DataReader(self, topic, qos, listener)
         self.readers.append(reader)
         return reader

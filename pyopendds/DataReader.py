@@ -18,13 +18,20 @@ class DataReader:
         self.listener = listener
         self.subscriber = subscriber
         self.qos = qos
-        self.update_qos(qos)
+        # self.qos = DataReaderQos
+        print(f"Iim in data reader !!!!!!!!")
+        print(f"qos")
+        print(self.qos)
+        # print(self.qos.durability.kind)
+        # self.update_qos(qos)
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
-        create_datareader(self, subscriber, topic, self.on_data_available_callback)
+        create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
 
     def update_qos(self, qos: DataReaderQos):
+        # from _pyopendds import update_reader_qos
+        # update_reader_qos(self,qos)
         # TODO: Call cpp binding to implement QoS
         # return update_reader_qos(self, qos)
         pass
