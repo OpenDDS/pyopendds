@@ -173,17 +173,24 @@ def run():
             sys.exit(1)
     args.__setattr__('output_dir', os.path.realpath(args.output_dir))
 
+    # Create the output directory if it does not exist
+    if not os.path.exists(args.output_dir):
+        subprocess.run(['mkdir', '-p', args.output_dir])
+
     # Check pyopendds include path (which is required in further CMake process)
     # Order of discovery is:
     #     1- Folder name or path given as input
     #     2- Environment variable named PYOPENDDS_LD
     #     1- Direct reference to include directory installed in pyopendds .egg archive (always successes)
+    include_subpath = '/pyopendds/dev/include'
     if not args.pyopendds_ld:
         env_pyopendds_ld = os.getenv('PYOPENDDS_LD')
         if not env_pyopendds_ld:
             args.__setattr__('pyopendds_ld', extract_include_path_from_egg(args.output_dir))
         else:
-            args.__setattr__('pyopendds_ld', env_pyopendds_ld)
+            args.__setattr__('pyopendds_ld', f'{env_pyopendds_ld}{include_subpath}')
+    else:
+        args.__setattr__('pyopendds_ld', f'{args.pyopendds_ld}{include_subpath}')
     args.__setattr__('pyopendds_ld', os.path.realpath(args.pyopendds_ld))
 
     # Parse package name. If no name is given, the basename of the first .idl file will be taken
