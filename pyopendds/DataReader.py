@@ -18,16 +18,14 @@ class DataReader:
         self.listener = listener
         self.subscriber = subscriber
         self.qos = qos
-        # self.qos = DataReaderQos
-        print(f"Iim in data reader !!!!!!!!")
-        print(f"qos")
-        print(self.qos)
-       
-
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
-        create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
+        #verify if callback is None 
+        if self.listener == None :
+            create_datareader(self, subscriber, topic, None, self.qos)
+        else : 
+            create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
 
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):

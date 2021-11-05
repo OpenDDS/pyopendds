@@ -429,53 +429,57 @@ bool update_writer_qos(Ref pyQos, DDS::DataWriterQos &qos)
     Ref pydurabilityKind;
     Ref pyreliabilityKind;
     Ref pyhistoryKind;
+    Ref pyhistorydepth;
 
 
-    std::cerr << "get durability" << std::endl;
+    // std::cerr << "get durability" << std::endl;
     pydurability = PyObject_GetAttrString(*pyQos, "durability");
     if (!pydurability) return false;
     pydurability ++;
 
-    std::cerr << "get reliability" << std::endl;
+    // std::cerr << "get reliability" << std::endl;
     pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
     if (!pyreliability) return false;
     pyreliability ++;
 
-    std::cerr << "get history" << std::endl;
+    // std::cerr << "get history" << std::endl;
     pyhistory = PyObject_GetAttrString(*pyQos, "history");
     if (!pyhistory) return false;
     pyhistory ++;
 
-    std::cerr << "get dura kind" << std::endl;
+    // std::cerr << "get dura kind" << std::endl;
     pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
     if (!pydurabilityKind) return false;
     pydurabilityKind ++;
-    std::cerr << "AsLong" << std::endl;
+    // std::cerr << "AsLong" << std::endl;
     qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
 
-    std::cerr << "get rela kind" << std::endl;
+    // std::cerr << "get rela kind" << std::endl;
     pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
     if (!pyreliabilityKind) return false;
     pyreliabilityKind ++;
-    std::cerr << "AsLong" << std::endl;
+    // std::cerr << "AsLong" << std::endl;
     qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
 
-    std::cerr << "get histo kind" << std::endl;
+    // std::cerr << "get histo kind" << std::endl;
     pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
     if (!pyhistoryKind) return false;
     pyhistoryKind ++;
 
-    std::cerr << "AsLong" << std::endl;
+    // std::cerr << "AsLong" << std::endl;
     qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
 
+    pyhistorydepth = PyObject_GetAttrString(*pyhistory, "depth");
+    if (!pyhistorydepth) return false;
+    pyhistorydepth ++;
+    qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
+    // std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
 
-    std::cerr << "return" << std::endl;
     return true;
 }
 
 bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
 {
-        std::cout << "i am in update_reader qos cpp\n";
         Ref pydurability;
         Ref pyreliability;
         Ref pyhistory;
@@ -492,8 +496,7 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
     
         pydurability = PyObject_GetAttrString(*pyQos, "durability");
         if (!pydurability)
-        {
-            std::cout << "no pydurability\n";
+        { 
             return false;
         }
         pydurability ++;
@@ -516,7 +519,7 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
         pyreliabilityKind ++;
         qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
         
-        std::cout << " reliability : "<< qos.reliability.kind << "\n";
+        // std::cout << " is reliabile : "<< std::to_string(qos.reliability.kind == DDS::RELIABLE_RELIABILITY_QOS) << "\n";
         pyreliabilitymax = PyObject_GetAttrString(*pyreliability, "max_blocking_time");
         if (!pyreliabilitymax) return false;
         pyreliabilitymax ++;
@@ -532,9 +535,8 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
         if (!pyhistorydepth) return false;
         pyhistorydepth ++;
         qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
-        std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
+        // std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
 
-        std::cout <<"fin_qos"<<"\n";
         return true;
 }
 /**
@@ -579,26 +581,20 @@ PyObject* create_datareader(PyObject* self, PyObject* args )
 
     
     // Create QoS
-     DDS::DataReaderQos qos;
+    DDS::DataReaderQos qos;
      
-    std::cout <<"testing not sure"<<"\n";
-    
-    // std::cout <<qos.reliability.kind<<"\n";
-
     subscriber->get_default_datareader_qos(qos);
-    std::cout <<"update qos"<<"\n";
     bool isgoodqos = update_reader_qos(*pyqos,qos); 
-    std::cout <<"after qos "<<qos.history.depth<<"\n";
+    // std::cout <<"after update qos reader, qos.history.depth "<<qos.history.depth<<"\n";
     // qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
 
-    std::cout <<"create reader"<<"\n";
+    
     // Create DataReader
     DDS::DataReader* datareader = subscriber->create_datareader(
        topic, qos, listener,
          OpenDDS::DCPS::DEFAULT_STATUS_MASK);
 
     if (!datareader) {
-        std::cout <<"fail create reader"<<"\n";
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
         return nullptr;
     }
@@ -650,13 +646,12 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
     if (!topic) return nullptr;
 
-    // TODO : force qos to DDS::RELIABLE_RELIABILITY_QOS
     // Create QoS
     DDS::DataWriterQos qos;
     publisher->get_default_datawriter_qos(qos);
     // qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
     bool isgoodwriterqos = update_writer_qos(pyqos,qos); 
-    std::cout <<"after qos "<<qos.history.depth<<"\n";
+    // std::cout <<"after update qos writer, qos.history.depth "<<qos.history.depth<<"\n";
     // Create DataWriter
     DDS::DataWriter* datawriter = publisher->create_datawriter(
         topic, qos, nullptr,
@@ -816,8 +811,6 @@ PyMethodDef pyopendds_Methods[] = {
     { "create_datawriter", create_datawriter, METH_VARARGS, internal_docstr },
     { "datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr },
     { "datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr },
-    // { "update_writer_qos", update_writer_qos, METH_VARARGS, internal_docstr },
-    // { "update_reader_qos", update_reader_qos, METH_VARARGS, internal_docstr },
     { nullptr, nullptr, 0, nullptr }
 };
 

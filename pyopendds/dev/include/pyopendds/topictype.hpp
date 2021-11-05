@@ -158,7 +158,7 @@ public:
 //         }
 // #else
         // TODO: fallback to naive implementation
-        std::cout<<"i'm here take next sample pyopendds \n"<<std::endl;
+        
         IdlType sample;
         DDS::SampleInfo info;
         DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
