@@ -86,8 +86,7 @@ namespace pyopendds {
             return true;
 
         const bool error = PyObject_SetAttrString(py, capsule_name, capsule);
-        printf("im in set_capsule ",error);
-        if (error==false){  printf("not good");}
+        // if (error==false){  printf("not good");}
         Py_DECREF(capsule);
         
         return error;
@@ -117,58 +116,7 @@ namespace pyopendds {
         return instance;
     }
 
-    template<typename T>
-    T* get_class(PyObject* obj){
-        // Py_Initialize();
-        PyObject* module = PyImport_ImportModule("pyopendds.Qos");
-        assert(module != NULL);
-
-        T* return_value = nullptr;
-        // reliability.kind
-        PyObject* capsule = PyObject_GetAttrString(obj, "reliability"); // nr
-        
-
-        PyObject* pyopendds_ = PyImport_ImportModule("pyopendds");
-        if (!pyopendds_) printf("not find pyopendds");
-
-        PyObject* PyOpenDDS_qos_= PyObject_GetAttrString(pyopendds_, "Qos");
-        if (!PyOpenDDS_qos_) printf("not find pyopendds.Qos");
-
-        DDS::DataReaderQos DataReaderQos_ = PyObject_GetAttrString(PyOpenDDS_qos_, "DataReaderQos");
-        // if (!DataReaderQos_)  printf("not find pyopendds.Qos.DataReaderQos");
-    
-
-        // if (capsule) {
-        //     if (PyCapsule_IsValid(capsule, nullptr)) {
-        //         return_value = static_cast<T*>(PyCapsule_GetPointer(capsule, nullptr));
-        //         printf(return_value);
-        //     }
-        //     Py_DECREF(capsule);
-
-
-        // PyObject* klass = PyObject_GetAttrString(module, "DataReaderQos");
-        // assert(klass != NULL);
-
-        // PyObject* instance = PyInstance_New(klass, NULL, NULL);
-        // assert(instance != NULL);
-
-        // PyObject* result = PyObject_CallMethod(instance, "durability");
-        // assert(result != NULL);
-
-        // printf("1 + 2 = %ld\n", PyInt_AsLong(result));
-        // Py_Finalize();
-        return return_value;
-    }
-
-    // MapType dictToMap(const Py::Dict& dict)
-    // {
-    //     MapType map;
-    //     for (auto key : dict.keys()) {
-    //         map.emplace(key.str(), asElement(dict.getItem(key)));
-    //     }
-    //     return map;
-    // }
-
+   
    
 } // namesapce pyopendds
 

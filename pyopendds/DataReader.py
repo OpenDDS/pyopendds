@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class DataReader:
 
-    def __init__(self, subscriber: Subscriber, topic: Topic, qos=None, listener: Optional[Callable[..., None]] = None):
+    def __init__(self, subscriber: Subscriber, topic: Topic, qos=DataReaderQos(), listener: Optional[Callable[..., None]] = None):
         self.topic = topic
         self.listener = listener
         self.subscriber = subscriber
@@ -22,19 +22,13 @@ class DataReader:
         print(f"Iim in data reader !!!!!!!!")
         print(f"qos")
         print(self.qos)
-        # print(self.qos.durability.kind)
-        # self.update_qos(qos)
+       
+
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
         create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
 
-    def update_qos(self, qos: DataReaderQos):
-        # from _pyopendds import update_reader_qos
-        # update_reader_qos(self,qos)
-        # TODO: Call cpp binding to implement QoS
-        # return update_reader_qos(self, qos)
-        pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):
         from _pyopendds import datareader_wait_for  # noqa
