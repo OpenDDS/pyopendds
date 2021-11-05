@@ -420,9 +420,9 @@ void delete_datareader_var(PyObject* reader_capsule)
     }
 }
 
-bool update_reader_qos(DDS::DataReader* reader, Ref pyQos)
+bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
 {
-        std::cout << "i am in apdate_reader qos cpp\n";
+        std::cout << "i am in update_reader qos cpp\n";
         Ref pydurability;
         Ref pyreliability;
         Ref pyhistory;
@@ -435,9 +435,8 @@ bool update_reader_qos(DDS::DataReader* reader, Ref pyQos)
         Ref pyreliabilityKindname; //add by me
 
         // Create Qos for the data writer according to the spec
-        DDS::DataReaderQos qos;
-        reader->get_subscriber()->get_default_datareader_qos(qos);
-
+       
+    
         pydurability = PyObject_GetAttrString(*pyQos, "durability");
         if (!pydurability)
         {
@@ -462,14 +461,15 @@ bool update_reader_qos(DDS::DataReader* reader, Ref pyQos)
         pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
         if (!pyreliabilityKind) return false;
         pyreliabilityKind ++;
-        //add by me : 
-        pyreliabilityKindname = PyObject_GetAttrString(*pyreliabilityKind, "name");
-        if (!pyreliabilityKindname) return false;
-        pyreliabilityKindname ++;
-        std::cout<<"pyreliabilityKindname : "<<pyreliabilityKindname;
-        //add by me up
-        qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKindname);
-        std::cout << "reliability : "<< qos.reliability.kind << "\n";
+        qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
+        // add by me : 
+        // pyreliabilityKindname = PyObject_GetAttrString(*pyreliabilityKind, "name");
+        // if (!pyreliabilityKindname) return false;
+        // pyreliabilityKindname ++;
+        // std::cout<<"pyreliabilityKindname : "<<pyreliabilityKindname << "\n";
+        // add by me up
+        // qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKindname);
+        std::cout << " reliability : "<< qos.reliability.kind << "\n";
         pyreliabilitymax = PyObject_GetAttrString(*pyreliability, "max_blocking_time");
         if (!pyreliabilitymax) return false;
         pyreliabilitymax ++;
@@ -485,16 +485,17 @@ bool update_reader_qos(DDS::DataReader* reader, Ref pyQos)
         if (!pyhistorydepth) return false;
         pyhistorydepth ++;
         qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
-        std::cout <<"set_qos : "<<qos.history.depth<<"\n";
-        DDS::ReturnCode_t ret = reader->set_qos (qos);
-        if (ret != DDS::RETCODE_OK)
-        {
-            std::cout <<"set_qos NOT WORKING ! "<<"\n";
-            ACE_ERROR ((
-                LM_ERROR,
-                ACE_TEXT("(%P|%t)ERROR: set qos reader returned %d.\n"),
-                ret));
-        }
+        std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
+        //Set qos not working :/
+        //  DDS::ReturnCode_t ret = reader->set_qos (qos);
+        // if (ret != DDS::RETCODE_OK)
+        // {
+        //     std::cout <<"set_qos NOT WORKING ! "<<"\n";
+        //     ACE_ERROR ((
+        //         LM_ERROR,
+        //         ACE_TEXT("(%P|%t)ERROR: set qos reader returned %d.\n"),
+        //         ret));
+        // }
         std::cout <<"fin_qos"<<"\n";
         return true;
         // Py_RETURN_NONE;
@@ -555,7 +556,10 @@ PyObject* create_datareader(PyObject* self, PyObject* args )
     // std::cout <<qos.reliability.kind<<"\n";
 
     subscriber->get_default_datareader_qos(qos);
-    qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
+    std::cout <<"update qos"<<"\n";
+    bool isgoodqos = update_reader_qos(*pyqos,qos);
+    std::cout <<"after qos "<<qos.history.depth<<"\n";
+    // qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
 
     std::cout <<"create reader"<<"\n";
     // Create DataReader
@@ -568,14 +572,15 @@ PyObject* create_datareader(PyObject* self, PyObject* args )
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
         return nullptr;
     }
-    std::cout <<"update qos"<<"\n";
-    bool isgoodqos = update_reader_qos(datareader,*pyqos);
-    std::cout <<"fin update"<<"\n";
-    if (isgoodqos == true)
-    {
-        std::cout <<"YESSSSSSS !!!!!"<<"\n";
+    
+    // std::cout <<"update qos"<<"\n";
+    // bool isgoodqos = update_reader_qos(datareader,*pyqos);
+    // std::cout <<"fin update"<<"\n";
+    // if (isgoodqos == true)
+    // {
+    //     std::cout <<"YESSSSSSS !!!!!"<<"\n";
         
-    }
+    // }
    
     // Attach OpenDDS DataReader to DataReader Python Object
     if (set_capsule(*pydatareader, datareader, delete_datareader_var)) {

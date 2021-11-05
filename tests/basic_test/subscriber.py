@@ -24,7 +24,9 @@ if __name__ == "__main__":
         domain = DomainParticipant(34)
         topic = domain.create_topic('Readings', Reading)
         subscriber = domain.create_subscriber()
+        # Change qos testing 
         datareaderqos = DataReaderQos()
+        datareaderqos.history.depth = 2 
         print("test subscriber")
         print(datareaderqos)
         print(datareaderqos.durability.kind)
