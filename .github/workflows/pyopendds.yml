@@ -53,7 +53,7 @@ jobs:
         python -m pip --verbose install .
 
     - name: Run Tests
-      run: python run_tests.py
+      run: python tests/run_tests.py
 
     - name: Build Basic Test
       run: |
