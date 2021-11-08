@@ -2,6 +2,21 @@
 '''
 
 
+def opendds_version_str():
+    from _pyopendds import opendds_version_str as vs
+    return vs()
+
+
+def opendds_version_tuple():
+    from _pyopendds import opendds_version_tuple as vt
+    return vt()
+
+
+def opendds_version_dict():
+    from _pyopendds import opendds_version_dict as vd
+    return vd()
+
+
 def init_opendds(*args,
         default_rtps=True,
         opendds_debug_level=0):

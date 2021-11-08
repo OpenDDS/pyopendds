@@ -52,6 +52,9 @@ jobs:
       run: |
         python -m pip --verbose install .
 
+    - name: Run Tests
+      run: python run_tests.py
+
     - name: Build Basic Test
       run: |
         cd tests/basic_test

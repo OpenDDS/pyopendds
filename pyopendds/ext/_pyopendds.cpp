@@ -9,6 +9,7 @@
 #include <dds/DCPS/Service_Participant.h>
 #include <dds/DCPS/Marked_Default_Qos.h>
 #include <dds/DCPS/WaitSet.h>
+#include <dds/Version.h>
 
 using namespace pyopendds;
 
@@ -17,6 +18,29 @@ PyObject* Errors::PyOpenDDS_Error_ = nullptr;
 PyObject* Errors::ReturnCodeError_ = nullptr;
 
 namespace {
+
+PyObject* opendds_version_str(PyObject*, PyObject*)
+{
+  return PyUnicode_FromString(OPENDDS_VERSION);
+}
+
+PyObject* opendds_version_tuple(PyObject*, PyObject*)
+{
+  return Py_BuildValue("(I,I,I)",
+    unsigned(OPENDDS_MAJOR_VERSION),
+    unsigned(OPENDDS_MINOR_VERSION),
+    unsigned(OPENDDS_MICRO_VERSION));
+}
+
+PyObject* opendds_version_dict(PyObject*, PyObject*)
+{
+  return Py_BuildValue("{s:I,s:I,s:I,s:s,s:I}",
+    "major", OPENDDS_MAJOR_VERSION,
+    "minor", OPENDDS_MINOR_VERSION,
+    "micro", OPENDDS_MICRO_VERSION,
+    "metadata", OPENDDS_VERSION_METADATA,
+    "is_release", OPENDDS_IS_RELEASE);
+}
 
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
@@ -404,6 +428,9 @@ PyObject* datareader_wait_for(PyObject* self, PyObject* args)
 const char* internal_docstr = "Internal to PyOpenDDS, not for use directly!";
 
 PyMethodDef pyopendds_Methods[] = {
+  {"opendds_version_str", opendds_version_str, METH_NOARGS, internal_docstr},
+  {"opendds_version_tuple", opendds_version_tuple, METH_NOARGS, internal_docstr},
+  {"opendds_version_dict", opendds_version_dict, METH_NOARGS, internal_docstr},
   {
     "init_opendds_impl", reinterpret_cast<PyCFunction>(init_opendds_impl),
     METH_VARARGS | METH_KEYWORDS, internal_docstr
