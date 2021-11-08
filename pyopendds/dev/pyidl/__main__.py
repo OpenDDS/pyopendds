@@ -69,23 +69,25 @@ def mk_tmp_package_proj(args: argparse.Namespace):
                 gen_cmakelist(target_name=args.package_name,
                               pyopendds_ldir=args.pyopendds_ld,
                               idl_files=args.input_files,
-                              include_dirs=args.include_paths))
+                              include_dirs=args.include_paths,
+                              venv_path=os.environ['VIRTUAL_ENV']))
 
     # Create setup.py
     mk_tmp_file(f"{args.output_dir}/setup.py",
                 gen_setup(target_name=args.package_name))
 
     # Create a the empty __init__.py to indicate the project is a package
-    subprocess.run(['mkdir', args.package_name],
-                   cwd=args.output_dir)
-    mk_tmp_file(f"{args.output_dir}/{args.package_name}/__init__.py", "")
-
-    # Install a dummy python package [package_name]
-    print(f"Init dummy '{args.package_name}' Python package...")
-    subprocess.run(['python3', 'setup.py', 'install'],
-                   cwd=args.output_dir)
+    # subprocess.run(['mkdir', args.package_name],
+    #                cwd=args.output_dir)
+    # mk_tmp_file(f"{args.output_dir}/{args.package_name}/__init__.py", "")
+    #
+    # # Install a dummy python package [package_name]
+    # print(f"Init dummy '{args.package_name}' Python package...")
+    # subprocess.run(['python3', 'setup.py', 'install'],
+    #                cwd=args.output_dir)
 
     # Run cmake to prepare the python to cpp bindings
+    subprocess.run(['mkdir', 'build'], cwd=args.output_dir)
     subprocess.run(['cmake', '..'], cwd=f"{args.output_dir}/build")
     subprocess.run(['make'], cwd=f"{args.output_dir}/build")
 

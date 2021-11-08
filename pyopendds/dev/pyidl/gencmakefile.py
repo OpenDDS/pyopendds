@@ -2,7 +2,8 @@
 def gen_cmakelist(target_name: str,
                   pyopendds_ldir: str,
                   idl_files: list,
-                  include_dirs: list):
+                  include_dirs: list,
+                  venv_path: str = ""):
     statement_0 = ""
     for idx, include_dir in enumerate(include_dirs):
         statement_0 += f'set(inc_dir_{idx} "{include_dir}")\n'
@@ -20,6 +21,12 @@ def gen_cmakelist(target_name: str,
     for idx, _ in enumerate(include_dirs):
         statement_4 += f' -I${{inc_dir_{idx}}}'
 
+    statement_5 = ""
+    if venv_path:
+        statement_5 += f'set_target_properties({target_name}_idl PROPERTIES\n'
+        statement_5 += f'    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/{target_name}"\n'
+        statement_5 += ')'
+
     return f"""
 cmake_minimum_required(VERSION 3.10)
 
@@ -31,6 +38,9 @@ find_package(OpenDDS REQUIRED)
 add_library({target_name}_idl SHARED)
 target_include_directories({target_name}_idl PUBLIC "${{CMAKE_CURRENT_SOURCE_DIR}}/build")
 {statement_1}
+set_target_properties({target_name}_idl PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/{target_name}"
+)
 if(${{CPP11_IDL}})
     set(opendds_idl_mapping_option "-Lc++11")
 endif()
