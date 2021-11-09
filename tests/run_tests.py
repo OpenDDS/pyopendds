@@ -33,6 +33,9 @@ def run_test(dir_path, *args):
 def run_integration_tests():
     failed = False
 
+    failed |= run_test(tests_path / 'basic_test')
+    failed |= run_test(tests_path / 'basic_test', '--cpp11')
+
     return failed
 
 

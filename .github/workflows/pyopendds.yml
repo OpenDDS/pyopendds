@@ -55,38 +55,6 @@ jobs:
     - name: Run Tests
       run: python tests/run_tests.py
 
-    - name: Build Basic Test
-      run: |
-        cd tests/basic_test
-        mkdir build
-        cd build
-        cmake ..
-        make
-        itl2py -o basic_output basic_idl basic.itl
-        cd basic_output
-        python -m pip --verbose install .
-
-    - name: Run Basic Test
-      run: |
-        cd tests/basic_test
-        bash run_test.sh
-
-    - name: Build Basic C++11 Test
-      run: |
-        cd tests/basic_test
-        mkdir build_cpp11
-        cd build_cpp11
-        cmake -DCPP11_IDL=ON ..
-        make
-        itl2py -o basic_output basic_idl basic.itl
-        cd basic_output
-        python -m pip --verbose install .
-
-    - name: Run Basic C++11 Test
-      run: |
-        cd tests/basic_test
-        bash run_test.sh _cpp11
-
     - name: Lint with flake8
       run: |
         pip install flake8
