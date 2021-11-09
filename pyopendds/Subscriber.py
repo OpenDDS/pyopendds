@@ -6,6 +6,7 @@ from .Topic import Topic
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
+    from .DataReader import DataReader
 
 
 class Subscriber:
@@ -14,7 +15,7 @@ class Subscriber:
         participant.subscribers.append(self)
         self.qos = qos
         self.listener = listener
-        self.readers = []
+        self.readers: list[DataReader] = []
 
         from _pyopendds import create_subscriber
         create_subscriber(self, participant)
