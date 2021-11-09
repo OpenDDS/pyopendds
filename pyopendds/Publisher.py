@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from .Topic import Topic
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ class Publisher:
         participant.publishers.append(self)
         self.qos = qos
         self.listener = listener
-        self.writers: list[DataWriter] = []
+        self.writers: List[DataWriter] = []
 
         from _pyopendds import create_publisher
         create_publisher(self, participant)
