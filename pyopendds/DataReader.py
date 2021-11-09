@@ -37,8 +37,14 @@ class DataReader:
 
     def on_data_available_callback(self):
         sample = self.take_next_sample()
+        topicname = self.topic.name
+        print("on data available callback")
+        
         if sample is None:
             # print("on_data_available_callback error: sample is None")
             pass
         elif self.listener is not None:
-            self.listener(sample)
+            try: # if callback have 2 arguments
+                self.listener(sample,topicname)
+            except  : # if callback have 1 arguments
+                self.listener(sample)
