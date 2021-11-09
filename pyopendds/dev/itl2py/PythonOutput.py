@@ -28,7 +28,7 @@ class PythonOutput(Output):
     }
 
     def __init__(self, context: dict, name: str):
-        self.submodules: list[PythonOutput]  = []
+        self.submodules: list[PythonOutput] = []
         self.module = None
         new_context = context.copy()
         new_context.update(dict(
