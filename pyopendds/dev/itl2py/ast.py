@@ -1,5 +1,6 @@
 from enum import Enum, unique
 from dataclasses import dataclass
+from typing import Optional
 
 
 class Name:
@@ -86,7 +87,7 @@ class Module(Node):
 
 @dataclass(frozen=True)
 class PrimitiveTypeTraits:
-    element_size: int = None
+    element_size: Optional[int] = None
     is_unsigned_int: bool = False
     is_signed_int: bool = False
     is_float: bool = False

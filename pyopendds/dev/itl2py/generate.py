@@ -1,13 +1,13 @@
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 import codecs
 import json
 
 from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from .itl import parse_itl
-from .ast import get_ast, Module
+from .ast import get_ast, Module, Node
 from .Output import Output
 from .PythonOutput import PythonOutput
 from .CppOutput import CppOutput
@@ -18,7 +18,7 @@ def parse_itl_files(itl_files: List[Path]) -> Module:
     return an assembled AST.
     '''
 
-    types = {}
+    types: Dict[str, Node] = {}
     for itl_file in itl_files:
         with itl_file.open() as f:
             parse_itl(types, json.load(f))

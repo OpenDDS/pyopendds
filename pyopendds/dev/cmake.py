@@ -4,12 +4,13 @@ https://martinopilia.com/posts/2018/09/15/building-python-extension.html
 
 import sys
 from pathlib import Path
-import subprocess
 import sysconfig
 
 from distutils.errors import DistutilsSetupError
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext
+
+from .util import run_command, RunCommandError
 
 
 class CMakeWrapperExtension(Extension):
@@ -28,23 +29,10 @@ class CMakeWrapperExtension(Extension):
     def cmake(self, args, cwd=Path()):
         '''CMake Command Wrapper Function
         '''
-        command = [self.cmake_command] + args
         try:
-            subprocess.run(
-                command,
-                check=True,
-                cwd=str(cwd),
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-            )
-        except OSError as os_error:
-            raise DistutilsSetupError(
-                'Could not run "{}": {}'.format(
-                    ' '.join(command), str(os_error)))
-        except subprocess.CalledProcessError as return_code_error:
-            raise DistutilsSetupError(
-                '"{}" returned non-zero result: {}'.format(
-                    ' '.join(command), return_code_error.returncode))
+            run_command(self.cmake_command, *args, cwd=cwd)
+        except RunCommandError as error:
+            raise DistutilsSetupError(str(error)) from error
 
     def get_extra_vars(self):
         return ['-D{}={}'.format(k, v) for k, v in self.extra_vars.items()]

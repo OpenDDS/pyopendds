@@ -1,3 +1,5 @@
+from typing import Dict, Any, List
+
 from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
@@ -9,10 +11,10 @@ class DomainParticipant:
         self.domain = int(domain)
         self.qos = qos
         self.listener = listener
-        self.topics = {}
-        self.subscribers = []
-        self.publishers = []
-        self._registered_typesupport = []
+        self.topics: Dict[str, Topic] = {}
+        self.subscribers: List[Subscriber] = []
+        self.publishers: List[Publisher] = []
+        self._registered_typesupport: List[Any] = []
 
         from _pyopendds import create_participant
         create_participant(self, domain)

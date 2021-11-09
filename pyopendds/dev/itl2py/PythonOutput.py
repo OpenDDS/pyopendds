@@ -1,3 +1,5 @@
+from typing import List
+
 from .ast import PrimitiveType, StructType, EnumType
 from .Output import Output
 
@@ -28,7 +30,7 @@ class PythonOutput(Output):
     }
 
     def __init__(self, context: dict, name: str):
-        self.submodules = []
+        self.submodules: List[PythonOutput] = []
         self.module = None
         new_context = context.copy()
         new_context.update(dict(

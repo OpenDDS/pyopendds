@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
 
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class Topic:
 
     def __init__(self,
-            participant: DomainParticipant, name: str, topic_type: type,
+            participant: DomainParticipant, name: str, topic_type: Any,
             qos=None, listener=None):
         participant.topics[name] = self
         self.name = name
@@ -18,7 +18,7 @@ class Topic:
 
         # Get OpenDDS Topic Type Name
         import importlib
-        self._ts_package = \
+        self._ts_package: Any = \
             importlib.import_module(
                 topic_type._pyopendds_typesupport_packge_name)
         if topic_type not in participant._registered_typesupport:

@@ -1,10 +1,27 @@
 '''Manage the initialization of OpenDDS and related functionality.
 '''
 
+from typing import Tuple
 
-def init_opendds(*args,
+
+def opendds_version_str() -> str:
+    from _pyopendds import opendds_version_str as vs
+    return vs()
+
+
+def opendds_version_tuple() -> Tuple[int, int, int]:
+    from _pyopendds import opendds_version_tuple as vt
+    return vt()
+
+
+def opendds_version_dict() -> dict:
+    from _pyopendds import opendds_version_dict as vd
+    return vd()
+
+
+def init_opendds(*args: str,
         default_rtps=True,
-        opendds_debug_level=0):
+        opendds_debug_level=0) -> None:
     '''Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
     passing the positional arguments in.
 
@@ -19,12 +36,12 @@ def init_opendds(*args,
     verbose). It is printed to stdout.
     '''
 
-    args = list(args)
+    args_list = list(args)
 
     if opendds_debug_level > 0:
         if not (1 <= opendds_debug_level <= 10):
             raise ValueError('OpenDDS debug level must be between 0 and 10!')
-        args.extend(['-DCPSDebugLevel', str(opendds_debug_level)])
+        args_list.extend(['-DCPSDebugLevel', str(opendds_debug_level)])
 
     from _pyopendds import init_opendds_impl
-    init_opendds_impl(*args, default_rtps=default_rtps)
+    init_opendds_impl(*args_list, default_rtps=default_rtps)
