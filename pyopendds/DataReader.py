@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 
 class DataReader:
 
-    def __init__(self, subscriber: Subscriber, topic: Topic, qos=DataReaderQos(), listener: Optional[Callable[..., None]] = None):
+    def __init__(self, subscriber: Subscriber, topic: Topic, qos=DataReaderQos(), listener: Optional[Callable[..., None]] = None, context : Any=None):
         self.topic = topic
         self.listener = listener
         self.subscriber = subscriber
         self.qos = qos
+        self.context = context
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
@@ -37,14 +38,11 @@ class DataReader:
 
     def on_data_available_callback(self):
         sample = self.take_next_sample()
-        topicname = self.topic.name
-        print("on data available callback")
-        
         if sample is None:
             # print("on_data_available_callback error: sample is None")
             pass
         elif self.listener is not None:
-            try: # if callback have 2 arguments
-                self.listener(sample,topicname)
-            except  : # if callback have 1 arguments
+            if self.context is None: 
                 self.listener(sample)
+            else : 
+                self.listener(sample,self.context)
