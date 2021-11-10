@@ -17,17 +17,17 @@ export(
     FILE "${CMAKE_CURRENT_BINARY_DIR}/basic_idlConfig.cmake"
 )
 
-add_library(airbus_idl SHARED)
-if(${CPP11_IDL})
-    set(opendds_idl_mapping_option "-Lc++11")
-endif()
-OPENDDS_TARGET_SOURCES(airbus_idl "airbusdds.idl"
-    OPENDDS_IDL_OPTIONS "-Gitl" "${opendds_idl_mapping_option}")
-target_link_libraries(airbus_idl PUBLIC OpenDDS::Dcps)
-export(
-    TARGETS airbus_idl
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/airbus_idlConfig.cmake"
-)
+# add_library(airbus_idl SHARED)
+# if(${CPP11_IDL})
+#     set(opendds_idl_mapping_option "-Lc++11")
+# endif()
+# OPENDDS_TARGET_SOURCES(airbus_idl "airbusdds.idl"
+#     OPENDDS_IDL_OPTIONS "-Gitl" "${opendds_idl_mapping_option}")
+# target_link_libraries(airbus_idl PUBLIC OpenDDS::Dcps)
+# export(
+#     TARGETS airbus_idl
+#     FILE "${CMAKE_CURRENT_BINARY_DIR}/airbus_idlConfig.cmake"
+# )
 
 add_executable(publisher publisher.cpp)
 target_link_libraries(publisher OpenDDS::OpenDDS basic_idl)

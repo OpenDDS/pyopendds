@@ -1,6 +1,7 @@
 import sys
 import time
 from datetime import timedelta
+from pyopendds.Qos import DataWriterQos
 
 from pyopendds import \
     init_opendds, DomainParticipant, StatusKind, PyOpenDDS_Error
@@ -15,7 +16,11 @@ if __name__ == "__main__":
         domain = DomainParticipant(34)
         topic = domain.create_topic('Readings', Reading)
         publisher = domain.create_publisher()
-        writer = publisher.create_datawriter(topic)
+        datawriterqos = DataWriterQos()
+        datawriterqos.history.depth = 2
+        
+        writer = publisher.create_datawriter(topic,qos = datawriterqos)
+
 
         # Wait for Subscriber to Connect
         print('Waiting for Subscriber...')
