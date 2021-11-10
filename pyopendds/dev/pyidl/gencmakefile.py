@@ -26,12 +26,6 @@ def gen_cmakelist(target_name: str,
         statement_5 += f'    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/pyidl/{target_name}"\n'
         statement_5 += ')'
 
-    statement_5 = ""
-    if venv_path:
-        statement_5 += f'set_target_properties({target_name}_idl PROPERTIES\n'
-        statement_5 += f'    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/{target_name}"\n'
-        statement_5 += ')'
-
     return f"""
 cmake_minimum_required(VERSION 3.10)
 
