@@ -1,0 +1,6 @@
+
+@topic
+struct MySample2 {
+    @key string a_string;
+    double a_double;
+};

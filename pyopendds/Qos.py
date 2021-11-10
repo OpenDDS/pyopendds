@@ -20,19 +20,19 @@ class HistoryQosPolicyKind(IntEnum):
 
 class DurabilityQosPolicy:
     def __init__(self):
-        self.kind = DurabilityQosPolicyKind.PERSISTENT_DURABILITY_QOS
+        self.kind = DurabilityQosPolicyKind.VOLATILE_DURABILITY_QOS
 
 
 class ReliabilityQosPolicy:
     def __init__(self):
-        self.kind = ReliabilityQosPolicyKind.RELIABLE_RELIABILITY_QOS
+        self.kind = ReliabilityQosPolicyKind.BEST_EFFORT_RELIABILITY_QOS
         self.max_blocking_time = 0
 
 
 class HistoryQosPolicy:
     def __init__(self):
         self.kind = HistoryQosPolicyKind.KEEP_LAST_HISTORY_QOS
-        self.depth = 0
+        self.depth = 1
 
 
 class DataWriterQos:

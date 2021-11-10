@@ -1,0 +1,23 @@
+
+#include "TypeSupport_to_include.idl"
+
+module TypeSupportTest {
+
+    @topic
+    struct MySample1 {
+        @key string a_string;
+        boolean a_bool;
+        float a_float;
+        double a_double;
+        short a_short; // 16
+        long a_long; // 32
+        long long a_longlong; // 64
+        unsigned short a_ushort;
+        unsigned long a_ulong;
+        unsigned long long a_ulonglong;
+        char a_char;
+        wchar a_wchar;
+        octet an_octet;
+        MySample2 a_tata;
+    };
+};

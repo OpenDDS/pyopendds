@@ -1,6 +1,7 @@
 import sys
 import time
 from datetime import timedelta
+from pyopendds.Qos import DataReaderQos 
 
 from pyopendds import \
     init_opendds, DomainParticipant, StatusKind, PyOpenDDS_Error
@@ -23,7 +24,13 @@ if __name__ == "__main__":
         domain = DomainParticipant(34)
         topic = domain.create_topic('Readings', Reading)
         subscriber = domain.create_subscriber()
-        reader = subscriber.create_datareader(topic=topic, listener=listener.listener_func)
+        # Change qos testing 
+        datareaderqos = DataReaderQos()
+        datareaderqos.history.depth = 2 
+        print("test subscriber")
+        print(datareaderqos)
+        print(datareaderqos.durability.kind)
+        reader = subscriber.create_datareader(topic=topic, qos =datareaderqos, listener=listener.listener_func)
 
         # Wait for Publisher to Connect
         print('Waiting for Publisher...')

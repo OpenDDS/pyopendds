@@ -13,21 +13,20 @@ if TYPE_CHECKING:
 
 class DataReader:
 
-    def __init__(self, subscriber: Subscriber, topic: Topic, qos=None, listener: Optional[Callable[..., None]] = None):
+    def __init__(self, subscriber: Subscriber, topic: Topic, qos=DataReaderQos(), listener: Optional[Callable[..., None]] = None):
         self.topic = topic
         self.listener = listener
         self.subscriber = subscriber
         self.qos = qos
-        self.update_qos(qos)
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
-        create_datareader(self, subscriber, topic, self.on_data_available_callback)
+        #verify if callback is None 
+        if self.listener == None :
+            create_datareader(self, subscriber, topic, None, self.qos)
+        else : 
+            create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
 
-    def update_qos(self, qos: DataReaderQos):
-        # TODO: Call cpp binding to implement QoS
-        # return update_reader_qos(self, qos)
-        pass
 
     def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):
         from _pyopendds import datareader_wait_for  # noqa
@@ -38,8 +37,14 @@ class DataReader:
 
     def on_data_available_callback(self):
         sample = self.take_next_sample()
+        topicname = self.topic.name
+        print("on data available callback")
+        
         if sample is None:
             # print("on_data_available_callback error: sample is None")
             pass
         elif self.listener is not None:
-            self.listener(sample)
+            try: # if callback have 2 arguments
+                self.listener(sample,topicname)
+            except  : # if callback have 1 arguments
+                self.listener(sample)

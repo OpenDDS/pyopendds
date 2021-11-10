@@ -135,29 +135,30 @@ public:
             throw Exception("Could not narrow reader implementation", Errors::PyOpenDDS_Error());
         }
 
-#ifndef __APPLE__
-        // TODO: wait causes segmentation fault
-        DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
-            DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
-        DDS::WaitSet_var ws = new DDS::WaitSet;
-        ws->attach_condition(read_condition);
+// #ifndef __APPLE__
+//         // TODO: wait causes segmentation fault
+//         DDS::ReadCondition_var read_condition = reader_impl->create_readcondition(
+//             DDS::ANY_SAMPLE_STATE, DDS::ANY_VIEW_STATE, DDS::ANY_SAMPLE_STATE);
+//         DDS::WaitSet_var ws = new DDS::WaitSet;
+//         ws->attach_condition(read_condition);
 
-        DDS::ConditionSeq active;
-        const DDS::Duration_t max_wait_time = {60, 0};
+//         DDS::ConditionSeq active;
+//         const DDS::Duration_t max_wait_time = {60, 0};
 
-        if (Errors::check_rc(ws->wait(active, max_wait_time))) {
-            throw Exception();
-        }
-        ws->detach_condition(read_condition);
-        reader_impl->delete_readcondition(read_condition);
+//         if (Errors::check_rc(ws->wait(active, max_wait_time))) {
+//             throw Exception();
+//         }
+//         ws->detach_condition(read_condition);
+//         reader_impl->delete_readcondition(read_condition);
 
-        IdlType sample;
-        DDS::SampleInfo info;
-        if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
-            throw Exception();
-        }
-#else
+//         IdlType sample;
+//         DDS::SampleInfo info;
+//         if (Errors::check_rc(reader_impl->take_next_sample(sample, info))) {
+//             throw Exception();
+//         }
+// #else
         // TODO: fallback to naive implementation
+        
         IdlType sample;
         DDS::SampleInfo info;
         DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
@@ -166,7 +167,7 @@ public:
             // PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
             return Py_None;
         }
-#endif
+// #endif
         PyObject* rv = nullptr;
         if (info.valid_data) {
             Type<IdlType>::cpp_to_python(sample, rv);

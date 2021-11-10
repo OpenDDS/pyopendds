@@ -14,6 +14,7 @@ namespace pyopendds {
     */
     class Ref {
     public:
+
         Ref(PyObject* o = nullptr)
         : object_(o)
         { }
@@ -44,9 +45,11 @@ namespace pyopendds {
         {
             return object_;
         }
+       
 
     private:
         PyObject* object_;
+
     };
 
     /**
@@ -83,8 +86,9 @@ namespace pyopendds {
             return true;
 
         const bool error = PyObject_SetAttrString(py, capsule_name, capsule);
+        // if (error==false){  printf("not good");}
         Py_DECREF(capsule);
-
+        
         return error;
     }
 
@@ -112,6 +116,8 @@ namespace pyopendds {
         return instance;
     }
 
+   
+   
 } // namesapce pyopendds
 
 #endif // PYOPENDDS_UTILS_HEADER
