@@ -36,8 +36,10 @@ def run_test(args):
 
     # Run the test
     pub = run_command(build_dir / 'publisher', '-DCPSConfigFile', 'rtps.ini',
-        return_popen=True, cwd=this_dir)
-    sub = run_python(this_dir / 'subscriber.py', cwd=this_dir, return_popen=True)
+        return_popen=True, cwd=this_dir,
+        add_library_paths=[build_dir])
+    sub = run_python(this_dir / 'subscriber.py', cwd=this_dir, return_popen=True,
+        add_library_paths=[build_dir])
     wait_or_kill(pub, timeout)
     wait_or_kill(sub, timeout)
 
