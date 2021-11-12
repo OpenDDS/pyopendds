@@ -24,8 +24,8 @@ setup(
             cmake_configure_options=[
                 f'-DPython3_ROOT_DIR={Path(sys.prefix)}',
                 '-DCALL_FROM_SETUP_PY:BOOL=ON',
-                '-DPYOPENDDS_INCLUDE=' +
-                    str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
+                '-DPYOPENDDS_INCLUDE='
+                    + str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
             ],
         )
     ],
