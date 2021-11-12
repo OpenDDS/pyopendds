@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 from pathlib import Path
+import shutil
 
 
 def get_include_path() -> Path:
@@ -76,3 +77,22 @@ def wait_or_kill(proc, timeout):
             + _command_repr(proc.args)) from ex
     if return_code != 0:
         raise RunCommandError(_non_zero_message(proc.args, return_code))
+
+
+def run_cmake(*args):
+    run_command('cmake', *args, exit_on_error=True)
+
+
+def build_cmake_project(source_dir, build_dir, cfg_args=[], build_args=[]):
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
+    build_dir.mkdir()
+    run_cmake(
+        '-S', str(source_dir),
+        '-B', str(build_dir),
+        '-GNinja',  # cmake-build-extension provides Ninja
+        f'-DCMAKE_MAKE_PROGRAM={shutil.which("ninja")}',
+        '-DCMAKE_BUILD_TYPE=Release',
+        *cfg_args
+    )
+    run_cmake('--build', str(build_dir), *build_args)
