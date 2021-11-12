@@ -60,7 +60,8 @@ the exepcted config file is not there, then this option becomes required.'''),
                 sys.exit('''\
 --idl-library-build-dir is required when ITL files are in different directories''')
     else:
-        args.idl_library_build_dir = args.idl_library_build_dir.resolve()
+        # CMake will freak out if there are DOS-style slashes in the path
+        args.idl_library_build_dir = args.idl_library_build_dir.resolve().as_posix()
     config_filename = '{}Config.cmake'.format(args.idl_library_cmake_name)
     config_path = args.idl_library_build_dir / config_filename
     if not config_path.is_file():
