@@ -25,7 +25,8 @@ def _add_to_env_var_path_list(env, name, prepend):
 def _new_environment(add_executable_paths=[], add_library_paths=[]):
     env = dict(os.environ)
     _add_to_env_var_path_list(env, 'PATH', add_executable_paths)
-    _add_to_env_var_path_list(env, 'LD_LIBRARY_PATH', add_library_paths)
+    _add_to_env_var_path_list(env,
+        'PATH' if os.name == 'nt' else 'LD_LIBRARY_PATH', add_library_paths)
     return env
 
 

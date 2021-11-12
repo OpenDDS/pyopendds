@@ -60,14 +60,15 @@ the exepcted config file is not there, then this option becomes required.'''),
                 sys.exit('''\
 --idl-library-build-dir is required when ITL files are in different directories''')
     else:
-        # CMake will freak out if there are DOS-style slashes in the path
-        args.idl_library_build_dir = args.idl_library_build_dir.resolve().as_posix()
+        args.idl_library_build_dir = args.idl_library_build_dir.resolve()
     config_filename = '{}Config.cmake'.format(args.idl_library_cmake_name)
     config_path = args.idl_library_build_dir / config_filename
     if not config_path.is_file():
         sys.exit('''\
 Native IDL library CMake config file {} does not exist, please pass the
 directory for it (where cmake was ran) using --idl-library-build-dir'''.format(config_path))
+    # CMake will freak out if there are DOS-style slashes in the path
+    args.idl_library_build_dir = args.idl_library_build_dir.as_posix()
 
     # Generate The Python Package
     generate(vars(args))
