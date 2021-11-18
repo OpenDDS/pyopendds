@@ -1,7 +1,7 @@
 from .constants import SampleState, ViewState, InstanceState, StatusKind
 from .exceptions import PyOpenDDS_Error, ReturnCodeError
 from .init_opendds import init_opendds
-from .DomainParticipant import DomainParticipant
+from .DomainParticipant import DomainParticipant, Discovery, EnumDiscovery
 from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
@@ -22,4 +22,6 @@ __all__ = [
     "Publisher",
     "DataReader",
     "DataWriter",
+    "Discovery",
+    "EnumDiscovery"
 ]
