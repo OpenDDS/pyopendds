@@ -824,7 +824,7 @@ PyMethodDef pyopendds_Methods[] = {
     { "create_datareader", create_datareader, METH_VARARGS, internal_docstr },
     { "create_datawriter", create_datawriter, METH_VARARGS, internal_docstr },
     { "datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr },
-    { "datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr }
+    { "datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr },
     { nullptr, nullptr, 0, nullptr }
 };
 

@@ -27,9 +27,9 @@ class DomainParticipant(object):
         create_participant(self, domain)
 
     def __del__(self):
-        print("python cleanup")
+        
         participant_cleanup(self)
-        print("python cleanup2")
+        
 
     def create_topic(self, name: str, topic_type: type, qos=None, listener=None) -> Topic:
         return Topic(self, name, topic_type, qos, listener)
