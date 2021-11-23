@@ -10,14 +10,7 @@ except ImportError as e:
         pass
     pass
 
-class EnumDiscovery(IntEnum):
-    DEFAULT_REPO = 0,
-    DEFAULT_RTPS = 1,
-    DEFAULT_STATIC =2
 
-class Discovery : 
-    def __init__(self,discovery : EnumDiscovery) -> None:
-        self.discovery= discovery
 
 class DomainParticipant(object):
 
@@ -47,11 +40,5 @@ class DomainParticipant(object):
     def create_publisher(self, qos=None) -> Publisher:
         return Publisher(self, qos)
 
-    def set_default_discovery(self,discovery : Discovery):
-        from _pyopendds import setDefaultDiscovery
-        setDefaultDiscovery(self, discovery)
-    
-    def set_repo_ior(self,dcpsInfoRepoAddress):
-        from _pyopendds import setRepoIor
-        setRepoIor(self,dcpsInfoRepoAddress)
+
         
