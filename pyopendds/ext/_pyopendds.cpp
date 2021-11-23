@@ -157,16 +157,16 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
     }
     if (default_rtps) {
         TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
-
-        OpenDDS::DCPS::TransportConfig_rch transport_config =
-        TheTransportRegistry->create_config("default_rtps_transport_config");
-
-        OpenDDS::DCPS::TransportInst_rch transport_inst =
-        TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
-
-        transport_config->instances_.push_back(transport_inst);
-        TheTransportRegistry->global_config(transport_config);
     }
+    OpenDDS::DCPS::TransportConfig_rch transport_config =
+    TheTransportRegistry->create_config("default_rtps_transport_config");
+
+    OpenDDS::DCPS::TransportInst_rch transport_inst =
+    TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
+
+    transport_config->instances_.push_back(transport_inst);
+    TheTransportRegistry->global_config(transport_config);
+
 
     // Initialize OpenDDS
     participant_factory = TheParticipantFactoryWithArgs(argc, argv);
@@ -240,6 +240,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
 
 PyObject* participant_cleanup(PyObject* self, PyObject* args)
 {
+    
     Ref pyparticipant;
     if (!PyArg_ParseTuple(args, "O", &*pyparticipant)) {
         return nullptr;
@@ -249,18 +250,21 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     // Get DomainParticipant_var
     DDS::DomainParticipant* participant =
         get_capsule<DDS::DomainParticipant>(*pyparticipant);
-
-    if (!participant) return nullptr;
+    
+    if (!participant){
+    return nullptr;} 
+    
     numParticipant--;
-    std::cout<<numParticipant<<"/n" ;
-
+    // std::cout<<numParticipant<<"\n" ;
+   
     participant->delete_contained_entities();
     participant_factory->delete_participant(participant);
     if (numParticipant == 0)
     {
+        
         TheServiceParticipant->shutdown();
     }
-
+    
     Py_RETURN_NONE;
 }
 
@@ -801,57 +805,7 @@ PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-//add new function 
-PyObject* setDefaultDiscovery(PyObject* self, PyObject* args)
-{
-    std::cout<<self<<"\n";
 
-    Ref pydiscovery;
-    Ref pyparticipant;
-
-    Ref pydiscoveryDiscovery;
-    
-    if (!PyArg_ParseTuple(args, "OO",  &*pyparticipant,&*pydiscovery)) {
-        return nullptr;
-    }
-    
-    pydiscovery++;
-    pyparticipant++;
-
-    pydiscoveryDiscovery = PyObject_GetAttrString(*pydiscovery, "discovery");
-    if (!pydiscovery) return nullptr;
-    pydiscoveryDiscovery++;
-    
-
-    if (pydiscoveryDiscovery == 0)
-    {
-        TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_REPO);
-    }
-    else if(pydiscoveryDiscovery == 2)
-    {
-        TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_STATIC);
-    }
-    else 
-    {
-        TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
-    }
-
-    Py_RETURN_NONE;
-}
-
-PyObject* setRepoIor(PyObject* self, PyObject* args)
-{
-    Ref pyparticipant;
-    char *s;
-    if (!PyArg_ParseTuple(args, "Os",  &*pyparticipant,&s)) {
-        return nullptr;
-    }
-    // pydcpsInfoRepoAddress++;
-    pyparticipant++;
-    std::cout<<"pydcpsInfoRepoAddress"<<"\n";
-    TheServiceParticipant->set_repo_ior(s, OpenDDS::DCPS::Discovery::DEFAULT_REPO);
-    Py_RETURN_NONE;
-}
 
 
 
@@ -870,9 +824,7 @@ PyMethodDef pyopendds_Methods[] = {
     { "create_datareader", create_datareader, METH_VARARGS, internal_docstr },
     { "create_datawriter", create_datawriter, METH_VARARGS, internal_docstr },
     { "datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr },
-    { "datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr },
-    {"setDefaultDiscovery",setDefaultDiscovery, METH_VARARGS, internal_docstr }, 
-    {"setRepoIor",setRepoIor, METH_VARARGS, internal_docstr},
+    { "datawriter_wait_for", datawriter_wait_for, METH_VARARGS, internal_docstr }
     { nullptr, nullptr, 0, nullptr }
 };
 
