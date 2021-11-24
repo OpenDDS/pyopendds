@@ -14,10 +14,6 @@ if __name__ == "__main__":
         init_opendds(opendds_debug_level=1)
  
         domain = DomainParticipant(34)
-
-        
-        # print(domain)
-        
         topic = domain.create_topic('Readings', Reading)
         
         publisher = domain.create_publisher()

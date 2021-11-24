@@ -18,11 +18,7 @@ def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
     Debug logging level in OpenDDS which goes from 0 (off) to 10 (most
     verbose). It is printed to stdout.
     """
-
-
-
-    # args = list(sys.argv[1:])
-
+    
     if opendds_debug_level > 0:
         if not (1 <= opendds_debug_level <= 10):
             raise ValueError('OpenDDS debug level must be between 0 and 10!')

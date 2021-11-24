@@ -9,9 +9,6 @@ except ImportError as e:
     def participant_cleanup(*args):
         pass
     pass
-
-
-
 class DomainParticipant(object):
 
     def __init__(self, domain: int, qos=None, listener=None):
@@ -39,6 +36,3 @@ class DomainParticipant(object):
 
     def create_publisher(self, qos=None) -> Publisher:
         return Publisher(self, qos)
-
-
-        
