@@ -99,3 +99,4 @@ class Byte(c_byte, _BitwiseImpl):
     @staticmethod
     def list_to_bytes(data: List['Byte']) -> bytes:
         return bytes(map(int, data))
+
