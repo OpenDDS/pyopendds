@@ -429,8 +429,6 @@ void delete_datareader_var(PyObject* reader_capsule)
     Ref pyhistoryKind;
     Ref pyhistorydepth;
 
-
-    std::cerr << "get durability" << std::endl;
     pydurability = PyObject_GetAttrString(pyQos, "durability");
     if (!pydurability) return false;
     pydurability ++;
