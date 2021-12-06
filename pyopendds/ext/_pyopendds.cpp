@@ -477,24 +477,19 @@ bool update_reader_qos(PyObject* pyQos, DDS::DataReaderQos &qos)
         Ref pyhistorydepth;
         Ref pyreliabilitymax;
 
-        Ref pyreliabilityKindname; //add by me
-
-        // Create Qos for the data writer according to the spec
-       
     
-        // pydurability = PyObject_GetAttrString(*pyQos, "durability");
+        // Create Qos for the data writer according to the spec
         pydurability = PyObject_GetAttrString(pyQos, "durability");
         if (!pydurability)
         { 
             return false;
         }
         pydurability ++;
-        // pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+        
         pyreliability = PyObject_GetAttrString(pyQos, "reliability");
         if (!pyreliability) return false;
         pyreliability ++;
 
-        // pyhistory = PyObject_GetAttrString(*pyQos, "history");
         pyhistory = PyObject_GetAttrString(pyQos, "history");
         if (!pyhistory) return false;
         pyhistory ++;
