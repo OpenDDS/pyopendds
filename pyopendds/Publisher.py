@@ -18,7 +18,6 @@ class Publisher(object):
         create_publisher(self, participant)
 
     def create_datawriter(self, topic: Topic, qos=None) -> DataWriter:
-        print("[pyopendds] creat datawriter")
         writer = DataWriter(self, topic, qos)
-        # self.writers.append(writer)
+        self.writers.append(writer)
         return writer

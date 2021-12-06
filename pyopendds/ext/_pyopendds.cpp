@@ -240,14 +240,14 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
         return nullptr;
     }
     pyparticipant++;
-    
+
     // Get DomainParticipant_var
     DDS::DomainParticipant* participant =
         get_capsule<DDS::DomainParticipant>(*pyparticipant);
     if (!participant) return nullptr;
 
     participant->delete_contained_entities();
-    // participant_factory->delete_participant(participant);
+    participant_factory->delete_participant(participant);
     Py_RETURN_NONE;
 }
 
@@ -419,7 +419,7 @@ void delete_datareader_var(PyObject* reader_capsule)
 }
 
 
- bool update_writer_qos(PyObject* pyQos, DDS::DataWriterQos &qos)
+bool update_writer_qos(PyObject* pyQos, DDS::DataWriterQos &qos)
 {
     Ref pydurability;
     Ref pyreliability;
@@ -625,11 +625,11 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     // Get Publisher
     DDS::Publisher* publisher = get_capsule<DDS::Publisher>(*pypublisher);
     if (!publisher) return nullptr;
- 
+
     // Get Topic
     DDS::Topic* topic = get_capsule<DDS::Topic>(*pytopic);
     if (!topic) return nullptr;
-   
+
     // Create QoS
     DDS::DataWriterQos qos;
     publisher->get_default_datawriter_qos(qos);
@@ -650,7 +650,7 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     if (set_capsule(*pydatawriter, datawriter, delete_datawriter_var)) {
         return nullptr;
     }
-   
+
     Py_RETURN_NONE;
 }
 
