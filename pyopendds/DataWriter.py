@@ -19,7 +19,6 @@ class DataWriter:
         self.publisher = publisher
         self.qos = qos
         publisher.writers.append(self)
-
         from _pyopendds import create_datawriter  # noqa
         create_datawriter(self, publisher, topic,self.qos)
 
@@ -30,3 +29,6 @@ class DataWriter:
 
     def write(self, sample) -> int:
         return self.topic.ts_package.write(self, sample)
+    
+
+        
