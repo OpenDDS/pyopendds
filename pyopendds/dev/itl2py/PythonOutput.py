@@ -65,7 +65,8 @@ class PythonOutput(Output):
         elif self.is_local_type(field_type):
             return field_type.local_name()
         else:
-            return self.context['package_name'] + '.' + field_type.name.join()
+            return field_type.local_name()
+            # return self.context['package_name'] + '.' + field_type.name.join()
             # return field_type.name.join()
 
     def get_python_default_value_string(self, field_type):
