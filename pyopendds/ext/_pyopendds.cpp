@@ -251,8 +251,7 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     DDS::DomainParticipant* participant =
         get_capsule<DDS::DomainParticipant>(*pyparticipant);
     
-    if (!participant){
-    return nullptr;} 
+    if (!participant) return nullptr;
     
     numParticipant--;
     // std::cout<<numParticipant<<"\n" ;
