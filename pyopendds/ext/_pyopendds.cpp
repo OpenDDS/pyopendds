@@ -98,6 +98,8 @@ void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 /// Global Participant Factory
 DDS::DomainParticipantFactory_var participant_factory;
 
+static int numParticipant = 0;
+
 /**
 * init_opendds_impl(*args[str], **kw) -> None
 *
@@ -155,19 +157,20 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
     }
     if (default_rtps) {
         TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
-
-        OpenDDS::DCPS::TransportConfig_rch transport_config =
-        TheTransportRegistry->create_config("default_rtps_transport_config");
-
-        OpenDDS::DCPS::TransportInst_rch transport_inst =
-        TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
-
-        transport_config->instances_.push_back(transport_inst);
-        TheTransportRegistry->global_config(transport_config);
     }
+    OpenDDS::DCPS::TransportConfig_rch transport_config =
+    TheTransportRegistry->create_config("default_rtps_transport_config");
+
+    OpenDDS::DCPS::TransportInst_rch transport_inst =
+    TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
+
+    transport_config->instances_.push_back(transport_inst);
+    TheTransportRegistry->global_config(transport_config);
+
 
     // Initialize OpenDDS
     participant_factory = TheParticipantFactoryWithArgs(argc, argv);
+    
     if (!participant_factory) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Initialize OpenDDS");
         return nullptr;
@@ -195,6 +198,7 @@ void delete_participant_var(PyObject* part_capsule)
 
         if (participant) {
             //participant->delete_contained_entities();
+            numParticipant--;
             participant = nullptr;
         }
     }
@@ -211,7 +215,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
         return nullptr;
     }
     pyparticipant++;
-
+    numParticipant++;
     // Create Participant
     DDS::DomainParticipantQos qos;
     participant_factory->get_default_participant_qos(qos);
@@ -222,6 +226,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
 
     if (!participant) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Participant");
+        numParticipant--;
         return nullptr;
     }
 
@@ -235,6 +240,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
 
 PyObject* participant_cleanup(PyObject* self, PyObject* args)
 {
+    
     Ref pyparticipant;
     if (!PyArg_ParseTuple(args, "O", &*pyparticipant)) {
         return nullptr;
@@ -244,10 +250,22 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     // Get DomainParticipant_var
     DDS::DomainParticipant* participant =
         get_capsule<DDS::DomainParticipant>(*pyparticipant);
-    if (!participant) return nullptr;
 
+    if (!participant) return nullptr;
+    
+    numParticipant--;
+    // std::cout<<numParticipant<<"\n" ;
+   
     participant->delete_contained_entities();
     participant_factory->delete_participant(participant);
+
+    if (numParticipant == 0)
+    {
+        
+        TheServiceParticipant->shutdown();
+    }
+    
+
     Py_RETURN_NONE;
 }
 
@@ -768,7 +786,6 @@ PyObject* datawriter_wait_for(PyObject* self, PyObject* args)
 #endif
     Py_RETURN_NONE;
 }
-
 
 
 

@@ -15,6 +15,7 @@ if __name__ == "__main__":
  
         domain = DomainParticipant(34)
         topic = domain.create_topic('Readings', Reading)
+        
         publisher = domain.create_publisher()
         datawriterqos = DataWriterQos()
         datawriterqos.history.depth = 2
@@ -24,7 +25,9 @@ if __name__ == "__main__":
 
         # Wait for Subscriber to Connect
         print('Waiting for Subscriber...')
-        writer.wait_for(StatusKind.PUBLICATION_MATCHED, timedelta(seconds=60))
+        print(timedelta(seconds=60))
+        # writer.wait_for(StatusKind.PUBLICATION_MATCHED, timedelta(seconds=60))
+        writer.wait_for(StatusKind.PUBLICATION_MATCHED, 0)
         print('Found subscriber!')
 
         sample = Reading()
