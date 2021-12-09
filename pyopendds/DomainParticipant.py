@@ -1,6 +1,7 @@
 from .Topic import Topic
 from .Subscriber import Subscriber
 from .Publisher import Publisher
+from enum import IntEnum
 
 try:
     from _pyopendds import participant_cleanup  # noqa
@@ -26,7 +27,6 @@ class DomainParticipant(object):
 
     def __del__(self):
         participant_cleanup(self)
-
 
     def create_topic(self, name: str, topic_type: type, qos=None, listener=None) -> Topic:
         return Topic(self, name, topic_type, qos, listener)

@@ -21,5 +21,5 @@ __all__ = [
     "Subscriber",
     "Publisher",
     "DataReader",
-    "DataWriter",
+    "DataWriter"
 ]
