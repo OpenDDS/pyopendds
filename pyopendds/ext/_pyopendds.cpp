@@ -250,7 +250,7 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     // Get DomainParticipant_var
     DDS::DomainParticipant* participant =
         get_capsule<DDS::DomainParticipant>(*pyparticipant);
-    
+
     if (!participant) return nullptr;
     
     numParticipant--;
@@ -258,12 +258,14 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
    
     participant->delete_contained_entities();
     participant_factory->delete_participant(participant);
+
     if (numParticipant == 0)
     {
         
         TheServiceParticipant->shutdown();
     }
     
+
     Py_RETURN_NONE;
 }
 
@@ -434,9 +436,9 @@ void delete_datareader_var(PyObject* reader_capsule)
     }
 }
 
-bool update_writer_qos(Ref pyQos, DDS::DataWriterQos &qos)
-{
 
+bool update_writer_qos(PyObject* pyQos, DDS::DataWriterQos &qos)
+{
     Ref pydurability;
     Ref pyreliability;
     Ref pyhistory;
@@ -445,54 +447,44 @@ bool update_writer_qos(Ref pyQos, DDS::DataWriterQos &qos)
     Ref pyhistoryKind;
     Ref pyhistorydepth;
 
-
-    // std::cerr << "get durability" << std::endl;
-    pydurability = PyObject_GetAttrString(*pyQos, "durability");
+    pydurability = PyObject_GetAttrString(pyQos, "durability");
     if (!pydurability) return false;
     pydurability ++;
 
-    // std::cerr << "get reliability" << std::endl;
-    pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+    pyreliability = PyObject_GetAttrString(pyQos, "reliability");
     if (!pyreliability) return false;
     pyreliability ++;
 
-    // std::cerr << "get history" << std::endl;
-    pyhistory = PyObject_GetAttrString(*pyQos, "history");
+    pyhistory = PyObject_GetAttrString(pyQos, "history");
     if (!pyhistory) return false;
     pyhistory ++;
 
-    // std::cerr << "get dura kind" << std::endl;
     pydurabilityKind = PyObject_GetAttrString(*pydurability, "kind");
     if (!pydurabilityKind) return false;
     pydurabilityKind ++;
-    // std::cerr << "AsLong" << std::endl;
     qos.durability.kind = (DDS::DurabilityQosPolicyKind) PyLong_AsLong(*pydurabilityKind);
 
-    // std::cerr << "get rela kind" << std::endl;
     pyreliabilityKind = PyObject_GetAttrString(*pyreliability, "kind");
     if (!pyreliabilityKind) return false;
     pyreliabilityKind ++;
-    // std::cerr << "AsLong" << std::endl;
     qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
 
-    // std::cerr << "get histo kind" << std::endl;
+
     pyhistoryKind = PyObject_GetAttrString(*pyhistory, "kind");
     if (!pyhistoryKind) return false;
     pyhistoryKind ++;
-
-    // std::cerr << "AsLong" << std::endl;
     qos.history.kind = (DDS::HistoryQosPolicyKind) PyLong_AsLong(*pyhistoryKind);
 
     pyhistorydepth = PyObject_GetAttrString(*pyhistory, "depth");
     if (!pyhistorydepth) return false;
     pyhistorydepth ++;
     qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
-    // std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
+    
 
     return true;
 }
 
-bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
+bool update_reader_qos(PyObject* pyQos, DDS::DataReaderQos &qos)
 {
         Ref pydurability;
         Ref pyreliability;
@@ -503,23 +495,20 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
         Ref pyhistorydepth;
         Ref pyreliabilitymax;
 
-        Ref pyreliabilityKindname; //add by me
-
-        // Create Qos for the data writer according to the spec
-       
     
-        pydurability = PyObject_GetAttrString(*pyQos, "durability");
+        // Create Qos for the data writer according to the spec
+        pydurability = PyObject_GetAttrString(pyQos, "durability");
         if (!pydurability)
         { 
             return false;
         }
         pydurability ++;
-
-        pyreliability = PyObject_GetAttrString(*pyQos, "reliability");
+        
+        pyreliability = PyObject_GetAttrString(pyQos, "reliability");
         if (!pyreliability) return false;
         pyreliability ++;
 
-        pyhistory = PyObject_GetAttrString(*pyQos, "history");
+        pyhistory = PyObject_GetAttrString(pyQos, "history");
         if (!pyhistory) return false;
         pyhistory ++;
 
@@ -533,7 +522,6 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
         pyreliabilityKind ++;
         qos.reliability.kind = (DDS::ReliabilityQosPolicyKind) PyLong_AsLong(*pyreliabilityKind);
         
-        // std::cout << " is reliabile : "<< std::to_string(qos.reliability.kind == DDS::RELIABLE_RELIABILITY_QOS) << "\n";
         pyreliabilitymax = PyObject_GetAttrString(*pyreliability, "max_blocking_time");
         if (!pyreliabilitymax) return false;
         pyreliabilitymax ++;
@@ -549,8 +537,7 @@ bool update_reader_qos(Ref pyQos, DDS::DataReaderQos &qos)
         if (!pyhistorydepth) return false;
         pyhistorydepth ++;
         qos.history.depth =  PyLong_AsLong(*pyhistorydepth);
-        // std::cout <<"qos.history.depth : "<<qos.history.depth<<"\n";
-
+       
         return true;
 }
 /**
@@ -599,10 +586,6 @@ PyObject* create_datareader(PyObject* self, PyObject* args )
      
     subscriber->get_default_datareader_qos(qos);
     bool isgoodqos = update_reader_qos(*pyqos,qos); 
-    // std::cout <<"after update qos reader, qos.history.depth "<<qos.history.depth<<"\n";
-    // qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
-
-    
     // Create DataReader
     DDS::DataReader* datareader = subscriber->create_datareader(
        topic, qos, listener,
@@ -663,9 +646,9 @@ PyObject* create_datawriter(PyObject* self, PyObject* args)
     // Create QoS
     DDS::DataWriterQos qos;
     publisher->get_default_datawriter_qos(qos);
-    // qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
-    bool isgoodwriterqos = update_writer_qos(pyqos,qos); 
-    // std::cout <<"after update qos writer, qos.history.depth "<<qos.history.depth<<"\n";
+    qos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
+
+    bool isgoodwriterqos = update_writer_qos(*pyqos,qos);
     // Create DataWriter
     DDS::DataWriter* datawriter = publisher->create_datawriter(
         topic, qos, nullptr,

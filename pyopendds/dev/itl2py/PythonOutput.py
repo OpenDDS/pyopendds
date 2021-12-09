@@ -54,7 +54,10 @@ class PythonOutput(Output):
         submodule.visit_root_module(module)
 
     def is_local_type(self, type_node):
-        return type_node in self.module.types.values()
+        if isinstance(type_node, (SequenceType, ArrayType)):
+            return type_node.base_type in self.module.types.values()
+        else:
+            return type_node in self.module.types.values()
 
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):

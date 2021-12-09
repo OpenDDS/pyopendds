@@ -22,3 +22,4 @@ class Subscriber:
         reader = DataReader(self, topic, qos, listener,context=context)
         self.readers.append(reader)
         return reader
+
