@@ -29,6 +29,7 @@ public:
         } else {
             py = Py_True;
         }
+        Py_INCREF(py);
     }
 
     static void python_to_cpp(PyObject* py, T& cpp)

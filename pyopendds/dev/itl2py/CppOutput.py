@@ -45,51 +45,52 @@ class CppOutput(Output):
             {context['native_package_name'] + '.cpp': 'user.cpp'})
 
     def visit_struct(self, struct_type):
-        struct_to_lines = [
-            'Ref field_value;',
-        ]
-        struct_from_lines = [
-            'Ref field_value;',
-        ]
+        struct_to_lines = []
+        struct_from_lines = []
         for field_name, field_node in struct_type.fields.items():
-            to_lines = []
-            from_lines = []
+            field_value = 'field_value_'+field_name
+            to_lines = [
+                'Ref {field_value};',
+            ]
+            from_lines = [
+                'Ref {field_value};',
+            ]
             pyopendds_type = ''
             is_string = isinstance(field_node.type_node, PrimitiveType) and \
                 field_node.type_node.is_string()
             is_sequence = isinstance(field_node.type_node, SequenceType)
 
-            to_lines = [
+            to_lines.extend([
                 'Type<{pyopendds_type}>::cpp_to_python(cpp.{field_name}',
                 '#ifdef CPP11_IDL',
                 '    ()',
                 '#endif',
-                '    , *field_value'
+                '    , *{field_value}'
                     + (', "{default_encoding}"' if is_string else '') + ');',
-            ]
+            ])
 
-            from_lines = [
+            from_lines.extend([
                 'if (PyObject_HasAttrString(py, "{field_name}")) {{',
-                '    *field_value = PyObject_GetAttrString(py, "{field_name}");',
+                '    *{field_value} = PyObject_GetAttrString(py, "{field_name}");',
                 '}}',
-                'if (!field_value) {{',
+                'if (!{field_value}) {{',
                 '  throw Exception();',
                 '}}'
-            ]
+            ])
 
             pyopendds_type = cpp_type_name(field_node.type_node)
 
             if to_lines:
                 to_lines.extend([
-                    'if (!field_value || PyObject_SetAttrString(',
-                    'py, "{field_name}", *field_value)) {{',
+                    'if (!{field_value} || PyObject_SetAttrString(',
+                    'py, "{field_name}", *{field_value})) {{',
                     '  throw Exception();',
                     '}}'
                 ])
 
             if from_lines:
                 from_lines.extend([
-                    'Type<{pyopendds_type}>::python_to_cpp(*field_value, cpp.{field_name}',
+                    'Type<{pyopendds_type}>::python_to_cpp(*{field_value}, cpp.{field_name}',
                     '#ifdef CPP11_IDL',
                     '    ()',
                     '#endif',
@@ -101,6 +102,7 @@ class CppOutput(Output):
                 return [''] + [
                     s.format(
                         field_name=field_name,
+                        field_value=field_value,
                         default_encoding=self.context['default_encoding'],
                         pyopendds_type=pyopendds_type,
                     ) for s in (lines if lines else [
