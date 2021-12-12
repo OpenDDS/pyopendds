@@ -3,7 +3,15 @@
 
 // Python.h should always be first
 #define PY_SSIZE_T_CLEAN
+#ifdef _DEBUG
+#  undef _DEBUG
+#  define PYOPENDDS_DEBUG
+#endif
 #include <Python.h>
+#ifdef PYOPENDDS_DEBUG
+#  undef PYOPENDDS_DEBUG
+#  define _DEBUG
+#endif
 
 #include <dds/DdsDcpsInfrastructureC.h>
 

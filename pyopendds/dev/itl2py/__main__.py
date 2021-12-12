@@ -67,6 +67,8 @@ the exepcted config file is not there, then this option becomes required.'''),
         sys.exit('''\
 Native IDL library CMake config file {} does not exist, please pass the
 directory for it (where cmake was ran) using --idl-library-build-dir'''.format(config_path))
+    # CMake will freak out if there are DOS-style slashes in the path
+    args.idl_library_build_dir = args.idl_library_build_dir.as_posix()
 
     # Generate The Python Package
     generate(vars(args))

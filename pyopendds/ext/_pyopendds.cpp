@@ -11,6 +11,8 @@
 #include <dds/DCPS/WaitSet.h>
 #include <dds/Version.h>
 
+#include <ace/Init_ACE.h>
+
 using namespace pyopendds;
 
 PyObject* Errors::pyopendds_ = nullptr;
@@ -58,6 +60,13 @@ DDS::DomainParticipantFactory_var participant_factory;
  */
 PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
 {
+#ifdef _WIN32
+  // On Windows it apparently doesn't call this automatically. If not called it
+  // can cause an access violation when trying to use the "managed objects" in
+  // ACE.
+  ACE::init();
+#endif
+
   /*
    * In addition to the need to convert the arguments into an argv array,
    * OpenDDS will mess with argv and argc so we need to create copies that we
