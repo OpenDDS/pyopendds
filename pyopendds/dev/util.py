@@ -5,6 +5,9 @@ from pathlib import Path
 import shutil
 
 
+build_type = os.environ.get('PYOPENDDS_BUILD_TYPE', 'Release')
+
+
 def get_include_path() -> Path:
     return Path(__file__).resolve().parent / 'include'
 
@@ -93,7 +96,7 @@ def build_cmake_project(source_dir, build_dir, cfg_args=[], build_args=[]):
         '-B', str(build_dir),
         '-GNinja',  # cmake-build-extension provides Ninja
         f'-DCMAKE_MAKE_PROGRAM={shutil.which("ninja")}',
-        '-DCMAKE_BUILD_TYPE=Release',
+        f'-DCMAKE_BUILD_TYPE={build_type}',
         *cfg_args
     )
-    run_cmake('--build', str(build_dir), *build_args)
+    run_cmake('--build', str(build_dir), '--config', build_type, *build_args)

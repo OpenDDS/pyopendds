@@ -1,10 +1,12 @@
 import sys
+import os
 import inspect
 from pathlib import Path
 from setuptools import setup, find_packages
 
 import cmake_build_extension
 
+build_type = os.environ.get('PYOPENDDS_BUILD_TYPE', 'Release')
 init_py = inspect.cleandoc(
     """
     import cmake_build_extension as _cmake_build_extension
@@ -27,6 +29,7 @@ setup(
                 '-DPYOPENDDS_INCLUDE='
                     + str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
             ],
+            cmake_build_type=build_type,
         )
     ],
     cmdclass=dict(build_ext=cmake_build_extension.BuildExtension),
