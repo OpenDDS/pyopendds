@@ -6,6 +6,7 @@
 #include <dds/DCPS/TypeSupportImpl.h>
 #include <dds/DdsDcpsDomainC.h>
 #include <dds/DCPS/WaitSet.h>
+#include <dds/Version.h>
 
 #include <stdexcept>
 #include <map>
@@ -153,7 +154,13 @@ public:
   typedef typename Traits::MessageSequenceType IdlTypeSequence;
 
   typedef typename Traits::TypeSupportType TypeSupport;
-  typedef typename Traits::TypeSupportTypeImpl TypeSupportImpl;
+  typedef typename
+#if OPENDDS_VERSION_AT_LEAST(3, 19, 0)
+    Traits::TypeSupportImplType
+#else
+    Traits::TypeSupportTypeImpl
+#endif
+    TypeSupportImpl;
   typedef typename Traits::DataWriterType DataWriter;
   typedef typename Traits::DataReaderType DataReader;
 
