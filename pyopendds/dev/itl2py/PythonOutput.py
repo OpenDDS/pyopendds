@@ -62,12 +62,10 @@ class PythonOutput(Output):
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
-        elif self.is_local_type(field_type):
-            return field_type.local_name()
+        # elif self.is_local_type(field_type):
+        #     return field_type.local_name()
         else:
             return field_type.local_name()
-            # return self.context['package_name'] + '.' + field_type.name.join()
-            # return field_type.name.join()
 
     def get_python_default_value_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
@@ -79,7 +77,13 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                return 'field(default_factory=list)'
+                subfield_type = field_type.base_type
+                subtype_name = self.get_python_type_string(subfield_type)
+                print(subtype_name)
+                if isinstance(subfield_type, PrimitiveType):
+                    return 'field(default_factory=lambda :['+self.primitive_types[subfield_type.kind][1]+'])'
+                else : 
+                    return 'field(default_factory=lambda :['+subtype_name+'()])'
             elif isinstance(field_type, ArrayType):
                 return 'field(default_factory=list)'
             else:
