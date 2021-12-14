@@ -24,11 +24,7 @@ public:
 
     static void cpp_to_python(const T& cpp, PyObject*& py)
     {
-        if ( !cpp ) {
-            py = Py_False;
-        } else {
-            py = Py_True;
-        }
+        py = PyBool_FromLong(cpp);
     }
 
     static void python_to_cpp(PyObject* py, T& cpp)

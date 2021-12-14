@@ -53,17 +53,17 @@ public:
     PyObject* cls = get_python_class();
     /*{%- if type.to_replace %}*/
     if (py) Py_DECREF(py);
-    PyObject* args;
+    Ref args;
     /*{{ type.new_lines | indent(4) }}*/
-    py = PyObject_CallObject(cls, args);
+    py = PyObject_CallObject(cls, *args);
     /*{% else %}*/
     /*{% if type.sequence %}*/
     if (py) Py_DECREF(py);
     py = nullptr;
     /*{% endif %}*/
-    PyObject* args;
+    Ref args;
     /*{{ type.new_lines | indent(6) }}*/
-    py = PyObject_CallObject(cls, args);
+    py = PyObject_CallObject(cls, *args);
     /*{% if type.to_lines %}*//*{{ type.to_lines | indent(4) }}*//*{% endif %}*/
     /*{%- endif %}*/
   }
@@ -85,9 +85,9 @@ public:
         throw Exception(msg.str().c_str(), PyExc_TypeError);
       }
     } else {
-      PyObject* args;
+      Ref args;
       /*{{ type.new_lines | indent(6) }}*/
-      py = PyObject_CallObject(cls, args);
+      py = PyObject_CallObject(cls, *args);
     }
     /*{% if type.from_lines %}*//*{{ type.from_lines | indent(4) }}*//*{% endif %}*/
     /*{% endif %}*/
