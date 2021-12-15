@@ -79,7 +79,6 @@ class PythonOutput(Output):
             elif isinstance(field_type, SequenceType):
                 subfield_type = field_type.base_type
                 subtype_name = self.get_python_type_string(subfield_type)
-                print(subtype_name)
                 if isinstance(subfield_type, PrimitiveType):
                     return 'field(default_factory=lambda :['+self.primitive_types[subfield_type.kind][1]+'])'
                 else : 
