@@ -85,11 +85,14 @@ def mk_tmp_package_proj(args: argparse.Namespace):
     # print(f"Init dummy '{args.package_name}' Python package...")
     # subprocess.run(['python3', 'setup.py', 'install'],
     #                cwd=args.output_dir)
+    
+    # add args to the make command
+    make_opts = args.make_opts.split(" ")
 
     # Run cmake to prepare the python to cpp bindings
     subprocess.run(['mkdir', 'build'], cwd=args.output_dir)
     subprocess.run(['cmake', '..'], cwd=f"{args.output_dir}/build")
-    subprocess.run(['make'], cwd=f"{args.output_dir}/build")
+    subprocess.run(['make'] + make_opts, cwd=f"{args.output_dir}/build")
 
     # Build the python IDL package
     itl_files = resolve_wildcard('*.itl', f'{args.output_dir}/build')
@@ -131,6 +134,8 @@ def run():
                         help='create a directory for the generated sources.')
     parser.add_argument('-i', '--include-paths', nargs='*', metavar='',
                         help='the include paths needed by the IDL files, if any')
+    parser.add_argument('-m', '--make-opts', metavar='',
+                        help='arguments passed to make')
 
     args = parser.parse_args()
     current_dir = os.getcwd()
@@ -198,6 +203,9 @@ def run():
     # Parse package name. If no name is given, the basename of the first .idl file will be taken
     if not args.package_name:
         args.__setattr__('package_name', os.path.splitext(os.path.basename(args.input_files[0]))[0])
+
+    if not args.make_opts:
+        args.__setattr__('make_opts', "")
 
     # Process generation and packaging
     mk_tmp_package_proj(args=args)
