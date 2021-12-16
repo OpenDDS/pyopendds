@@ -119,7 +119,7 @@ class CppOutput(Output):
             'to_lines': '\n'.join(struct_to_lines),
             'from_lines': '\n'.join(struct_from_lines),
             'new_lines': '\n'.join([
-                'args = nullptr;'
+                'args = PyTuple_New(0);'
             ]),
             'is_topic_type': struct_type.is_topic_type,
             'to_replace': False,
@@ -191,7 +191,7 @@ class CppOutput(Output):
             'to_lines': '\n'.join(sequence_to_lines),
             'from_lines': '\n'.join(sequence_from_lines),
             'new_lines': '\n'.join([
-                'args = nullptr;'
+                'args = PyTuple_New(0);'
             ]),
             'is_topic_type': sequence_type.is_topic_type,
             'sequence': True,
