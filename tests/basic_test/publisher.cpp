@@ -11,18 +11,17 @@
 
 using OpenDDS::DCPS::retcode_to_string;
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[])
+{
   try {
     // Init OpenDDS
     TheServiceParticipant->default_configuration_file("rtps.ini");
-    DDS::DomainParticipantFactory_var opendds =
-      TheParticipantFactoryWithArgs(argc, argv);
+    DDS::DomainParticipantFactory_var opendds = TheParticipantFactoryWithArgs(argc, argv);
 
     DDS::DomainParticipantQos part_qos;
     opendds->get_default_participant_qos(part_qos);
-    DDS::DomainParticipant_var participant = opendds->create_participant(
-      34, part_qos, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    DDS::DomainParticipant_var participant =
+      opendds->create_participant(34, part_qos, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
     if (!participant) {
       std::cerr << "Error: Failed to create participant" << std::endl;
       return 1;
@@ -31,24 +30,20 @@ int main(int argc, char* argv[]) {
     basic::ReadingTypeSupport_var ts = new basic::ReadingTypeSupportImpl();
     DDS::ReturnCode_t rc = ts->register_type(participant.in(), "");
     if (rc != DDS::RETCODE_OK) {
-      std::cerr
-        << "Error: Failed to register type: "
-        << retcode_to_string(rc) << std::endl;
+      std::cerr << "Error: Failed to register type: " << retcode_to_string(rc) << std::endl;
       return 1;
     }
 
     CORBA::String_var type_name = ts->get_type_name();
     DDS::Topic_var topic = participant->create_topic(
-      "Readings", type_name.in(), TOPIC_QOS_DEFAULT, 0,
-      OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+      "Readings", type_name.in(), TOPIC_QOS_DEFAULT, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
     if (!topic) {
       std::cerr << "Error: Failed to create topic" << std::endl;
       return 1;
     }
 
-    DDS::Publisher_var publisher = participant->create_publisher(
-      PUBLISHER_QOS_DEFAULT, 0,
-      OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    DDS::Publisher_var publisher =
+      participant->create_publisher(PUBLISHER_QOS_DEFAULT, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
     if (!publisher) {
       std::cerr << "Error: Failed to create publisher" << std::endl;
       return 1;
@@ -56,9 +51,8 @@ int main(int argc, char* argv[]) {
 
     DDS::DataWriterQos qos;
     publisher->get_default_datawriter_qos(qos);
-    DDS::DataWriter_var writer = publisher->create_datawriter(
-      topic.in(), qos, 0,
-      OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    DDS::DataWriter_var writer =
+      publisher->create_datawriter(topic.in(), qos, 0, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
     if (!writer) {
       std::cerr << "Error: Failed to create writer" << std::endl;
       return 1;
@@ -89,8 +83,7 @@ int main(int argc, char* argv[]) {
     ACE_OS::sleep(1);
 
     // Write Sample
-    basic::ReadingDataWriter_var reading_writer =
-      basic::ReadingDataWriter::_narrow(writer);
+    basic::ReadingDataWriter_var reading_writer = basic::ReadingDataWriter::_narrow(writer);
     basic::Reading reading;
     reading.kind
 #ifdef CPP11_IDL
@@ -110,8 +103,7 @@ int main(int argc, char* argv[]) {
       = "Somewhere";
     rc = reading_writer->write(reading, DDS::HANDLE_NIL);
     if (rc != DDS::RETCODE_OK) {
-      std::cerr << "Error: Failed to write: "
-        << retcode_to_string(rc) << std::endl;
+      std::cerr << "Error: Failed to write: " << retcode_to_string(rc) << std::endl;
       return 1;
     }
 

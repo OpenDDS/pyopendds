@@ -20,15 +20,15 @@ namespace pyopendds {
 class Exception : public std::exception {
 public:
   Exception()
-  : message_(nullptr)
-  , pyexc_(nullptr)
+    : message_(nullptr)
+    , pyexc_(nullptr)
   {
     assert(PyErr_Occurred());
   }
 
   Exception(const char* message, PyObject* pyexc)
-  : message_(message)
-  , pyexc_(pyexc)
+    : message_(message)
+    , pyexc_(pyexc)
   {
   }
 
@@ -56,7 +56,10 @@ private:
  */
 class Ref {
 public:
-  Ref(PyObject* o = nullptr) : o_(o) {}
+  Ref(PyObject* o = nullptr)
+    : o_(o)
+  {
+  }
   ~Ref() { Py_XDECREF(o_); }
   PyObject*& operator*() { return o_; }
   Ref& operator=(PyObject* o)
@@ -92,8 +95,7 @@ T* get_capsule(PyObject* obj)
     PyErr_Clear();
   }
   if (!rv) {
-    PyErr_SetString(PyExc_TypeError,
-      "Python object does not have a valid capsule pointer");
+    PyErr_SetString(PyExc_TypeError, "Python object does not have a valid capsule pointer");
   }
   return rv;
 }
@@ -102,7 +104,9 @@ template <typename T>
 bool set_capsule(PyObject* py, T* cpp, PyCapsule_Destructor cb)
 {
   PyObject* capsule = PyCapsule_New(cpp, nullptr, cb);
-  if (!capsule) return true;
+  if (!capsule) {
+    return true;
+  }
   const bool error = PyObject_SetAttrString(py, capsule_name, capsule);
   Py_DECREF(capsule);
   return error;
@@ -110,31 +114,28 @@ bool set_capsule(PyObject* py, T* cpp, PyCapsule_Destructor cb)
 
 class Errors {
 public:
-  static PyObject* pyopendds()
-  {
-    return pyopendds_;
-  }
+  static PyObject* pyopendds() { return pyopendds_; }
 
-  static PyObject* PyOpenDDS_Error()
-  {
-    return PyOpenDDS_Error_;
-  }
+  static PyObject* PyOpenDDS_Error() { return PyOpenDDS_Error_; }
 
-  static PyObject* ReturnCodeError()
-  {
-    return ReturnCodeError_;
-  }
+  static PyObject* ReturnCodeError() { return ReturnCodeError_; }
 
   static bool cache()
   {
     pyopendds_ = PyImport_ImportModule("pyopendds");
-    if (!pyopendds_) return true;
+    if (!pyopendds_) {
+      return true;
+    }
 
     PyOpenDDS_Error_ = PyObject_GetAttrString(pyopendds_, "PyOpenDDS_Error");
-    if (!PyOpenDDS_Error_) return true;
+    if (!PyOpenDDS_Error_) {
+      return true;
+    }
 
     ReturnCodeError_ = PyObject_GetAttrString(pyopendds_, "ReturnCodeError");
-    if (!ReturnCodeError_) return true;
+    if (!ReturnCodeError_) {
+      return true;
+    }
 
     return false;
   }
@@ -150,6 +151,6 @@ private:
   static PyObject* ReturnCodeError_;
 };
 
-} // namesapce pyopendds
+} // namespace pyopendds
 
 #endif
