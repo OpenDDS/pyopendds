@@ -58,7 +58,7 @@ def run_clang_format():
             continue
         p = file.relative_to(pyopendds_path)
         try:
-            run_command('clang-format', '--Werror', '--dry-run', str(p))
+            run_command('clang-format-12', '--Werror', '--dry-run', str(p))
         except RunCommandError as e:
             print(str(p), 'failed:', str(e), file=sys.stderr)
             failed = True
