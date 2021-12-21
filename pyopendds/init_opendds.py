@@ -4,7 +4,7 @@
 import sys
 
 
-def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
+def init_opendds(*args, default_rtps=True,isRtpstransport=True, opendds_debug_level=0):
     """ Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
     passing the positional arguments in.
 
@@ -25,4 +25,4 @@ def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
         args = args + ('-DCPSDebugLevel', str(opendds_debug_level))
 
     from _pyopendds import init_opendds_impl  # noqa
-    init_opendds_impl(*args, default_rtps=default_rtps)
+    init_opendds_impl(*args, default_rtps=default_rtps,isRtpstransport=isRtpstransport)

@@ -3,6 +3,7 @@
 #include <dds/DCPS/transport/framework/TransportRegistry.h>
 #include <dds/DCPS/transport/framework/TransportConfig.h>
 #include <dds/DCPS/transport/framework/TransportInst.h>
+#include "dds/DCPS/transport/shmem/ShmemInst.h"
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
@@ -147,6 +148,7 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
     * Process default_rtps
     */
     bool default_rtps = true;
+    bool isRtpstransport = true;
     Ref default_rtps_obj{PyMapping_GetItemString(kw, "default_rtps")};
     if (default_rtps_obj) {
         int result = PyObject_IsTrue(*default_rtps_obj);
@@ -158,15 +160,36 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
     if (default_rtps) {
         TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
     }
-    OpenDDS::DCPS::TransportConfig_rch transport_config =
-    TheTransportRegistry->create_config("default_rtps_transport_config");
 
-    OpenDDS::DCPS::TransportInst_rch transport_inst =
-    TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
+    Ref isRtpstransport_obj{PyMapping_GetItemString(kw, "isRtpstransport")};
+    if(isRtpstransport_obj){
+        int result2 = PyObject_IsTrue(*isRtpstransport_obj);
+        if (result2 == -1) return nullptr;
+        isRtpstransport= result2;
+    }else{
+        PyErr_Clear();
+    }
+    OpenDDS::DCPS::TransportConfig_rch transport_config;
+    OpenDDS::DCPS::TransportInst_rch transport_inst;
+    if (isRtpstransport){
+        transport_config =
+        TheTransportRegistry->create_config("default_rtps_transport_config");
 
+        transport_inst =
+        TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
+
+    }else{
+        // Create SHMEM transport config for this domainId
+        transport_config = TheTransportRegistry->create_config("default_shmem_transport_config");
+        transport_inst =TheTransportRegistry->create_inst("default_shmem_transport", "shmem");
+        OpenDDS::DCPS::ShmemInst * shmemInst = static_cast<OpenDDS::DCPS::ShmemInst *>(transport_inst.get());
+        if(shmemInst != nullptr) {
+            shmemInst->pool_size_ = 67108864; // (4x 4K image size);
+            shmemInst->datalink_control_size_ = 8192;
+        }
+    }
     transport_config->instances_.push_back(transport_inst);
     TheTransportRegistry->global_config(transport_config);
-
 
     // Initialize OpenDDS
     participant_factory = TheParticipantFactoryWithArgs(argc, argv);
