@@ -7,7 +7,6 @@ import sys
 
 from zipfile import ZipFile
 from .gencmakefile import gen_cmakelist
-from .gensetupfile import gen_setup
 
 
 def prompt(question):
@@ -33,7 +32,7 @@ def in_virtualenv():
 
 def resolve_wildcard(expr, dir_name) -> list:
     files = glob.glob(f'{dir_name}/{expr}')
-    rem_part = (len(dir_name)+1)
+    rem_part = (len(dir_name) + 1)
     return list(map(lambda s: s[rem_part:], files))
 
 
@@ -41,11 +40,14 @@ def subprocess_check_run(commands: list, cwd: str, env=None, description: str = 
     try:
         subprocess.run(commands, cwd=cwd, check=True, env=env)
     except subprocess.CalledProcessError as err:
-        print()
+        print()  # print blank line
         if description:
             print(description)
 
-        print(f"Exiting pyidl with status {err.returncode}.")
+        print(f"An error occured with the following command:\n"
+              f"\tCWD: {cwd}\n"
+              f"\tCMD: {' '.join(err.cmd)}\n"
+              f"Exiting pyidl with status {err.returncode}.")
         sys.exit(err.returncode)
 
 
@@ -84,29 +86,14 @@ def mk_tmp_package_proj(args: argparse.Namespace):
                               include_dirs=args.include_paths,
                               venv_path=os.environ['VIRTUAL_ENV']))
 
-    # Create setup.py
-    mk_tmp_file(f"{args.output_dir}/setup.py",
-                gen_setup(target_name=args.package_name))
-
-    # Create a the empty __init__.py to indicate the project is a package
-    # subprocess.run(['mkdir', args.package_name],
-    #                cwd=args.output_dir)
-    # mk_tmp_file(f"{args.output_dir}/{args.package_name}/__init__.py", "")
-    #
-    # # Install a dummy python package [package_name]
-    # print(f"Init dummy '{args.package_name}' Python package...")
-    # subprocess.run(['python3', 'setup.py', 'install'],
-    #                cwd=args.output_dir)
-    
     # add args to the make command
-    if args.make_opts=="":
-    	make_opts = []
+    if args.make_opts == "":
+        make_opts = []
     else:
-    	make_opts = args.make_opts.split(" ")
-
+        make_opts = args.make_opts.split(" ")
 
     # Run cmake to prepare the python to cpp bindings
-    subprocess.run(['mkdir', 'build'], cwd=args.output_dir)
+    subprocess.run(['mkdir', '-p', 'build'], cwd=args.output_dir)
     subprocess_check_run(['cmake', '..'], cwd=f"{args.output_dir}/build")
     subprocess_check_run(['make'] + make_opts, cwd=f"{args.output_dir}/build")
 
@@ -124,7 +111,8 @@ def mk_tmp_package_proj(args: argparse.Namespace):
     # Install the python package py[package_name]
     tmp_env = os.environ.copy()
     tmp_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
-    subprocess_check_run(['python3', 'setup.py', 'install'],
+
+    subprocess_check_run(['pip', 'install', '.'],
                          cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
                          env=tmp_env)
 
@@ -162,7 +150,9 @@ def run():
 
     # Check if an environment is sourced
     if not in_virtualenv():
-        prompt('No virtual environment seems to be sourced. Would you like to continue ?')
+        if not prompt('No virtual environment seems to be sourced. Would you like to continue ?'):
+            print("Aborting...")
+            sys.exit(1)
 
     # Initialize include paths or convert directories names into absolute paths
     if not args.include_paths:
@@ -187,17 +177,21 @@ def run():
             print("Error: no IDL file to compile in the current directory.")
             sys.exit(1)
 
+    # Parse package name. If no name is given, the basename of the first .idl file will be taken
+    if not args.package_name:
+        args.__setattr__('package_name', os.path.splitext(os.path.basename(args.input_files[0]))[0])
+
     # Check the ouput_dir (default will be $CWD/temp)
     args.__setattr__('user_defined_output', True)
     if not args.output_dir:
-        default_output_dir = 'temp'
+        default_output_dir = f'pyidl-{args.package_name}-build'
         args.__setattr__('output_dir', f'{os.getcwd()}/{default_output_dir}')
         args.__setattr__('user_defined_output', False)
     else:
         output_dir_abspath = os.path.realpath(args.output_dir)
         if os.path.isdir(output_dir_abspath) and len(os.listdir(output_dir_abspath)) != 0:
-            print(f"Error: {args.output_dir} is not empty.")
-            sys.exit(1)
+            print(f"{output_dir_abspath} is not empty. Building and installing anyway...")
+            # sys.exit(1)
     args.__setattr__('output_dir', os.path.realpath(args.output_dir))
 
     # Create the output directory if it does not exist
@@ -219,10 +213,6 @@ def run():
     else:
         args.__setattr__('pyopendds_ld', f'{args.pyopendds_ld}{include_subpath}')
     args.__setattr__('pyopendds_ld', os.path.realpath(args.pyopendds_ld))
-
-    # Parse package name. If no name is given, the basename of the first .idl file will be taken
-    if not args.package_name:
-        args.__setattr__('package_name', os.path.splitext(os.path.basename(args.input_files[0]))[0])
 
     if not args.make_opts:
         args.__setattr__('make_opts', "")
