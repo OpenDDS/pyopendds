@@ -37,6 +37,18 @@ def resolve_wildcard(expr, dir_name) -> list:
     return list(map(lambda s: s[rem_part:], files))
 
 
+def subprocess_check_run(commands: list, cwd: str, env=None, description: str = ""):
+    try:
+        subprocess.run(commands, cwd=cwd, check=True, env=env)
+    except subprocess.CalledProcessError as err:
+        print()
+        if description:
+            print(description)
+
+        print(f"Exiting pyidl with status {err.returncode}.")
+        sys.exit(err.returncode)
+
+
 def extract_include_path_from_egg(output_dir: str):
     # potentially is into a egg archive
     script_path = os.path.dirname(os.path.realpath(__file__))
@@ -91,22 +103,26 @@ def mk_tmp_package_proj(args: argparse.Namespace):
 
     # Run cmake to prepare the python to cpp bindings
     subprocess.run(['mkdir', 'build'], cwd=args.output_dir)
-    subprocess.run(['cmake', '..'], cwd=f"{args.output_dir}/build")
-    subprocess.run(['make'] + make_opts, cwd=f"{args.output_dir}/build")
+    subprocess_check_run(['cmake', '..'], cwd=f"{args.output_dir}/build")
+    subprocess_check_run(['make'] + make_opts, cwd=f"{args.output_dir}/build")
 
     # Build the python IDL package
     itl_files = resolve_wildcard('*.itl', f'{args.output_dir}/build')
-    subprocess.run(['itl2py', '-o', f"{args.package_name}_ouput",
-                    f"{args.package_name}_idl", *itl_files,
-                    '--package-name', f'py{args.package_name}'],
-                   cwd=f"{args.output_dir}/build")
+    subprocess_check_run(['itl2py',
+                          '-o',
+                          f"{args.package_name}_ouput",
+                          f"{args.package_name}_idl",
+                          *itl_files,
+                          '--package-name',
+                          f'py{args.package_name}'],
+                         cwd=f"{args.output_dir}/build")
 
     # Install the python package py[package_name]
     tmp_env = os.environ.copy()
     tmp_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
-    subprocess.run(['python3', 'setup.py', 'install'],
-                   cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
-                   env=tmp_env)
+    subprocess_check_run(['python3', 'setup.py', 'install'],
+                         cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
+                         env=tmp_env)
 
     # Cleanup temporary folder
     if not args.user_defined_output:
