@@ -99,7 +99,11 @@ def mk_tmp_package_proj(args: argparse.Namespace):
     #                cwd=args.output_dir)
     
     # add args to the make command
-    make_opts = args.make_opts.split(" ")
+    if args.make_opts=="":
+    	make_opts = []
+    else:
+    	make_opts = args.make_opts.split(" ")
+
 
     # Run cmake to prepare the python to cpp bindings
     subprocess.run(['mkdir', 'build'], cwd=args.output_dir)
