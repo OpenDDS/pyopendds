@@ -78,7 +78,7 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                return 'field(default_factory=list)'
+                return 'field(default_factory=%s)'%(type_name,)
             elif isinstance(field_type, ArrayType):
                 return 'field(default_factory=list)'
             else:
@@ -115,7 +115,7 @@ class PythonOutput(Output):
             local_name=sequence_type.local_name(),
             type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
             sequence=dict(
-                type=sequence_type.base_type,
+                type=sequence_type.base_type.local_name(),
                 len=sequence_type.max_count,
             ),
         ))
