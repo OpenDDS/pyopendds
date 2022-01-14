@@ -29,7 +29,8 @@ class {{ type.local_name }}(_pyopendds_enum):
 {%- elif type.sequence %}
 
 class {{ type.local_name }}(list):
-    pass
+    _base_type = {{ type.sequence.type }}
+    _max_len = {{ type.sequence.len }}
 {%- else %}
 # {{ type.local_name }} was left unimplmented
 {% endif -%}

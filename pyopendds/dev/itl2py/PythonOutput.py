@@ -75,12 +75,7 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                subfield_type = field_type.base_type
-                subtype_name = self.get_python_type_string(subfield_type)
-                if isinstance(subfield_type, PrimitiveType):
-                    return "field(default_factory=lambda :[{type}])".format(type=self.primitive_types[subfield_type.kind][1])
-                else : 
-                    return 'field(default_factory=lambda :[{type}()])'.format(type=subtype_name)
+                return "field(default_factory={type})".format(type=type_name)
             elif isinstance(field_type, ArrayType):
                 return 'field(default_factory=list)'
             else:
@@ -117,7 +112,7 @@ class PythonOutput(Output):
             local_name=sequence_type.local_name(),
             type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
             sequence=dict(
-                type=sequence_type.base_type,
+                type=sequence_type.base_type.local_name(),
                 len=sequence_type.max_count,
             ),
         ))
