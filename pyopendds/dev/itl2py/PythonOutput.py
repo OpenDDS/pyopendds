@@ -75,7 +75,7 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + '.' + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                return 'field(default_factory=%s)'%(type_name,)
+                return "field(default_factory={type})".format(type=type_name)
             elif isinstance(field_type, ArrayType):
                 return 'field(default_factory=list)'
             else:
