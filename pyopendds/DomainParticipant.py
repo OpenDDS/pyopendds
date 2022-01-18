@@ -13,7 +13,7 @@ except ImportError as e:
 
 class DomainParticipant(object):
 
-    def __init__(self, domain: int, qos=None, listener=None,isRtpstransport=True):
+    def __init__(self, domain: int, qos=None, listener=None, isRtpstransport=True):
         self.domain = int(domain)
         self.qos = qos
         self.listener = listener
