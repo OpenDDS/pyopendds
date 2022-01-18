@@ -22,7 +22,7 @@ class DomainParticipant(object):
         self.publishers = []
         self._registered_typesupport = []
         from _pyopendds import create_participant  # noqa
-        create_participant(self, domain,int(isRtpstransport))
+        create_participant(self, domain,isRtpstransport)
     def __del__(self):
         participant_cleanup(self)
 

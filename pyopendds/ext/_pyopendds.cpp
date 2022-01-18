@@ -205,7 +205,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     Ref pyparticipant;
     unsigned int domain;
     int isRtpstransport;
-    if (!PyArg_ParseTuple(args, "OIi", &*pyparticipant, &domain,&isRtpstransport)) {
+    if (!PyArg_ParseTuple(args, "OIi", &*pyparticipant, &domain, &isRtpstransport)) {
         return nullptr;
     }
     pyparticipant++;
@@ -236,7 +236,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     // Create Participant
     DDS::DomainParticipantQos qos;
     participant_factory->get_default_participant_qos(qos);
-    
+
     DDS::DomainParticipant* participant = participant_factory->create_participant(
         domain, qos, DDS::DomainParticipantListener::_nil(),
         OpenDDS::DCPS::DEFAULT_STATUS_MASK);
