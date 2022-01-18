@@ -13,7 +13,7 @@ except ImportError as e:
 
 class DomainParticipant(object):
 
-    def __init__(self, domain: int, qos=None, listener=None):
+    def __init__(self, domain: int, qos=None, listener=None,isRtpstransport=True):
         self.domain = int(domain)
         self.qos = qos
         self.listener = listener
@@ -21,10 +21,8 @@ class DomainParticipant(object):
         self.subscribers = []
         self.publishers = []
         self._registered_typesupport = []
-
         from _pyopendds import create_participant  # noqa
-        create_participant(self, domain)
-
+        create_participant(self, domain,int(isRtpstransport))
     def __del__(self):
         participant_cleanup(self)
 
