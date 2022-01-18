@@ -3,6 +3,7 @@
 #include <dds/DCPS/transport/framework/TransportRegistry.h>
 #include <dds/DCPS/transport/framework/TransportConfig.h>
 #include <dds/DCPS/transport/framework/TransportInst.h>
+#include "dds/DCPS/transport/shmem/ShmemInst.h"
 
 #include <dds/DdsDcpsInfrastructureC.h>
 #include <dds/DdsDcpsCoreC.h>
@@ -12,6 +13,7 @@
 
 #include <chrono>
 #include <thread>
+
 
 using namespace pyopendds;
 
@@ -158,15 +160,6 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
     if (default_rtps) {
         TheServiceParticipant->set_default_discovery(OpenDDS::DCPS::Discovery::DEFAULT_RTPS);
     }
-    OpenDDS::DCPS::TransportConfig_rch transport_config =
-    TheTransportRegistry->create_config("default_rtps_transport_config");
-
-    OpenDDS::DCPS::TransportInst_rch transport_inst =
-    TheTransportRegistry->create_inst("default_rtps_transport", "rtps_udp");
-
-    transport_config->instances_.push_back(transport_inst);
-    TheTransportRegistry->global_config(transport_config);
-
 
     // Initialize OpenDDS
     participant_factory = TheParticipantFactoryWithArgs(argc, argv);
@@ -210,12 +203,36 @@ void delete_participant_var(PyObject* part_capsule)
 PyObject* create_participant(PyObject* self, PyObject* args)
 {
     Ref pyparticipant;
-    unsigned domain;
-    if (!PyArg_ParseTuple(args, "OI", &*pyparticipant, &domain)) {
+    unsigned int domain;
+    int isRtpstransport;
+    if (!PyArg_ParseTuple(args, "OIi", &*pyparticipant, &domain, &isRtpstransport)) {
         return nullptr;
     }
     pyparticipant++;
     numParticipant++;
+    
+    OpenDDS::DCPS::TransportConfig_rch transport_config;
+    OpenDDS::DCPS::TransportInst_rch transport_inst;
+    if (isRtpstransport==1){
+        transport_config =
+        TheTransportRegistry->create_config("default_rtps_transport_config_"+ std::to_string(domain));
+
+        transport_inst =
+        TheTransportRegistry->create_inst("default_rtps_transport_"+std::to_string(domain), "rtps_udp");
+
+    }else{
+        // Create SHMEM transport config for this domainId
+        transport_config = TheTransportRegistry->create_config("default_shmem_transport_config_"+ std::to_string(domain));
+        transport_inst =TheTransportRegistry->create_inst("default_shmem_transport_"+std::to_string(domain), "shmem");
+        OpenDDS::DCPS::ShmemInst * shmemInst = static_cast<OpenDDS::DCPS::ShmemInst *>(transport_inst.get());
+        if(shmemInst != nullptr) {
+            shmemInst->pool_size_ = 67108864; // (4x 4K image size);
+            shmemInst->datalink_control_size_ = 8192;
+        }
+    }
+    transport_config->instances_.push_back(transport_inst);
+    TheTransportRegistry->domain_default_config(domain, transport_config);
+   
     // Create Participant
     DDS::DomainParticipantQos qos;
     participant_factory->get_default_participant_qos(qos);
