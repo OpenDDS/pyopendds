@@ -22,7 +22,7 @@ class PythonOutput(Output):
         PrimitiveType.Kind.i64: ('int', '0'),
         PrimitiveType.Kind.f32: ('float', '0.0'),
         PrimitiveType.Kind.f64: ('float', '0.0'),
-        PrimitiveType.Kind.c8: ('str', "'\\x00'"),
+        PrimitiveType.Kind.c8: ('Byte', 'Byte(0x00)'),
         PrimitiveType.Kind.c16: ('str', "'\\x00'"),
         PrimitiveType.Kind.s8: ('str', "''"),
         PrimitiveType.Kind.s16: ('str', "''"),
@@ -108,11 +108,14 @@ class PythonOutput(Output):
 
     def visit_sequence(self, sequence_type):
         self.context['has_sequence'] = True
+        type = sequence_type.base_type.local_name()
+        if type == None :
+            type =  self.primitive_types[sequence_type.base_type.kind][0]
         self.context['types'].append(dict(
             local_name=sequence_type.local_name(),
             type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
             sequence=dict(
-                type=sequence_type.base_type.local_name(),
+                type = type,
                 len=sequence_type.max_count,
             ),
         ))
