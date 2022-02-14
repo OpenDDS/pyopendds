@@ -1,3 +1,4 @@
+from pathlib import Path
 from setuptools import setup, find_packages
 from pyopendds.dev.cmake import CMakeWrapperExtension, CMakeWrapperBuild
 import distutils.command.sdist
