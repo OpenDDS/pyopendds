@@ -42,7 +42,7 @@ class CppOutput(Output):
             )
         ))
         super().__init__(new_context, context['output'],
-            {context['native_package_name'] + '.cpp': 'user.cpp'})
+            {context['native_package_name'] + '.cpp': 'user_cpp.tpl'})
 
     def visit_struct(self, struct_type):
         struct_to_lines = []
