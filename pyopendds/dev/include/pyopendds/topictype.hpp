@@ -165,16 +165,16 @@ public:
         if (rc != DDS::RETCODE_OK) {
             // TODO: Temporarily inhibit this error and let the user check for its return code
             // PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
-            return Py_None;
+            Py_RETURN_NONE;
         }
 // #endif
-        PyObject* rv = nullptr;
         if (info.valid_data) {
+            PyObject* rv = nullptr;
             Type<IdlType>::cpp_to_python(sample, rv);
+            return rv;
         } else {
-            rv = Py_None;
+            Py_RETURN_NONE;
         }
-        return rv;
     }
 
     PyObject* write(PyObject* pywriter, PyObject* pysample)
