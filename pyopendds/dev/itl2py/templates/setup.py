@@ -6,6 +6,7 @@ from pyopendds.dev.cmake import \
 
 setup(
     name='{{ package_name }}',
+    version='{{ package_version }}',
     packages=find_packages(),
     ext_modules=[CMakeWrapperExtension(
         name='{{ native_package_name }}',

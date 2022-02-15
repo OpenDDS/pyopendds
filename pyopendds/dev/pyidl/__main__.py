@@ -4,6 +4,7 @@ import os
 import os.path
 import subprocess
 import sys
+from shlex import split
 
 from zipfile import ZipFile
 from .gencmakefile import gen_cmakelist
@@ -86,35 +87,38 @@ def mk_tmp_package_proj(args: argparse.Namespace):
                               include_dirs=args.include_paths,
                               venv_path=os.environ['VIRTUAL_ENV']))
 
-    # add args to the make command
-    if args.make_opts == "":
-        make_opts = []
-    else:
-        make_opts = args.make_opts.split(" ")
-
     # Run cmake to prepare the python to cpp bindings
-    subprocess.run(['mkdir', '-p', 'build'], cwd=args.output_dir)
-    subprocess_check_run(['cmake', '..'], cwd=f"{args.output_dir}/build")
-    subprocess_check_run(['make'] + make_opts, cwd=f"{args.output_dir}/build")
+    os.makedirs(os.path.join(args.output_dir, "build"), exist_ok=True)
+    subprocess_check_run(split("cmake .."), cwd=f"{args.output_dir}/build")
+    subprocess_check_run(split(f"make {args.make_opts}"), cwd=f"{args.output_dir}/build")
 
     # Build the python IDL package
-    itl_files = resolve_wildcard('*.itl', f'{args.output_dir}/build')
-    subprocess_check_run(['itl2py',
-                          '-o',
-                          f"{args.package_name}_ouput",
-                          f"{args.package_name}_idl",
-                          *itl_files,
-                          '--package-name',
-                          f'py{args.package_name}'],
+    itl_files: list = resolve_wildcard('*.itl', f'{args.output_dir}/build')
+    subprocess_check_run(split("itl2py -o{package_name}_ouput "
+                               "{package_name}_idl {files} "
+                               "--package-name py{package_name} "
+                               "--package-version=\"{version}\"".format(package_name=args.package_name,
+                                                                        files=' '.join(itl_files),
+                                                                        version=args.package_version)),
                          cwd=f"{args.output_dir}/build")
 
     # Install the python package py[package_name]
     tmp_env = os.environ.copy()
     tmp_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
 
-    subprocess_check_run(['pip', 'install', '.'],
+    subprocess_check_run(split(f"python3 setup.py bdist_wheel --dist-dir={args.output_dir}/dist"),
                          cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
                          env=tmp_env)
+
+    if args.force_install:
+        whl_list = glob.glob(f"{args.output_dir}/dist/py{args.package_name}*.whl")
+        if len(whl_list):
+            package_path = whl_list[0]
+            subprocess_check_run(split(f"pip install {package_path} --force-reinstall"),
+                                 cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
+                                 env=tmp_env)
+        else:
+            raise FileNotFoundError()
 
     # Cleanup temporary folder
     if not args.user_defined_output:
@@ -136,6 +140,8 @@ def run():
     parser.add_argument('-p', '--package-name', metavar='',
                         help='the python generated package name '
                              '(default: the basename of the first input file)')
+    parser.add_argument('-v', '--package-version', metavar='', default="0.0.0",
+                        help="Package version")
     parser.add_argument('-d', '--pyopendds-ld', metavar='',
                         help='the path to pyopendds project. You can also define PYOPENDDS_LD as environment variable')
     parser.add_argument('-o', '--output-dir', metavar='',
@@ -144,6 +150,8 @@ def run():
                         help='the include paths needed by the IDL files, if any')
     parser.add_argument('-m', '--make-opts', metavar='',
                         help='arguments passed to make')
+    parser.add_argument('--force-install', action='store_true',
+                        help='install the generated package')
 
     args = parser.parse_args()
     current_dir = os.getcwd()
@@ -196,7 +204,7 @@ def run():
 
     # Create the output directory if it does not exist
     if not os.path.exists(args.output_dir):
-        subprocess.run(['mkdir', '-p', args.output_dir])
+        os.makedirs(args.output_dir, exist_ok=True)
 
     # Check pyopendds include path (which is required in further CMake process)
     # Order of discovery is:

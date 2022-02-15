@@ -24,6 +24,10 @@ Name of the Python package to create. If there is only one ITL file, then by
 default this will be \'py\' and the name of the ITL file with the .itl
 extension (my_types.itl -> pymy_types). If there are are multiple ITL files,
 then this option becomes required.''')
+    argparser.add_argument('-v', '--package-version',
+                           type=str,
+                           default='0.0.1',
+                           help='Version of the Python package to create.')
     argparser.add_argument('--native-package-name',
         type=str,
         help='''\
