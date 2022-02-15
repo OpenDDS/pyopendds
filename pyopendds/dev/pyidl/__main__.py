@@ -2,6 +2,7 @@ import argparse
 import glob
 import os
 import os.path
+import shutil
 import subprocess
 import sys
 from shlex import split
@@ -32,7 +33,7 @@ def in_virtualenv():
 
 
 def resolve_wildcard(expr, dir_name) -> list:
-    files = glob.glob(f'{dir_name}/{expr}')
+    files = glob.glob(os.path.join(dir_name, expr))
     rem_part = (len(dir_name) + 1)
     return list(map(lambda s: s[rem_part:], files))
 
@@ -55,21 +56,21 @@ def subprocess_check_run(commands: list, cwd: str, env=None, description: str = 
 def extract_include_path_from_egg(output_dir: str):
     # potentially is into a egg archive
     script_path = os.path.dirname(os.path.realpath(__file__))
-    root_path = os.path.realpath(f'{script_path}/../../..')
-    include_dir = f'{output_dir}/include'
-    sub_path = 'pyopendds/dev/include'
+    root_path = os.path.realpath(os.path.join(script_path, '..', '..', '..'))
+    include_dir = os.path.join(output_dir, 'include')
+    sub_path = os.path.join('pyopendds', 'dev', 'include')
 
     if os.path.isfile(root_path) and root_path.lower().endswith('.egg'):
         with ZipFile(root_path, 'r') as zipObj:
-            source_dir_path = f'{output_dir}/pyopendds/dev/include'
+            source_dir_path = os.path.join(output_dir, sub_path)
             for fileName in zipObj.namelist():
                 if fileName.startswith(sub_path):
                     zipObj.extract(fileName, output_dir)
-            subprocess.run(['mv', source_dir_path, include_dir])
-            subprocess.run(['rm', '-r', f'{output_dir}/pyopendds'])
+            subprocess.run(split(f"mv {source_dir_path} {include_dir}"))
+            shutil.rmtree(os.path.join(output_dir, 'pyopendds'))
         return include_dir
     else:
-        return f'{root_path}/{sub_path}'
+        return os.path.join(root_path, sub_path)
 
 
 def add_include_path(args: argparse.Namespace, filepath: str):
@@ -80,7 +81,8 @@ def add_include_path(args: argparse.Namespace, filepath: str):
 
 def mk_tmp_package_proj(args: argparse.Namespace):
     # Create CMakeLists.txt
-    mk_tmp_file(f"{args.output_dir}/CMakeLists.txt",
+    os.makedirs(args.build_dir, exist_ok=True)
+    mk_tmp_file(os.path.join(args.build_dir, '..', 'CMakeLists.txt'),
                 gen_cmakelist(target_name=args.package_name,
                               pyopendds_ldir=args.pyopendds_ld,
                               idl_files=args.input_files,
@@ -88,41 +90,40 @@ def mk_tmp_package_proj(args: argparse.Namespace):
                               venv_path=os.environ['VIRTUAL_ENV']))
 
     # Run cmake to prepare the python to cpp bindings
-    os.makedirs(os.path.join(args.output_dir, "build"), exist_ok=True)
-    subprocess_check_run(split("cmake .."), cwd=f"{args.output_dir}/build")
-    subprocess_check_run(split(f"make {args.make_opts}"), cwd=f"{args.output_dir}/build")
+    subprocess_check_run(split("cmake .."), cwd=args.build_dir)
+    subprocess_check_run(split(f"make {args.make_opts}"), cwd=args.build_dir)
 
     # Build the python IDL package
-    itl_files: list = resolve_wildcard('*.itl', f'{args.output_dir}/build')
+    itl_files: list = resolve_wildcard('*.itl', args.build_dir)
     subprocess_check_run(split("itl2py -o{package_name}_ouput "
                                "{package_name}_idl {files} "
                                "--package-name py{package_name} "
                                "--package-version=\"{version}\"".format(package_name=args.package_name,
                                                                         files=' '.join(itl_files),
                                                                         version=args.package_version)),
-                         cwd=f"{args.output_dir}/build")
+                         cwd=args.build_dir)
 
     # Install the python package py[package_name]
     tmp_env = os.environ.copy()
-    tmp_env[f"{args.package_name}_idl_DIR"] = f"{os.path.abspath(args.output_dir)}/build"
+    tmp_env[f"{args.package_name}_idl_DIR"] = args.build_dir
 
-    subprocess_check_run(split(f"python3 setup.py bdist_wheel --dist-dir={args.output_dir}/dist"),
-                         cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
+    subprocess_check_run(split(f"python3 setup.py bdist_wheel --dist-dir={args.dist_dir}"),
+                         cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
                          env=tmp_env)
 
     if args.force_install:
-        whl_list = glob.glob(f"{args.output_dir}/dist/py{args.package_name}*.whl")
+        whl_list = glob.glob(os.path.join(args.dist_dir, f"py{args.package_name}*.whl"))
         if len(whl_list):
             package_path = whl_list[0]
             subprocess_check_run(split(f"pip install {package_path} --force-reinstall"),
-                                 cwd=f"{args.output_dir}/build/{args.package_name}_ouput",
+                                 cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
                                  env=tmp_env)
         else:
             raise FileNotFoundError()
 
     # Cleanup temporary folder
     if not args.user_defined_output:
-        subprocess.run(['rm', '-r', args.output_dir])
+        shutil.rmtree(args.output_dir)
 
 
 def mk_tmp_file(pathname: str, content: str):
@@ -193,14 +194,18 @@ def run():
     args.__setattr__('user_defined_output', True)
     if not args.output_dir:
         default_output_dir = f'pyidl-{args.package_name}-build'
-        args.__setattr__('output_dir', f'{os.getcwd()}/{default_output_dir}')
+        args.__setattr__('output_dir', os.path.join(os.getcwd(), 'build'))
+        args.__setattr__('build_dir', os.path.join(os.getcwd(), 'build', default_output_dir, 'build'))
+        args.__setattr__('dist_dir', os.path.join(os.getcwd(), 'dist'))
         args.__setattr__('user_defined_output', False)
     else:
-        output_dir_abspath = os.path.realpath(args.output_dir)
-        if os.path.isdir(output_dir_abspath) and len(os.listdir(output_dir_abspath)) != 0:
-            print(f"{output_dir_abspath} is not empty. Building and installing anyway...")
+        args.output_dir = os.path.realpath(args.output_dir)
+        if os.path.isdir(args.output_dir) and len(os.listdir(args.output_dir)) != 0:
+            print(f"{args.output_dir} is not empty. Building and installing anyway...")
             # sys.exit(1)
-    args.__setattr__('output_dir', os.path.realpath(args.output_dir))
+        args.__setattr__('build_dir', os.path.join(args.output_dir, 'build'))
+        args.__setattr__('dist_dir', os.path.join(args.output_dir, 'dist'))
+
 
     # Create the output directory if it does not exist
     if not os.path.exists(args.output_dir):
@@ -211,7 +216,7 @@ def run():
     #     1- Folder name or path given as input
     #     2- Environment variable named PYOPENDDS_LD
     #     1- Direct reference to include directory installed in pyopendds .egg archive (always successes)
-    include_subpath = '/pyopendds/dev/include'
+    include_subpath = os.path.join('pyopendds', 'dev', 'include')
     if not args.pyopendds_ld:
         env_pyopendds_ld = os.getenv('PYOPENDDS_LD')
         if not env_pyopendds_ld:
