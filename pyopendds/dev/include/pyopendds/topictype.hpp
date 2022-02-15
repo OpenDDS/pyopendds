@@ -66,7 +66,7 @@ public:
     typedef typename Traits::MessageSequenceType IdlTypeSequence;
 
     typedef typename Traits::TypeSupportType TypeSupport;
-    typedef typename Traits::TypeSupportTypeImpl TypeSupportImpl;
+    typedef typename Traits::TypeSupportImplType TypeSupportImpl;
     typedef typename Traits::DataWriterType DataWriter;
     typedef typename Traits::DataReaderType DataReader;
 
