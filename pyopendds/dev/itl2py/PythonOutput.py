@@ -1,3 +1,4 @@
+from typing import List
 from .ast import PrimitiveType, StructType, EnumType, SequenceType, ArrayType
 from .Output import Output
 
@@ -29,12 +30,12 @@ class PythonOutput(Output):
     }
 
     def __init__(self, context: dict, name: str):
-        self.submodules = []
+        self.submodules: List[PythonOutput] = []
         self.module = None
         new_context = context.copy()
         new_context.update(dict(
             output=context['output'] / name,
-            types=[]
+            types=[],
         ))
         super().__init__(new_context, new_context['output'],
             {'__init__.py': 'user.py'})
@@ -62,6 +63,8 @@ class PythonOutput(Output):
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
+        elif self.is_local_type(field_type):
+            return field_type.local_name()
         else:
             return field_type.local_name()
 

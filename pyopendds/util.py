@@ -10,16 +10,14 @@ def normalize_time_duration(duration: TimeDurationType):
     if isinstance(duration, timedelta):
         seconds = duration // timedelta(seconds=1)
         nanoseconds = ((duration - timedelta(seconds=seconds)) // timedelta(microseconds=1)) * 1000
+    elif isinstance(duration, int):
+        seconds = int(duration)
+        nanoseconds = 0
+    elif isinstance(duration, tuple):
+        seconds = int(duration[0])
+        nanoseconds = int(duration[1])
     else:
-        try:
-            seconds = int(duration[0])
-            nanoseconds = int(duration[1])
-        except Exception:
-            try:
-                seconds = int(duration)
-                nanoseconds = 0
-            except Exception:
-                raise TypeError('Could not extract time from value')
+        raise TypeError('Could not extract time from ' + repr(duration))
 
     return seconds, nanoseconds
 

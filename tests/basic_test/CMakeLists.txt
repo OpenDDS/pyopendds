@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
+project(PyOpenDDS_Test CXX)
 
-project(PyOpenDDS_Test)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-list(APPEND CMAKE_MODULE_PATH "$ENV{DDS_ROOT}/cmake")
 find_package(OpenDDS REQUIRED)
 
 add_library(basic_idl SHARED)

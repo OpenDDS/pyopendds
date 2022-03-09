@@ -1,11 +1,16 @@
 import sys
 import time
 from datetime import timedelta
-from pyopendds.Qos import DataReaderQos 
+from pyopendds.Qos import DataReaderQos
 
-from pyopendds import \
-    init_opendds, DomainParticipant, StatusKind, PyOpenDDS_Error
-from pybasic.basic import *
+from pyopendds import (
+    opendds_version_dict,
+    init_opendds,
+    DomainParticipant,
+    StatusKind,
+    PyOpenDDS_Error,
+)
+from pybasic.basic import Reading
 
 
 class TestClass:
@@ -17,6 +22,7 @@ class TestClass:
 
 
 if __name__ == "__main__":
+    print('OpenDDS Version is:', opendds_version_dict())
     try:
         listener = TestClass()
         # Initialize OpenDDS and Create DDS Entities
@@ -24,9 +30,9 @@ if __name__ == "__main__":
         domain = DomainParticipant(34)
         topic = domain.create_topic('Readings', Reading)
         subscriber = domain.create_subscriber()
-        # Change qos testing 
+        # Change qos testing
         datareaderqos = DataReaderQos()
-        datareaderqos.history.depth = 2 
+        datareaderqos.history.depth = 2
         print("test subscriber")
         print(datareaderqos)
         print(datareaderqos.durability.kind)

@@ -15,7 +15,7 @@ PyObject* Errors::ReturnCodeError_ = nullptr;
 
 /*{%- for type in types %}*/
 
-template<>
+template <>
 class Type</*{{ type.cpp_name }}*/> {
 public:
   static PyObject* get_python_class()
@@ -106,7 +106,9 @@ PyObject* pyregister_type(PyObject* self, PyObject* args)
 {
   Ref pyparticipant;
   Ref pytype;
-  if (!PyArg_ParseTuple(args, "OO", &*pyparticipant, &*pytype)) return nullptr;
+  if (!PyArg_ParseTuple(args, "OO", &*pyparticipant, &*pytype)) {
+    return nullptr;
+  }
   pyparticipant++;
   pytype++;
 
@@ -121,7 +123,9 @@ PyObject* pyregister_type(PyObject* self, PyObject* args)
 PyObject* pytype_name(PyObject* self, PyObject* args)
 {
   Ref pytype;
-  if (!PyArg_ParseTuple(args, "O", &*pytype)) return nullptr;
+  if (!PyArg_ParseTuple(args, "O", &*pytype)) {
+    return nullptr;
+  }
   pytype++;
 
   try {
@@ -134,14 +138,20 @@ PyObject* pytype_name(PyObject* self, PyObject* args)
 PyObject* pytake_next_sample(PyObject* self, PyObject* args)
 {
   Ref pyreader;
-  if (!PyArg_ParseTuple(args, "O", &*pyreader)) return nullptr;
+  if (!PyArg_ParseTuple(args, "O", &*pyreader)) {
+    return nullptr;
+  }
   pyreader++;
 
   // Try to Get Topic Type and Do Read
   Ref pytopic = PyObject_GetAttrString(*pyreader, "topic");
-  if (!pytopic) return nullptr;
+  if (!pytopic) {
+    return nullptr;
+  }
   Ref pytype = PyObject_GetAttrString(*pytopic, "type");
-  if (!pytype) return nullptr;
+  if (!pytype) {
+    return nullptr;
+  }
 
   try {
     return TopicTypeBase::find(*pytype)->take_next_sample(*pyreader);
@@ -157,7 +167,7 @@ PyObject* pywrite(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "OO", &*pywriter, &*pysample)) return nullptr;
   pywriter++;
   pysample++;
-  
+
   // Try to Get Reading Type and Do write
   Ref pytopic = PyObject_GetAttrString(*pywriter, "topic");
   if (!pytopic) return nullptr;
@@ -176,14 +186,15 @@ PyMethodDef /*{{ native_package_name }}*/_Methods[] = {
   {"type_name", pytype_name, METH_VARARGS, ""},
   {"write", pywrite, METH_VARARGS, ""},
   {"take_next_sample", pytake_next_sample, METH_VARARGS, ""},
-  {nullptr, nullptr, 0, nullptr}
+  {nullptr, nullptr, 0, nullptr},
 };
 
 PyModuleDef /*{{ native_package_name }}*/_Module = {
   PyModuleDef_HEAD_INIT,
-  "/*{{ native_package_name }}*/", "",
+  "/*{{ native_package_name }}*/",
+  "",
   -1, // Global State Module, because OpenDDS uses Singletons
-  /*{{ native_package_name }}*/_Methods
+  /*{{ native_package_name }}*/_Methods,
 };
 
 } // namespace
@@ -191,7 +202,9 @@ PyModuleDef /*{{ native_package_name }}*/_Module = {
 PyMODINIT_FUNC PyInit_/*{{ native_package_name }}*/()
 {
   PyObject* module = PyModule_Create(&/*{{ native_package_name }}*/_Module);
-  if (!module || pyopendds::Errors::cache()) return nullptr;
+  if (!module || pyopendds::Errors::cache()) {
+    return nullptr;
+  }
   /*{% for type in types %}*//*{% if type.is_topic_type %}*/
   TopicType</*{{ type.cpp_name }}*/>::init();
   /*{%- endif %}*//*{% endfor %}*/

@@ -1,4 +1,5 @@
 from .constants import ReturnCode
+from typing import Dict
 
 
 class PyOpenDDS_Error(Exception):
@@ -16,7 +17,7 @@ class ReturnCodeError(PyOpenDDS_Error):
 
     return_code = None
     dds_name = None
-    subclasses = {}
+    subclasses: Dict[int, type] = {}
 
     def __init__(self, unknown_code: int = None):
         self.unknown_code = unknown_code
