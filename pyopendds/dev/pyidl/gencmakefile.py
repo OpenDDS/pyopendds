@@ -1,9 +1,10 @@
-
-def gen_cmakelist(target_name: str,
-                  pyopendds_ldir: str,
-                  idl_files: list,
-                  include_dirs: list,
-                  venv_path: str = ""):
+def gen_cmakelist(
+    target_name: str,
+    pyopendds_ldir: str,
+    idl_files: list,
+    include_dirs: list,
+    venv_path: str = "",
+):
     statement_0 = ""
     for idx, include_dir in enumerate(include_dirs):
         statement_0 += f'set(inc_dir_{idx} "{include_dir}")\n'
@@ -14,17 +15,19 @@ def gen_cmakelist(target_name: str,
 
     statement_3 = ""
     for idl_file in idl_files:
-        statement_3 += f'\n    {idl_file}'
+        statement_3 += f"\n    {idl_file}"
 
     statement_4 = ""
     for idx, _ in enumerate(include_dirs):
-        statement_4 += f'\n    -I${{inc_dir_{idx}}}'
+        statement_4 += f"\n    -I${{inc_dir_{idx}}}"
 
     statement_5 = ""
     if venv_path:
-        statement_5 += f'set_target_properties({target_name}_idl PROPERTIES\n'
-        statement_5 += f'    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/pyidl/{target_name}"\n'
-        statement_5 += ')'
+        statement_5 += f"set_target_properties({target_name}_idl PROPERTIES\n"
+        statement_5 += (
+            f'    LIBRARY_OUTPUT_DIRECTORY "{venv_path}/lib/pyidl/{target_name}"\n'
+        )
+        statement_5 += ")"
 
     return f"""
 cmake_minimum_required(VERSION 3.10)

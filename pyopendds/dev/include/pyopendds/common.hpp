@@ -56,7 +56,10 @@ private:
  */
 class Ref {
 public:
-  Ref(PyObject* o = nullptr) : o_(o) {}
+  Ref(PyObject* o = nullptr)
+    : o_(o)
+  {
+  }
   ~Ref() { Py_XDECREF(o_); }
   PyObject*& operator*() { return o_; }
   Ref& operator=(PyObject* o)

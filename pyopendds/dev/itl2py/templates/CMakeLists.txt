@@ -15,12 +15,12 @@ set_property(TARGET {{ native_package_name }} PROPERTY CXX_STANDARD_REQUIRED ON)
 target_include_directories({{ native_package_name }} PRIVATE ${PYOPENDDS_INCLUDE})
 target_link_libraries({{ native_package_name }} PRIVATE {{ idl_library_cmake_name }})
 
-get_property(idl_mappings TARGET {{ idl_library_cmake_name }}
-    PROPERTY OPENDDS_LANGUAGE_MAPPINGS)
-if("C++11" IN_LIST idl_mappings)
-    set_target_properties({{ native_package_name }} PROPERTIES
-        COMPILE_DEFINITIONS "CPP11_IDL")
-endif()
+#get_property(idl_mappings TARGET {{ idl_library_cmake_name }}
+#    PROPERTY OPENDDS_LANGUAGE_MAPPINGS)
+#if("C++11" IN_LIST idl_mappings)
+#    set_target_properties({{ native_package_name }} PROPERTIES
+#        COMPILE_DEFINITIONS "CPP11_IDL")
+#endif()
 
 # Handle where to install the resulting Python package
 if(CALL_FROM_SETUP_PY)

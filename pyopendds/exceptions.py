@@ -3,12 +3,11 @@ from typing import Dict
 
 
 class PyOpenDDS_Error(Exception):
-    """ Base for all errors in PyOpenDDS
-    """
+    """Base for all errors in PyOpenDDS"""
 
 
 class ReturnCodeError(PyOpenDDS_Error):
-    """ Raised when a ReturnCode_t other than RETURNCODE_OK was returned from a
+    """Raised when a ReturnCode_t other than RETURNCODE_OK was returned from a
     OpenDDS function that returns ReturnCode_t.
 
     There are subclasses for each ReturnCode, for example
@@ -25,10 +24,10 @@ class ReturnCodeError(PyOpenDDS_Error):
     @classmethod
     def generate_subclasses(cls) -> None:
         for name, value in ReturnCode.__members__.items():
-            if name != 'OK':
-                dds_name = 'DDS::RETCODE_' + name
-                name = name.title().replace('_', '') + 'ReturnCodeError'
-                cls = type(name, (cls,), {'return_code': value, 'dds_name': dds_name})
+            if name != "OK":
+                dds_name = "DDS::RETCODE_" + name
+                name = name.title().replace("_", "") + "ReturnCodeError"
+                cls = type(name, (cls,), {"return_code": value, "dds_name": dds_name})
                 globals()[name] = cls
                 cls.subclasses[value] = cls
 
@@ -43,9 +42,10 @@ class ReturnCodeError(PyOpenDDS_Error):
 
     def __str__(self):
         if self.return_code:
-            return 'OpenDDS has returned ' + self.dds_name
-        return 'OpenDDS has returned an ReturnCode_t unkown to PyOpenDDS: ' + \
-            repr(self.unknown_code)
+            return "OpenDDS has returned " + self.dds_name
+        return "OpenDDS has returned an ReturnCode_t unkown to PyOpenDDS: " + repr(
+            self.unknown_code
+        )
 
 
 ReturnCodeError.generate_subclasses()

@@ -20,7 +20,7 @@ class Type</*{{ type.cpp_name }}*/> {
 public:
   static PyObject* get_python_class()
   {
-    PyObject* python_class = nullptr;
+    static PyObject* python_class = nullptr;
     if (!python_class) {
       std::stringstream mod_ss;
       mod_ss << "/*{{ package_name }}*/";
@@ -50,7 +50,7 @@ public:
 
   static void cpp_to_python(const /*{{ type.cpp_name }}*/& cpp, PyObject*& py)
   {
-    PyObject* cls = get_python_class();
+    PyObject* const cls = get_python_class();
     /*{%- if type.to_replace %}*/
     if (py) Py_DECREF(py);
     Ref args;

@@ -9,13 +9,13 @@ if TYPE_CHECKING:
 
 
 class Publisher:
-
     def __init__(self, participant: DomainParticipant, qos=None):
         participant.publishers.append(self)
         self.qos = qos
         self.writers: List[DataWriter] = []
 
         from _pyopendds import create_publisher
+
         create_publisher(self, participant)
 
     def create_datawriter(self, topic: Topic, qos=None) -> DataWriter:
