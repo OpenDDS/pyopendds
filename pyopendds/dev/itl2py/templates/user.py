@@ -21,29 +21,29 @@ class {{type.local_name}}:
 
 
   { % - if type.type_support %}
-_pyopendds_typesupport_packge_name = '{{ type.type_support }}'
-{ % endif - %}
-{ % -
-for field in type.struct.fields %}
-{{field.name}}: {{field.type}} = {{field.default_value}}
-{ % - endfor %}
-{ % - elif type.enum is defined %}
-
-class {{type.local_name}}(_pyopendds_enum):
-
-
+  _pyopendds_typesupport_packge_name = '{{ type.type_support }}'
+  { % endif - %}
   { % -
-for member in type.enum.members %}
-{{member.name}} = {{member.value}}
-{ % - endfor %}
-{ % - elif type.sequence %}
+  for field in type.struct.fields %}
+  {{field.name}}: {{field.type}} = {{field.default_value}}
+  { % - endfor %}
+  { % - elif type.enum is defined %}
 
-class {{type.local_name}}(list):
-  _base_type = {{type.sequence.type}}
-  _max_len = {{type.sequence.len}}
+  class {{type.local_name}}(_pyopendds_enum):
 
 
-{ % - else %}
-# {{ type.local_name }} was left unimplmented
-{ % endif - %}
-{ % - endfor - %}
+    { % -
+    for member in type.enum.members %}
+
+  {{member.name}} = {{member.value}}
+  { % - endfor %}
+  { % - elif type.sequence %}
+
+  class {{type.local_name}}(list):
+    _base_type = {{type.sequence.type}}
+    _max_len = {{type.sequence.len}}
+
+  { % - else %}
+  # {{ type.local_name }} was left unimplmented
+  { % endif - %}
+  { % - endfor - %}
