@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-  from .DomainParticipant import DomainParticipant
+    from .DomainParticipant import DomainParticipant
 
 
 class Topic:
@@ -15,14 +15,14 @@ class Topic:
       qos=None,
       listener=None,
   ):
-    participant.topics[name] = self
-    self.name = name
-    self.type = topic_type
-    self.qos = qos
-    self.listener = listener
+        participant.topics[name] = self
+        self.name = name
+        self.type = topic_type
+        self.qos = qos
+        self.listener = listener
 
-    # Get OpenDDS Topic Type Name
-    import importlib
+        # Get OpenDDS Topic Type Name
+        import importlib
 
     self._ts_package: Any = importlib.import_module(
       topic_type._pyopendds_typesupport_packge_name
@@ -33,8 +33,8 @@ class Topic:
 
     from _pyopendds import create_topic
 
-    create_topic(self, participant, name, self.type_name)
+        create_topic(self, participant, name, self.type_name)
 
-  @property
-  def ts_package(self):
-    return self._ts_package
+    @property
+    def ts_package(self):
+        return self._ts_package

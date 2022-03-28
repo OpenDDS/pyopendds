@@ -10,6 +10,9 @@ setup(
         'pyopendds.dev.itl2py': [
             'templates/*',
         ],
+        'pyopendds.dev.pyidl': [
+            'templates/*',
+        ],
     },
     entry_points={
         'console_scripts': [
