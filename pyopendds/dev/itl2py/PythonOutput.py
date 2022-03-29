@@ -37,7 +37,7 @@ class PythonOutput(Output):
             types=[]
         ))
         super().__init__(new_context, new_context['output'],
-            {'__init__.py': 'user.py'})
+            {'__init__.py': 'user_py.tpl'})
 
     def write(self):
         super().write()

@@ -31,8 +31,8 @@ class PackageOutput(Output):
 
     def __init__(self, context: dict):
         super().__init__(context, context['output'], {
-            'CMakeLists.txt': 'CMakeLists.txt',
-            'setup.py': 'setup.py',
+            'CMakeLists.txt': 'CMakeLists.tpl',
+            'setup.py': 'setup_py.tpl',
         })
         self.pyout = PythonOutput(context, context['package_name'])
         self.cppout = CppOutput(context)
