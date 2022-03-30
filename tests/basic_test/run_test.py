@@ -8,6 +8,7 @@ from pyopendds.dev.util import (
     run_python,
     wait_or_kill,
     build_cmake_project,
+    find_itl_file,
 )
 
 
@@ -27,7 +28,8 @@ def run_test(args):
 
         # Generate and Install Python Package
         pack_dir = 'basic_output'
-        run_command('itl2py', '-o', pack_dir, 'basic_idl', 'basic.itl',
+        run_command('itl2py', '-o', pack_dir, 'basic_idl',
+            find_itl_file(build_dir, 'basic.itl'),
             cwd=build_dir, exit_on_error=True)
         run_python('-m', 'pip', '--verbose', 'install', '.',
             cwd=(build_dir / pack_dir), exit_on_error=True)

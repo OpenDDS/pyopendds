@@ -100,3 +100,13 @@ def build_cmake_project(source_dir, build_dir, cfg_args=[], build_args=[]):
         *cfg_args
     )
     run_cmake('--build', str(build_dir), '--config', build_type, *build_args)
+
+
+def find_itl_file(build_dir, itl_filename):
+    path = build_dir / itl_filename
+    if not path.is_file():
+        path = build_dir / 'opendds_generated' / itl_filename
+    if not path.is_file():
+        raise FileNotFoundError("Couldn't find {} in {}".format(
+            repr(itl_filename), repr(str(build_dir))))
+    return path

@@ -64,9 +64,12 @@ the exepcted config file is not there, then this option becomes required.'''),
     config_filename = '{}Config.cmake'.format(args.idl_library_cmake_name)
     config_path = args.idl_library_build_dir / config_filename
     if not config_path.is_file():
+        args.idl_library_build_dir = Path('.').resolve()
+        config_path = args.idl_library_build_dir / config_filename
+    if not config_path.is_file():
         sys.exit('''\
-Native IDL library CMake config file {} does not exist, please pass the
-directory for it (where cmake was ran) using --idl-library-build-dir'''.format(config_path))
+Could not find native IDL library CMake config file {}, please pass the
+directory for it (where cmake was ran) using --idl-library-build-dir'''.format(config_filename))
     # CMake will freak out if there are DOS-style slashes in the path
     args.idl_library_build_dir = args.idl_library_build_dir.as_posix()
 
