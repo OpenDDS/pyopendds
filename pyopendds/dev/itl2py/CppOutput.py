@@ -9,19 +9,20 @@ def cpp_name(name_parts):
 
 
 def cpp_type_name(type_node):
-  if isinstance(type_node, PrimitiveType):
-    return type_node.kind.name
-  elif isinstance(type_node, (StructType, EnumType)):
-    return cpp_name(type_node.name.parts)
-  elif isinstance(type_node, (SequenceType)):
-    return cpp_name(type_node.name.parts)
-  elif isinstance(type_node, (ArrayType)):
-    return cpp_name(type_node.name.parts)
-  else:
-    raise NotImplementedError
+    if isinstance(type_node, PrimitiveType):
+        return type_node.kind.name
+    elif isinstance(type_node, (StructType, EnumType)):
+        return cpp_name(type_node.name.parts)
+    elif isinstance(type_node, (SequenceType)):
+        return cpp_name(type_node.name.parts)
+    elif isinstance(type_node, (ArrayType)):
+        return cpp_name(type_node.name.parts)
+    else:
+        raise NotImplementedError
 
 
 class CppOutput(Output):
+
   def __init__(self, context: dict):
     new_context = context.copy()
     jinja_start = "/*{"
@@ -46,7 +47,7 @@ class CppOutput(Output):
     super().__init__(
       new_context,
       context["output"],
-      {context["native_package_name"] + ".cpp": "user.cpp"},
+      {context["native_package_name"] + ".cpp": "user.tpl"},
     )
 
   def visit_struct(self, struct_type):
@@ -129,9 +130,8 @@ class CppOutput(Output):
             ]
           )
         ]
-
-      struct_to_lines.extend(line_process(to_lines))
-      struct_from_lines.extend(line_process(from_lines))
+        struct_to_lines.extend(line_process(to_lines))
+        struct_from_lines.extend(line_process(from_lines))
 
     self.context["types"].append(
       {

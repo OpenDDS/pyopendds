@@ -6,11 +6,11 @@ from .Output import Output
 
 class PythonOutput(Output):
     """Manages Output of Python Bindings
-  
-      Using a self nesting structure, a PythonOutput is created for each IDL
-      module.
+
+    Using a self nesting structure, a PythonOutput is created for each IDL
+    module.
     """
-    
+
     primitive_types = {  # (Python Type, Default Default Value)
         PrimitiveType.Kind.bool: ("bool", "False"),
         PrimitiveType.Kind.byte: ("UByte", "UByte(0x00)"),
@@ -29,7 +29,7 @@ class PythonOutput(Output):
         PrimitiveType.Kind.s8: ("str", "''"),
         PrimitiveType.Kind.s16: ("str", "''"),
     }
-    
+
     def __init__(self, context: dict, name: str):
         self.submodules: List[PythonOutput] = []
         self.module = None
@@ -42,28 +42,28 @@ class PythonOutput(Output):
             has_sequence=False,
         ))
         super().__init__(new_context, new_context['output'],
-                         {'__init__.py': 'user.py'})
-    
+                         {'__init__.py': 'user.tpl'})
+
     def write(self):
         super().write()
         for submodule in self.submodules:
             submodule.write()
-    
+
     def visit_root_module(self, root_module):
         self.module = root_module
         super().visit_module(root_module)
-    
+
     def visit_module(self, module):
         submodule = PythonOutput(self.context, module.local_name())
         self.submodules.append(submodule)
         submodule.visit_root_module(module)
-    
+
     def is_local_type(self, type_node):
         if isinstance(type_node, (SequenceType, ArrayType)):
             return type_node.base_type in self.module.types.values()
         else:
             return type_node in self.module.types.values()
-    
+
     def get_python_type_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
@@ -71,7 +71,7 @@ class PythonOutput(Output):
             return field_type.local_name()
         else:
             return field_type.local_name()
-    
+
     def get_python_default_value_string(self, field_type):
         if isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][1]
@@ -87,7 +87,7 @@ class PythonOutput(Output):
                 return 'field(default_factory=list)'
             else:
                 raise NotImplementedError(repr(field_type) + " is not supported")
-    
+
     def visit_struct(self, struct_type):
         self.context['has_struct'] = True
         self.context['types'].append(dict(
@@ -101,7 +101,7 @@ class PythonOutput(Output):
                 ) for name, node in struct_type.fields.items()],
             ),
         ))
-    
+
     def visit_enum(self, enum_type):
         self.context['has_enum'] = True
         self.context['types'].append(dict(
@@ -112,17 +112,17 @@ class PythonOutput(Output):
                 ],
             ),
         ))
-    
+
     def visit_sequence(self, sequence_type):
         self.context['has_sequence'] = True
         type = sequence_type.base_type.local_name()
-        if type == None:
-            type = self.primitive_types[sequence_type.base_type.kind][0]
+        if type == None :
+            type =  self.primitive_types[sequence_type.base_type.kind][0]
         self.context['types'].append(dict(
             local_name=sequence_type.local_name(),
             type_support=self.context['native_package_name'] if sequence_type.is_topic_type else None,
             sequence=dict(
-                type=type,
+                type = type,
                 len=sequence_type.max_count,
             ),
         ))
