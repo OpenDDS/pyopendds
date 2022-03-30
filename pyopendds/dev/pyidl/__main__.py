@@ -82,42 +82,72 @@ def add_include_path(args: argparse.Namespace, filepath: str):
 def mk_tmp_package_proj(args: argparse.Namespace):
     # Create CMakeLists.txt
     os.makedirs(args.build_dir, exist_ok=True)
+    
     mk_tmp_file(os.path.join(args.build_dir, '..', 'CMakeLists.txt'),
-                gen_cmakelist(target_name=args.package_name,
-                              pyopendds_ldir=args.pyopendds_ld,
-                              idl_files=args.input_files,
-                              include_dirs=args.include_paths,
-                              venv_path=os.environ['VIRTUAL_ENV']))
+        gen_cmakelist(target_name=args.package_name,
+                      pyopendds_ldir=args.pyopendds_ld,
+                      idl_files=args.input_files,
+                      include_dirs=args.include_paths,
+                      venv_path=os.environ['VIRTUAL_ENV']))
+    mk_tmp_file(os.path.join(args.build_dir, '..', "{}_idlConfig.cmake.in".format(args.package_name)),
+        gen_cmakeconfig(target_name=args.package_name,
+                      pyopendds_ldir=args.pyopendds_ld,
+                      idl_files=args.input_files,
+                      include_dirs=args.include_paths,
+                      venv_path=os.environ['VIRTUAL_ENV']))
+    
+    """
+        cd buildIdl/
+        cd build/
+        cmake ..
+        DESTDIR=prefix make install
+        itl2py -o DFApplication DFApplication_idl opendds_generated/*.itl --package-name pyDFApplication
+        VERBOSE=1 DFApplication_idl_DIR=../prefix/usr/local/share/cmake/DFApplication_idl/ python setup.py bdist_wheel
+    """
 
+    """
+        cd buildIdl/
+        cd build/
+        cmake ..
+    """
     # Run cmake to prepare the python to cpp bindings
     subprocess_check_run(split("cmake .."), cwd=args.build_dir)
-    subprocess_check_run(split(f"make {args.make_opts}"), cwd=args.build_dir)
-
+    """ DESTDIR=prefix make install """
+    subprocess_check_run(split(f"make install {args.make_opts} DESTDIR=prefix"), cwd=args.build_dir)
+    prefix_dir = os.path.join(args.build_dir, 'prefix')
+    install_dir = os.path.join(prefix_dir, 'usr', 'local', 'share', 'cmake',
+                               "{package_name}_idl".format(package_name=args.package_name))
+    """ itl2py -o DFApplication DFApplication_idl opendds_generated/*.itl --package-name pyDFApplication """
     # Build the python IDL package
-    itl_files: list = resolve_wildcard('*.itl', args.build_dir)
-    subprocess_check_run(split("itl2py -o{package_name}_ouput "
+    itl_files: list = resolve_wildcard('opendds_generated/*.itl', args.build_dir)
+    subprocess_check_run(split("itl2py -o{package_name} "
                                "{package_name}_idl {files} "
                                "--package-name py{package_name} "
-                               "--package-version=\"{version}\"".format(package_name=args.package_name,
-                                                                        files=' '.join(itl_files),
-                                                                        version=args.package_version)),
+                               "--package-version=\"{version}\" "
+                               "--idl-library-build-dir={lib_dir} ".format(package_name=args.package_name,
+                                                                             files=' '.join(itl_files),
+                                                                             version=args.package_version,
+                                                                             build_dir=args.build_dir,
+                                                                             lib_dir=install_dir)),
                          cwd=args.build_dir)
 
+    """ VERBOSE=1 DFApplication_idl_DIR=../prefix/usr/local/share/cmake/DFApplication_idl/ python setup.py bdist_wheel """
     # Install the python package py[package_name]
-    tmp_env = os.environ.copy()
-    tmp_env[f"{args.package_name}_idl_DIR"] = args.build_dir
-
-    subprocess_check_run(split(f"python3 setup.py bdist_wheel --dist-dir={args.dist_dir}"),
-                         cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
-                         env=tmp_env)
+    os.unlink("/home/dpierret/DragonFly/GitHub/Platform/09-Tools/09-pyDragonflyApplication/buildIdl/build/DFApplication_idlConfig.cmake")
+    python_build_dir = os.path.join(args.build_dir, args.package_name)
+    #tmp_env = os.environ.copy()
+    #tmp_env["{package_name}_idl_DIR".format(package_name=args.package_name)] = cmake_config_dir
+    cmd = "python3 setup.py bdist_wheel --dist-dir={dist_dir}".format(package_name=args.package_name,
+                                                                         dist_dir=args.dist_dir)
+    #subprocess_check_run(split(cmd), cwd=python_build_dir, env=tmp_env)
+    subprocess_check_run(split(cmd), cwd=python_build_dir)
 
     if args.force_install:
         whl_list = glob.glob(os.path.join(args.dist_dir, f"py{args.package_name}*.whl"))
         if len(whl_list):
             package_path = whl_list[0]
             subprocess_check_run(split(f"pip install {package_path} --force-reinstall"),
-                                 cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
-                                 env=tmp_env)
+                                 cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"))
         else:
             raise FileNotFoundError()
 
