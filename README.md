@@ -17,9 +17,12 @@ for the current status of the limitations.
 - CPython >= 3.7
   - This uses the C API of CPython, so other Python implementations like PyPy
     are not offically supported.
+  - If building Python from source, make sure to run the configure script with
+    `--enable-shared`. PyOpenDDS doesn't currently support building with the
+    statically-linkable Python library.
 - OpenDDS >= 3.16
 - CMake >= 3.12
-- A C++14 Compiler
+- A compiler that supports C++14 or later.
 
 ## Building PyOpenDDS and Running the Basic Test
 
@@ -38,7 +41,8 @@ cmake ..
 make
 
 # Build and Install Basic Test Python Type Support
-itl2py -o basic_output basic_idl basic.itl
+itl2py -o basic_output basic_idl opendds_generated/basic.itl
+# If using OpenDDS 3.19 or before, then just specify basic.itl
 cd basic_output
 pip install .
 

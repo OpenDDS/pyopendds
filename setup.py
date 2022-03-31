@@ -3,6 +3,7 @@ import os
 import inspect
 from pathlib import Path
 from setuptools import setup, find_packages
+import shutil
 
 import cmake_build_extension
 
@@ -28,6 +29,8 @@ setup(
                 '-DCALL_FROM_SETUP_PY:BOOL=ON',
                 '-DPYOPENDDS_INCLUDE='
                     + str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
+                # https://github.com/diegoferigo/cmake-build-extension/issues/26
+                f"-DCMAKE_MAKE_PROGRAM={shutil.which('ninja')}",
             ],
             cmake_build_type=build_type,
         )

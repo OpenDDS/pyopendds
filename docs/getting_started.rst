@@ -18,7 +18,8 @@ below in this directory.
     make
 
     # Build and Install Basic Test Python Type Support
-    itl2py -o basic_output basic_idl basic.itl
+    itl2py -o basic_output basic_idl opendds_generated/basic.itl
+    # If using OpenDDS 3.19 or before, then just specify basic.itl
     cd basic_output
     pip install .
 
