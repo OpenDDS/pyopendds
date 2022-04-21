@@ -14,8 +14,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../'))
 
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
@@ -25,7 +25,6 @@ author = 'Fred Hornsey'
 
 version = '0.2-dev'
 release = version
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -74,7 +73,6 @@ exclude_patterns = [
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'manni'
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -109,22 +107,21 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'PyOpenDDSdoc'
 
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
+    
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
+    
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
+    
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -138,7 +135,6 @@ latex_documents = [
      'Fred Hornsey', 'manual'),
 ]
 
-
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
@@ -147,7 +143,6 @@ man_pages = [
     (master_doc, 'pyopendds', 'PyOpenDDS Documentation',
      [author], 1)
 ]
-
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -159,7 +154,6 @@ texinfo_documents = [
      author, 'PyOpenDDS', 'One line description of project.',
      'Miscellaneous'),
 ]
-
 
 # -- Options for Epub output -------------------------------------------------
 
@@ -177,7 +171,6 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
 
 # -- Extension configuration -------------------------------------------------
 

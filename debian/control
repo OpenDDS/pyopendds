@@ -1,0 +1,13 @@
+Source: python3-opendds
+Section: net
+Priority: optional
+Maintainer: Dragonfly <dragonfly@upnext.com>
+Description: Python Opendds binding
+Standards-Version: 4.6.0
+Build-Depends: debhelper (>= 7.4.3), dh-python, python3-setuptools (>= 0.6b3), python3-all, python3-all-dev, cmake, opendds (>= 3.19-1)
+X-Python3-Version: >= 3.8
+
+Package: python3-pyopendds
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}
+Description: Python3 library for opendds

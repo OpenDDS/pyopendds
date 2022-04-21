@@ -27,7 +27,7 @@ setup(
                 f'-DPython3_ROOT_DIR={Path(sys.prefix)}',
                 '-DCALL_FROM_SETUP_PY:BOOL=ON',
                 '-DPYOPENDDS_INCLUDE='
-                    + str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
+                + str(Path(__file__).resolve().parent / 'pyopendds/dev/include'),
             ],
             cmake_build_type=build_type,
         )
@@ -36,6 +36,7 @@ setup(
     entry_points={
         'console_scripts': [
             'itl2py=pyopendds.dev.itl2py.__main__:main',
+            'pyidl=pyopendds.dev.pyidl.__main__:run',
         ],
     },
     package_data={
@@ -45,6 +46,9 @@ setup(
         'pyopendds.dev.itl2py': [
             'templates/*',
         ],
+        'pyopendds.dev.pyidl': [
+            'templates/*',
+        ]
     },
     install_requires=[
         'jinja2',

@@ -22,13 +22,13 @@ class TestClass:
 
 
 if __name__ == "__main__":
-    print('OpenDDS Version is:', opendds_version_dict())
+    print("OpenDDS Version is:", opendds_version_dict())
     try:
         listener = TestClass()
         # Initialize OpenDDS and Create DDS Entities
         init_opendds(opendds_debug_level=10)
         domain = DomainParticipant(34)
-        topic = domain.create_topic('Readings', Reading)
+        topic = domain.create_topic("Readings", Reading)
         subscriber = domain.create_subscriber()
         # Change qos testing
         datareaderqos = DataReaderQos()
@@ -36,18 +36,20 @@ if __name__ == "__main__":
         print("test subscriber")
         print(datareaderqos)
         print(datareaderqos.durability.kind)
-        reader = subscriber.create_datareader(topic=topic, qos =datareaderqos, listener=listener.listener_func)
+        reader = subscriber.create_datareader(
+            topic=topic, qos=datareaderqos, listener=listener.listener_func
+        )
 
         # Wait for Publisher to Connect
-        print('Waiting for Publisher...')
+        print("Waiting for Publisher...")
         reader.wait_for(StatusKind.SUBSCRIPTION_MATCHED, timedelta(seconds=30))
-        print('Found Publisher!')
+        print("Found Publisher!")
 
         # Read and Print Sample
         # print(reader.take_next_sample())
         time.sleep(60)
 
-        print('Done!')
+        print("Done!")
 
     except Exception as e:
         sys.exit(e)

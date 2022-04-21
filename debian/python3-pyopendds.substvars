@@ -1,0 +1,6 @@
+python3:Depends=python3 (<< 3.9), python3 (>= 3.8~), python3-jinja2, python3:any, python3:any (>= 3.8~)
+python3:Provides=python3.8-pyopendds
+python3:Versions=3.8
+shlibs:Depends=libc6 (>= 2.17), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2), opendds
+misc:Depends=
+misc:Pre-Depends=

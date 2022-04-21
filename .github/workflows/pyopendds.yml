@@ -18,12 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
+        os: [ ubuntu-20.04 ]
         python-version:
-        - '3.7'
-        - '3.8'
-        - '3.9'
-        - '3.10'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
 
     env:
       ACE_ROOT: '/usr/share/ace'
@@ -31,37 +31,37 @@ jobs:
       DDS_ROOT: '/usr/share/dds'
 
     steps:
-    - uses: actions/checkout@v2.4.0
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2.3.1
-      with:
-        python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v2.4.0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2.3.1
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Get OpenDDS
-      uses: actions/checkout@v2.4.0
-      with:
-        repository: 'iguessthislldo/OpenDDS-Debian'
-        path: OpenDDS-Debian
-        ref: ubuntu_20_04
+      - name: Get OpenDDS
+        uses: actions/checkout@v2.4.0
+        with:
+          repository: 'iguessthislldo/OpenDDS-Debian'
+          path: OpenDDS-Debian
+          ref: ubuntu_20_04
 
-    - name: Install Dependencies
-      run: |
-        sudo dpkg -i OpenDDS-Debian/opendds.deb
+      - name: Install Dependencies
+        run: |
+          sudo dpkg -i OpenDDS-Debian/opendds.deb
 
-    - name: Install PyOpenDDS
-      run: |
-        python -m pip --verbose install .
+      - name: Install PyOpenDDS
+        run: |
+          python -m pip --verbose install .
 
-    - name: Run Tests
-      run: python tests/run_tests.py
+      - name: Run Tests
+        run: python tests/run_tests.py
 
-    - name: Check Types with mypy
-      run: |
-        python -m pip install mypy
-        mypy -p pyopendds
+      - name: Check Types with mypy
+        run: |
+          python -m pip install mypy
+          mypy -p pyopendds
 
-    - name: Lint with flake8
-      run: |
-        python -m pip install flake8
-        flake8 --show-source --doctests --statistics
-      if: always()
+      - name: Lint with flake8
+        run: |
+          python -m pip install flake8
+          flake8 --show-source --doctests --statistics
+        if: always()
