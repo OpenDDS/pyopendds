@@ -12,8 +12,14 @@ if TYPE_CHECKING:
 
 
 class DataReader:
-
-    def __init__(self, subscriber: Subscriber, topic: Topic, qos=DataReaderQos(), listener: Optional[Callable[..., None]] = None, context : Any=None):
+    def __init__(
+        self,
+        subscriber: Subscriber,
+        topic: Topic,
+        qos=DataReaderQos(),
+        listener: Optional[Callable[..., None]] = None,
+        context: Any = None,
+    ):
         self.topic = topic
         self.listener = listener
         self.subscriber = subscriber
@@ -22,15 +28,22 @@ class DataReader:
         subscriber.readers.append(self)
 
         from _pyopendds import create_datareader  # noqa
-        #verify if callback is None 
-        if self.listener == None :
+
+        # verify if callback is None
+        if self.listener == None:
             create_datareader(self, subscriber, topic, None, self.qos)
-        else : 
-            create_datareader(self, subscriber, topic, self.on_data_available_callback, self.qos)
+        else:
+            create_datareader(
+                self, subscriber, topic, self.on_data_available_callback, self.qos
+            )
 
-
-    def wait_for(self, timeout: TimeDurationType, status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED):
+    def wait_for(
+        self,
+        timeout: TimeDurationType,
+        status: StatusKind = StatusKind.SUBSCRIPTION_MATCHED,
+    ):
         from _pyopendds import datareader_wait_for  # noqa
+
         datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
     def take_next_sample(self) -> Any:
@@ -42,8 +55,7 @@ class DataReader:
             # print("on_data_available_callback error: sample is None")
             pass
         elif self.listener is not None:
-            if self.context is None: 
+            if self.context is None:
                 self.listener(sample)
-            else : 
-                self.listener(sample,self.context)
-
+            else:
+                self.listener(sample, self.context)

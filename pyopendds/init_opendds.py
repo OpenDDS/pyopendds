@@ -1,11 +1,29 @@
-""" Manage the initialization of OpenDDS and related functionality.
+"""Manage the initialization of OpenDDS and related functionality.
 """
 
-import sys
+from typing import Tuple
 
 
-def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
-    """ Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
+def opendds_version_str() -> str:
+    from _pyopendds import opendds_version_str as vs
+
+    return vs()
+
+
+def opendds_version_tuple() -> Tuple[int, int, int]:
+    from _pyopendds import opendds_version_tuple as vt
+
+    return vt()
+
+
+def opendds_version_dict() -> dict:
+    from _pyopendds import opendds_version_dict as vd
+
+    return vd()
+
+
+def init_opendds(*args: str, default_rtps=True, opendds_debug_level=0) -> None:
+    """Initialize OpenDDS using the TheParticipantFactoryWithArgs macro while
     passing the positional arguments in.
 
     default_rtps
@@ -18,11 +36,14 @@ def init_opendds(*args, default_rtps=True, opendds_debug_level=0):
     Debug logging level in OpenDDS which goes from 0 (off) to 10 (most
     verbose). It is printed to stdout.
     """
-    
+
+    args_list = list(args)
+
     if opendds_debug_level > 0:
         if not (1 <= opendds_debug_level <= 10):
-            raise ValueError('OpenDDS debug level must be between 0 and 10!')
-        args = args + ('-DCPSDebugLevel', str(opendds_debug_level))
+            raise ValueError("OpenDDS debug level must be between 0 and 10!")
+        args_list.extend(["-DCPSDebugLevel", str(opendds_debug_level)])
 
-    from _pyopendds import init_opendds_impl  # noqa
-    init_opendds_impl(*args, default_rtps=default_rtps)
+    from _pyopendds import init_opendds_impl
+
+    init_opendds_impl(*args_list, default_rtps=default_rtps)

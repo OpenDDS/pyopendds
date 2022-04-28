@@ -3,8 +3,6 @@
 
 #include <Python.h>
 
-#include "utils.hpp"
-
 #include <dds/DCPS/TypeSupportImpl.h>
 #include <dds/DCPS/WaitSet.h>
 #include <dds/DdsDcpsDomainC.h>

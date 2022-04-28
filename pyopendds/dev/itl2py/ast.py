@@ -1,25 +1,24 @@
 from enum import Enum, unique
 from dataclasses import dataclass
+from typing import Optional
 
 
 class Name:
-
     def __init__(self, itl_name=None, parts=None):
         if itl_name is not None and parts is None:
             self.itl_name = itl_name
-            self.parts = itl_name.split(':')[1].split('/')
+            self.parts = itl_name.split(":")[1].split("/")
         elif itl_name is None and parts is not None:
-            self.itl_name = 'IDL:{}:1.0'.format('/'.join(parts))
+            self.itl_name = "IDL:{}:1.0".format("/".join(parts))
             self.parts = parts
         else:
-            raise ValueError('Either parts or itl_name must be passed')
+            raise ValueError("Either parts or itl_name must be passed")
 
-    def join(self, sep='.'):
+    def join(self, sep="."):
         return sep.join(self.parts)
 
 
 class Node:
-
     def __init__(self):
         self.name = None
         self.is_topic_type = False
@@ -42,23 +41,22 @@ class Node:
 
     def repr_name(self):
         if self.name:
-            return '::' + self.name.join('::')
+            return "::" + self.name.join("::")
 
     def repr_template(self, contents):
-        info = ''
+        info = ""
         name = self.repr_name()
         if name:
-            info += ' ' + name
+            info += " " + name
         if contents:
-            info += ': ' + contents
-        return '<{}{}>'.format(self.__class__.__name__, info)
+            info += ": " + contents
+        return "<{}{}>".format(self.__class__.__name__, info)
 
     def __repr__(self):
         return self.repr_template(None)
 
 
 class Module(Node):
-
     def __init__(self, parent, name):
         super().__init__()
         self.parent = parent
@@ -81,12 +79,12 @@ class Module(Node):
         if self.name.parts:
             return super().__repr__()
         else:
-            return ':: (Root Module)'
+            return ":: (Root Module)"
 
 
 @dataclass(frozen=True)
 class PrimitiveTypeTraits:
-    element_size: int = None
+    element_size: Optional[int] = None
     is_unsigned_int: bool = False
     is_signed_int: bool = False
     is_float: bool = False
@@ -97,7 +95,6 @@ class PrimitiveTypeTraits:
 
 
 class PrimitiveType(Node):
-
     @unique
     class Kind(Enum):
         bool = PrimitiveTypeTraits(element_size=8, is_bool=True)
@@ -137,12 +134,11 @@ class PrimitiveType(Node):
     def __repr__(self):
         contents = self.kind.name
         if self.element_count_limit:
-            contents += ' max {}'.format(self.element_count_limit)
+            contents += " max {}".format(self.element_count_limit)
         return self.repr_template(contents)
 
 
 class FieldType(Node):
-
     def __init__(self, name, type_node, optional):
         super().__init__()
         self.set_name(parts=[name])
@@ -154,7 +150,6 @@ class FieldType(Node):
 
 
 class StructType(Node):
-
     def __init__(self):
         super().__init__()
         self.fields = {}
@@ -167,7 +162,6 @@ class StructType(Node):
 
 
 class EnumType(Node):
-
     def __init__(self, size):
         super().__init__()
         self.size = size
@@ -183,11 +177,10 @@ class EnumType(Node):
         visitor.visit_enum(self)
 
     def __repr__(self):
-        return self.repr_template('{} bits'.format(self.size))
+        return self.repr_template("{} bits".format(self.size))
 
 
 class ArrayType(Node):
-
     def __init__(self, base_type, dimensions):
         super().__init__()
         self.base_type = base_type
@@ -199,11 +192,11 @@ class ArrayType(Node):
 
     def __repr__(self):
         return self.repr_template(
-            repr(self.base_type) + ''.join(["[{}]".format(i) for i in self.dimensions]))
+            repr(self.base_type) + "".join(["[{}]".format(i) for i in self.dimensions])
+        )
 
 
 class SequenceType(Node):
-
     def __init__(self, base_type, max_count):
         super().__init__()
         self.base_type = base_type
@@ -211,18 +204,21 @@ class SequenceType(Node):
 
     def accept(self, visitor):
         visitor.visit_sequence(self)
-        pass
 
     def __repr__(self):
-        return self.repr_template(repr(self.base_type)
-            + ("max " + str(self.max_count) if self.max_count else "no max"))
+        return self.repr_template(
+            repr(self.base_type)
+            + ("max " + str(self.max_count) if self.max_count else "no max")
+        )
 
     def repr_name(self):
         if self.name:
-            return '::' + self.name.join('::') + '::_tao_seq_' + repr(self.base_type) + '_'
+            return (
+                "::" + self.name.join("::") + "::_tao_seq_" + repr(self.base_type) + "_"
+            )
+
 
 class NodeVisitor:
-
     def visit_root_module(self, root_module):
         root_module.accept(self)
 
@@ -237,15 +233,15 @@ class NodeVisitor:
 
     def visit_array(self, array_type):
         pass
-        #array_type.accept(self)
+        # array_type.accept(self)
 
     def visit_sequence(self, sequence_type):
         raise NotImplementedError
-        #sequence_type.accept(self)
+        # sequence_type.accept(self)
 
 
 def get_ast(types: dict) -> Module:
-    root_module = Module(None, '')
+    root_module = Module(None, "")
     for type_node in types.values():
         module = root_module
         for module_name in type_node.parent_name().parts:
