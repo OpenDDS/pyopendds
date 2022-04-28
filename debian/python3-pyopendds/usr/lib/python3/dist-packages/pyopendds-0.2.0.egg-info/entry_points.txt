@@ -1,4 +1,0 @@
-[console_scripts]
-itl2py = pyopendds.dev.itl2py.__main__:main
-pyidl = pyopendds.dev.pyidl.__main__:run
-

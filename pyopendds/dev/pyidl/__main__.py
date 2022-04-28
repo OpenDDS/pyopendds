@@ -162,7 +162,7 @@ def mk_tmp_package_proj(args: argparse.Namespace):
     """ VERBOSE=1 DFApplication_idl_DIR=../prefix/usr/local/share/cmake/DFApplication_idl/ python setup.py bdist_wheel """
     # Install the python package py[package_name]
     os.unlink(
-        "/home/dpierret/DragonFly/GitHub/Platform/09-Tools/09-pyDragonflyApplication/buildIdl/build/DFApplication_idlConfig.cmake"
+        os.path.join(args.build_dir, f"{args.package_name}_idlConfig.cmake")
     )
     python_build_dir = os.path.join(args.build_dir, args.package_name)
     # tmp_env = os.environ.copy()
