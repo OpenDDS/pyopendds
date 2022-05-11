@@ -129,8 +129,9 @@ class CppOutput(Output):
                         ]
                     )
                 ]
-                struct_to_lines.extend(line_process(to_lines))
-                struct_from_lines.extend(line_process(from_lines))
+                
+            struct_to_lines.extend(line_process(to_lines))
+            struct_from_lines.extend(line_process(from_lines))
 
         self.context["types"].append(
             {
