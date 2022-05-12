@@ -1,8 +1,7 @@
 {% if has_struct -%}
 from dataclasses import dataclass as _pyopendds_struct
 from dataclasses import field
-from pyopendds.util import Byte, UByte
-import {{package_name}}
+import {{ package_name }}
 {%- endif %}
 {% if has_enum -%}
 from enum import IntFlag as _pyopendds_enum
@@ -27,8 +26,8 @@ class {{ type.local_name }}(_pyopendds_enum):
 {%- endfor %}
 {%- elif type.sequence %}
 class {{ type.local_name }}(list):
-    _base_type = {{type.sequence.type}}
-    _max_len = {{type.sequence.len}}
+    _base_type = {{ type.sequence.type }}
+    _max_len = {{ type.sequence.len }}
 {%- else %}
 # {{ type.local_name }} was left unimplmented
 {% endif -%}

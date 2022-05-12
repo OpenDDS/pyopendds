@@ -62,39 +62,3 @@ class _BitwiseImpl:
         return self
 
 
-class UByte(c_ubyte, _BitwiseImpl):
-    def __init__(self, x):
-        super().__init__(x)
-
-    def __repr__(self):
-        return "ub\\" + bin(self.value)
-
-    def __int__(self) -> int:
-        return super().value
-
-    @staticmethod
-    def bytes_to_list(data: bytes) -> List["UByte"]:
-        return list(map(UByte, data))
-
-    @staticmethod
-    def list_to_bytes(data: List["UByte"]) -> bytes:
-        return bytes(map(int, data))
-
-
-class Byte(c_byte, _BitwiseImpl):
-    def __init__(self, x):
-        super().__init__(x)
-
-    def __repr__(self):
-        return "sb\\" + bin(self.value)
-
-    def __int__(self) -> int:
-        return super().value
-
-    @staticmethod
-    def bytes_to_list(data: bytes) -> List["Byte"]:
-        return list(map(Byte, data))
-
-    @staticmethod
-    def list_to_bytes(data: List["Byte"]) -> bytes:
-        return bytes(map(int, data))
