@@ -57,63 +57,19 @@ public:
         return PyLong_FromLong(0);
     }
 
-    static PyObject* PyUByte_FromUInt8(uint8_t value)
-    {
-        initPyopenddsModule();
-        PyObject *args = PyTuple_Pack(1, PyLong_FromUnsignedLong(static_cast<unsigned long>(value)));
-        PyObject *py = PyObject_CallObject(pyopendds_ubyte_func, args);
-        if (!py) throw Exception("Cannot create Byte object from value", PyExc_ValueError);
-
-        return py;
-    }
-
-    static PyObject* PyByte_FromInt8(int8_t value)
-    {
-        initPyopenddsModule();
-        PyObject *args = PyTuple_Pack(1, PyLong_FromLong(static_cast<long>(value)));
-        PyObject *py = PyObject_CallObject(pyopendds_byte_func, args);
-        if (!py) throw Exception("Cannot create Byte object from value", PyExc_ValueError);
-
-        return py;
-    }
-
-    static long PyUByte_AsUnsignedLong(PyObject* value)
-    {
-        PyObject *py_int = PyObject_GetAttrString(value, "value");
-        if (!py_int) throw Exception("Error in getting obj.value", PyExc_ValueError);
-
-        return PyLong_AsLong(py_int);
-    }
-
-    static unsigned long PyByte_AsLong(PyObject* value)
-    {
-        PyObject *py_int = PyObject_GetAttrString(value, "value");
-        if (!py_int) throw Exception("Error in getting obj.value", PyExc_ValueError);
-
-        return PyLong_AsUnsignedLong(py_int);
-    }
-
     static void cpp_to_python(const T& cpp, PyObject*& py)
     {
         if (limits::is_signed) {
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromLongLong(cpp);
             } else {
-                if (sizeof(cpp) <= sizeof(int8_t)) {
-                    py = PyByte_FromInt8(cpp);
-                } else {
                     py = PyLong_FromLong(cpp);
-                }
             }
         } else {
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromUnsignedLongLong(cpp);
             } else {
-                if (sizeof(cpp) <= sizeof(uint8_t)) {
-                    py = PyUByte_FromUInt8(cpp);
-                } else {
                     py = PyLong_FromUnsignedLong(cpp);
-                }
             }
         }
     }
@@ -125,21 +81,13 @@ public:
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsLongLong(py);
             } else {
-                if (sizeof(T) <= sizeof(int8_t)) {
-                    value = static_cast<int8_t>(PyByte_AsLong(py));
-                } else {
                     value = PyLong_AsLong(py);
-                }
             }
         } else {
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsUnsignedLongLong(py);
             } else {
-                if (sizeof(T) <= sizeof(uint8_t)) {
-                    value = static_cast<uint8_t>(PyUByte_AsUnsignedLong(py));
-                } else {
                     value = PyLong_AsUnsignedLong(py);
-                }
             }
         }
         if (value < limits::lowest() || value > limits::max()) {
