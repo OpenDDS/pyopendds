@@ -31,9 +31,11 @@ def get_base_prefix_compat():
         or sys.prefix
     )
 
-
 def in_virtualenv():
     return get_base_prefix_compat() != sys.prefix
+
+def virtualenv_dir():
+    return sys.prefix
 
 
 def resolve_wildcard(expr, dir_name) -> list:
@@ -125,20 +127,38 @@ def mk_tmp_package_proj(args: argparse.Namespace):
         cmake ..
     """
     # Run cmake to prepare the python to cpp bindings
-    subprocess_check_run(split("cmake .."), cwd=args.build_dir)
-    """ DESTDIR=prefix make install """
-    subprocess_check_run(
-        split(f"make install {args.make_opts} DESTDIR=prefix"), cwd=args.build_dir
-    )
-    prefix_dir = os.path.join(args.build_dir, "prefix")
-    install_dir = os.path.join(
-        prefix_dir,
-        "usr",
-        "local",
-        "share",
-        "cmake",
-        "{package_name}_idl".format(package_name=args.package_name),
-    )
+    if in_virtualenv():
+        subprocess_check_run(split(f"cmake -DCMAKE_INSTALL_PREFIX={virtualenv_dir()} .."), cwd=args.build_dir)
+        # DESTDIR=prefix make install
+        subprocess_check_run(
+            split(f"make install {args.make_opts}"), cwd=args.build_dir
+        )
+    else:
+        subprocess_check_run(split(f"cmake .."), cwd=args.build_dir)
+        # DESTDIR=prefix make install
+        subprocess_check_run(
+            split(f"make install {args.make_opts} DESTDIR=prefix"), cwd=args.build_dir
+        )
+
+    if in_virtualenv():
+        prefix_dir = virtualenv_dir()
+        install_dir = os.path.join(
+            prefix_dir,
+            "share",
+            "cmake",
+            "{package_name}_idl".format(package_name=args.package_name),
+        )
+
+    else:
+        prefix_dir = os.path.join(args.build_dir, "prefix")
+        install_dir = os.path.join(
+            prefix_dir,
+            "usr",
+            "local",
+            "share",
+            "cmake",
+            "{package_name}_idl".format(package_name=args.package_name),
+        )
     """ itl2py -o DFApplication DFApplication_idl opendds_generated/*.itl --package-name pyDFApplication """
     # Build the python IDL package
     itl_files: list = resolve_wildcard("opendds_generated/*.itl", args.build_dir)
@@ -178,9 +198,8 @@ def mk_tmp_package_proj(args: argparse.Namespace):
         if len(whl_list):
             package_path = whl_list[0]
             subprocess_check_run(
-                split(f"pip install {package_path} --force-reinstall"),
-                cwd=os.path.join(args.build_dir, f"{args.package_name}_ouput"),
-            )
+                split(f"pip install {package_path} --force-reinstall --no-deps"),
+                cwd=args.build_dir)
         else:
             raise FileNotFoundError()
 
