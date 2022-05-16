@@ -55,13 +55,6 @@ install(TARGETS ${PROJECT_NAME}
 )
 install(DIRECTORY "include/" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.h")
-get_target_property(passed_files ${PROJECT_NAME} OPENDDS_ALL_PASSED_INTERFACE_FILES)
-foreach(file ${passed_files})
-  file(RELATIVE_PATH dest ${CMAKE_CURRENT_SOURCE_DIR} ${file})
-  string(REGEX REPLACE "^include/" "" dest ${dest})
-  get_filename_component(dest ${dest} DIRECTORY)
-  install(FILES ${file} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${dest}")
-endforeach()
 get_target_property(generated_files ${PROJECT_NAME} OPENDDS_ALL_GENERATED_INTERFACE_FILES)
 get_target_property(generated_directory ${PROJECT_NAME} OPENDDS_GENERATED_DIRECTORY)
 foreach(file ${generated_files})
