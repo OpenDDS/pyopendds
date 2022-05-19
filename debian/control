@@ -2,13 +2,12 @@ Source: python3-opendds
 Section: net
 Priority: optional
 Maintainer: Dragonfly <dragonfly@upnext.com>
-Description: Python Opendds binding
 Standards-Version: 4.5.0
-Build-Depends: debhelper, dh-python, python3-setuptools, python3-all, python3-all-dev, cmake, ninja-build, libopendds-dev (>= 3.20-1), python3-cmake-build-extension
+Build-Depends: debhelper, dh-python, python3-setuptools, python3-all, python3-all-dev, cmake (>= 3.12), ninja-build, libopendds-dev (>= 3.20), python3-cmake-build-extension
 X-Python3-Version: >= 3.8
 
 Package: python3-opendds
 Architecture: amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, opendds (>= 3.20-1)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, opendds (>= 3.20)
 Description: Python3 library for opendds
  allow Python3 applications to use the OpenDDS library.
