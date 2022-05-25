@@ -61,13 +61,13 @@ public:
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromLongLong(cpp);
             } else {
-                    py = PyLong_FromLong(cpp);
+                py = PyLong_FromLong(cpp);
             }
         } else {
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromUnsignedLongLong(cpp);
             } else {
-                    py = PyLong_FromUnsignedLong(cpp);
+                py = PyLong_FromUnsignedLong(cpp);
             }
         }
     }
@@ -79,18 +79,18 @@ public:
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsLongLong(py);
             } else {
-                    value = PyLong_AsLong(py);
+                value = PyLong_AsLong(py);
             }
         } else {
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsUnsignedLongLong(py);
             } else {
-                    value = PyLong_AsUnsignedLong(py);
+                value = PyLong_AsUnsignedLong(py);
             }
         }
-        if (value < limits::lowest() || value > limits::max()) {
+        if (value < limits::lowest() || value > limits::max())
             throw Exception("Integer Value is Out of Range for IDL Type", PyExc_ValueError);
-        }
+
         if (value == -1 && PyErr_Occurred())
             throw Exception();
 
@@ -141,7 +141,9 @@ public:
             throw Exception("Floating Value is Out of Range for IDL Type", PyExc_ValueError);
         }
 
-        if (value == -1 && PyErr_Occurred()) throw Exception();
+        if (value == -1 && PyErr_Occurred())
+            throw Exception();
+
         cpp = value;
     }
 };
