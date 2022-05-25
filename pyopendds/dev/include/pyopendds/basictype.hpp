@@ -43,8 +43,6 @@ public:
 
 PyObject* pyopendds_mod_str = NULL;
 PyObject* pyopendds_mod = NULL;
-PyObject* pyopendds_byte_func = NULL;
-PyObject* pyopendds_ubyte_func = NULL;
 
 template<typename T>
 class IntegerType {
@@ -114,20 +112,6 @@ private:
             pyopendds_mod = PyImport_Import(pyopendds_mod_str);
             if (!pyopendds_mod)
                 throw Exception("Cannot import \"pyopendds.util\"", PyExc_ImportError);
-        }
-
-        // Getting a reference to the Byte object initializer
-        if (!pyopendds_byte_func) {
-            pyopendds_byte_func = PyObject_GetAttrString(pyopendds_mod, (char*)"Byte");
-            if (!pyopendds_byte_func)
-                throw Exception("Cannot find \"Byte()\" in \"pyopendds.util\"", PyExc_NameError);
-        }
-
-        // Getting a reference to the UByte object initializer
-        if (!pyopendds_ubyte_func) {
-            pyopendds_ubyte_func = PyObject_GetAttrString(pyopendds_mod, (char*)"UByte");
-            if (!pyopendds_ubyte_func)
-                throw Exception("Cannot find \"UByte()\" in \"pyopendds.util\"", PyExc_NameError);
         }
 
         return true;
