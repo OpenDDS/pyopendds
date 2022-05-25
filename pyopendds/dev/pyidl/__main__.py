@@ -31,8 +31,10 @@ def get_base_prefix_compat():
         or sys.prefix
     )
 
+
 def in_virtualenv():
     return get_base_prefix_compat() != sys.prefix
+
 
 def virtualenv_dir():
     return sys.prefix
@@ -179,7 +181,8 @@ def mk_tmp_package_proj(args: argparse.Namespace):
         cwd=args.build_dir,
     )
 
-    """ VERBOSE=1 DFApplication_idl_DIR=../prefix/usr/local/share/cmake/DFApplication_idl/ python setup.py bdist_wheel """
+    """ VERBOSE=1 DFApplication_idl_DIR=../prefix/usr/local/share/cmake/DFApplication_idl/ \
+    python setup.py bdist_wheel """
     # Install the python package py[package_name]
     os.unlink(
         os.path.join(args.build_dir, f"{args.package_name}_idlConfig.cmake")
@@ -261,7 +264,7 @@ def run():
     current_dir = os.getcwd()
 
     # Check if an environment is sourced
-    if not in_virtualenv():
+    if not args.force_install and not in_virtualenv():
         if not prompt(
             "No virtual environment seems to be sourced. Would you like to continue ?"
         ):
