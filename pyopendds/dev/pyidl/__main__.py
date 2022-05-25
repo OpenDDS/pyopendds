@@ -259,17 +259,21 @@ def run():
     parser.add_argument(
         "--force-install", action="store_true", help="install the generated package"
     )
+    parser.add_argument(
+        "-y", "--yes", action="store_true", help="respond to yes to prompt"
+    )
 
     args = parser.parse_args()
     current_dir = os.getcwd()
 
     # Check if an environment is sourced
     if not args.force_install and not in_virtualenv():
-        if not prompt(
-            "No virtual environment seems to be sourced. Would you like to continue ?"
-        ):
-            print("Aborting...")
-            sys.exit(1)
+        if not args.yes:
+            if not prompt(
+                "No virtual environment seems to be sourced. Would you like to continue ?"
+            ):
+                print("Aborting...")
+                sys.exit(1)
 
     # Initialize include paths or convert directories names into absolute paths
     if not args.include_paths:
