@@ -43,8 +43,6 @@ public:
 
 PyObject* pyopendds_mod_str = NULL;
 PyObject* pyopendds_mod = NULL;
-PyObject* pyopendds_byte_func = NULL;
-PyObject* pyopendds_ubyte_func = NULL;
 
 template<typename T>
 class IntegerType {
@@ -63,13 +61,13 @@ public:
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromLongLong(cpp);
             } else {
-                    py = PyLong_FromLong(cpp);
+                py = PyLong_FromLong(cpp);
             }
         } else {
             if (sizeof(cpp) > sizeof(long)) {
                 py = PyLong_FromUnsignedLongLong(cpp);
             } else {
-                    py = PyLong_FromUnsignedLong(cpp);
+                py = PyLong_FromUnsignedLong(cpp);
             }
         }
     }
@@ -81,18 +79,18 @@ public:
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsLongLong(py);
             } else {
-                    value = PyLong_AsLong(py);
+                value = PyLong_AsLong(py);
             }
         } else {
             if (sizeof(T) == sizeof(long long)) {
                 value = PyLong_AsUnsignedLongLong(py);
             } else {
-                    value = PyLong_AsUnsignedLong(py);
+                value = PyLong_AsUnsignedLong(py);
             }
         }
-        if (value < limits::lowest() || value > limits::max()) {
+        if (value < limits::lowest() || value > limits::max())
             throw Exception("Integer Value is Out of Range for IDL Type", PyExc_ValueError);
-        }
+
         if (value == -1 && PyErr_Occurred())
             throw Exception();
 
@@ -114,20 +112,6 @@ private:
             pyopendds_mod = PyImport_Import(pyopendds_mod_str);
             if (!pyopendds_mod)
                 throw Exception("Cannot import \"pyopendds.util\"", PyExc_ImportError);
-        }
-
-        // Getting a reference to the Byte object initializer
-        if (!pyopendds_byte_func) {
-            pyopendds_byte_func = PyObject_GetAttrString(pyopendds_mod, (char*)"Byte");
-            if (!pyopendds_byte_func)
-                throw Exception("Cannot find \"Byte()\" in \"pyopendds.util\"", PyExc_NameError);
-        }
-
-        // Getting a reference to the UByte object initializer
-        if (!pyopendds_ubyte_func) {
-            pyopendds_ubyte_func = PyObject_GetAttrString(pyopendds_mod, (char*)"UByte");
-            if (!pyopendds_ubyte_func)
-                throw Exception("Cannot find \"UByte()\" in \"pyopendds.util\"", PyExc_NameError);
         }
 
         return true;
@@ -157,7 +141,9 @@ public:
             throw Exception("Floating Value is Out of Range for IDL Type", PyExc_ValueError);
         }
 
-        if (value == -1 && PyErr_Occurred()) throw Exception();
+        if (value == -1 && PyErr_Occurred())
+            throw Exception();
+
         cpp = value;
     }
 };
