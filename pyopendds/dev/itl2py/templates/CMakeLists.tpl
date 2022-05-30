@@ -3,7 +3,6 @@
 cmake_minimum_required(VERSION 3.12)
 project({{ native_package_name }} CXX)
 
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(Python3 COMPONENTS Development REQUIRED)
 find_package(OpenDDS REQUIRED)
