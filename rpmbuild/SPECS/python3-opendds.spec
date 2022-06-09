@@ -1,6 +1,6 @@
 Name:           python3-opendds
 Version:        3.20.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Python3 wrapper module for OpenDDS
 
 License:        MIT

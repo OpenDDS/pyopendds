@@ -1,3 +1,9 @@
+python3-opendds (3.20-2) focal; urgency=medium
+
+  * remove prompt and enforce "KEEP_RPATH" when called from virtualenv
+
+ -- Dragonfly <dragonfly@upnext.com>  Thu, 09 Jun 2022 10:51:47 +0200
+
 python3-opendds (3.20-1) focal; urgency=medium
 
   * pyOpenDDS compatible with OpenDDS 3.20
