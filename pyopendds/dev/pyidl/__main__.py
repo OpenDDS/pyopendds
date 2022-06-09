@@ -267,13 +267,8 @@ def run():
     current_dir = os.getcwd()
 
     # Check if an environment is sourced
-    if not args.force_install and not in_virtualenv():
-        if not args.yes:
-            if not prompt(
-                "No virtual environment seems to be sourced. Would you like to continue ?"
-            ):
-                print("Aborting...")
-                sys.exit(1)
+    if in_virtualenv():
+        os.environ["KEEP_RPATH"] = "true"
 
     # Initialize include paths or convert directories names into absolute paths
     if not args.include_paths:
