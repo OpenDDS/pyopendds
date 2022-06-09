@@ -4,5 +4,15 @@ __pycache__
 /_pyopendds*so
 /*.egg-info
 /build
+/.pybuild
 /.venv
 /dist
+/.idea
+/debian/*debhelper*
+/debian/python3-opendds*
+/debian/files
+/rpmbuild/BUILD
+/rpmbuild/BUILDROOT
+/rpmbuild/RPMS
+/rpmbuild/SRPMS
+/rpmbuild/SOURCES
