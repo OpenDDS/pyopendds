@@ -1,3 +1,8 @@
+%global srcname pyopendds
+%global debug_package ${nil}
+
+%define __python3 /usr/bin/python3.8
+
 Name:           python3-opendds
 Version:        3.20.0
 Release:        2%{?dist}
@@ -8,7 +13,8 @@ URL:            https://github.com/Sdpierret/pyopendds/
 Source:         packagesource.tar.gz
 
 BuildArch:	x86_64
-BuildRequires:  python3-devel
+BuildRequires:  python38-devel, python38-setuptools, cmake, python3-cmake-build-extension
+BuildRequires:  opendds-devel, python38-jinja2, python38-wheel
 
 %global _description %{expand:
 PyOpenDDS is a framework for using OpenDDS from Python.
@@ -16,27 +22,30 @@ PyOpenDDS is a framework for using OpenDDS from Python.
 
 %description %_description
 
-%package -n pyopendds
-Summary:        %{summary}
-
-%description -n pyopendds %_description
-
 %prep
-%autosetup -p1 -n pyopendds
+%setup -n %{srcname}
 
 %build
-%py3_build
+#pushd %{py3dir}
+pushd %{_builddir}/%{srcname}
+%{__python3} setup.py build
+popd
 
 %install
-%py3_install
+#pushd %{py3dir}
+pushd %{_builddir}/%{srcname}
+%{__python3} setup.py install --root %{buildroot}
+popd
 
-%check
-%{python3} setup.py test
+#%check
+#%{__python3} setup.py test
 
-%files -n pyopendds
-%{python3_sitelib}/%{srcname}-*.egg-info/
-%{python3_sitelib}/%{srcname}/
+%files
+%{python3_sitearch}/*
+%{_bindir}/itl2py
+%{_bindir}/pyidl
 
-# %doc README.md
+
+%doc README.md
 
 %changelog

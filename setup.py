@@ -2,7 +2,8 @@ import sys
 import os
 import inspect
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import setup
+from setuptools import find_packages
 
 import cmake_build_extension
 
@@ -52,5 +53,6 @@ setup(
     },
     install_requires=[
         'jinja2',
+        'cmake'
     ]
 )
