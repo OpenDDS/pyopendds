@@ -11,19 +11,6 @@ from zipfile import ZipFile
 from .gencmakefile import gen_cmakelist, gen_cmakeconfig
 
 
-def prompt(question):
-    yes = {"yes", "y"}
-    no = {"no", "n", ""}
-
-    choice = input(question).lower()
-    if choice in yes:
-        return True
-    elif choice in no:
-        return False
-    else:
-        sys.stdout.write("Please respond with 'yes' or 'no'")
-
-
 def get_base_prefix_compat():
     return (
         getattr(sys, "base_prefix", None)
@@ -260,20 +247,15 @@ def run():
         "--force-install", action="store_true", help="install the generated package"
     )
     parser.add_argument(
-        "-y", "--yes", action="store_true", help="respond to yes to prompt"
+        "-y", "--yes", action="store_true", help="respond to yes to prompt (deprecated)"
     )
 
     args = parser.parse_args()
     current_dir = os.getcwd()
 
     # Check if an environment is sourced
-    if not args.force_install and not in_virtualenv():
-        if not args.yes:
-            if not prompt(
-                "No virtual environment seems to be sourced. Would you like to continue ?"
-            ):
-                print("Aborting...")
-                sys.exit(1)
+    if in_virtualenv():
+        os.environ["KEEP_RPATH"] = "true"
 
     # Initialize include paths or convert directories names into absolute paths
     if not args.include_paths:

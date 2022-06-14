@@ -8,7 +8,11 @@ import cmake_build_extension
 
 from pyopendds.dev.util import get_include_path
 
-keep_rpath = os.environ.get("KEEP_RPATH", "OFF")
+keep_rpath = os.environ.get("KEEP_RPATH",'OFF').lower() in ('true', '1', 't')
+if keep_rpath == True :
+  rpath = 'ON'
+else : 
+  rpath = 'OFF'
 python_root = Path(sys.prefix).resolve()
 pyopendds_include = get_include_path()
 build_type = os.environ.get("PYOPENDDS_BUILD_TYPE", "Release")
@@ -33,7 +37,7 @@ setup(
       cmake_configure_options=[
         f"-DPython3_ROOT_DIR={python_root}",
         "-DCALL_FROM_SETUP_PY:BOOL=ON",
-        "-DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL={keep_rpath}",
+        "-DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL="+rpath,
         f"-DPYOPENDDS_INCLUDE={pyopendds_include}",
       ],
       cmake_build_type=build_type,
