@@ -38,11 +38,7 @@ class Topic:
     def ts_package(self):
         return self._ts_package
 
-    def __del__(self):
-        print("DELETE", self)
-    
     def clear(self):
-        print("clear",self)
         self.name = None
         self.type = None
         self.listener = None

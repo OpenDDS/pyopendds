@@ -11,9 +11,5 @@ class DataReaderListenerImpl:
 
         create_datareaderlistenerimpl(self, callback)
 
-    def __del__(self):
-        print("DELETE", self)
-
     def clear(self):
-        print("clear",self)
         self.callback = None

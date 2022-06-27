@@ -55,11 +55,10 @@ class DataReader:
         sample = None
         try:
             sample = self.take_next_sample()
-        except:
+        except: # we inhibit Exceptions due to wrong sample received
             pass
         if sample is None:
             pass
-            #raise ValueError()
         elif self.listener is not None:
             if self.context is None:
                 self.listener(sample)
@@ -67,7 +66,6 @@ class DataReader:
                 self.listener(sample, self.context)
 
     def clear(self):
-        print("clear",self)
         if self.datareaderlistenerimpl is not None:
             self.datareaderlistenerimpl.clear()
 
@@ -77,6 +75,3 @@ class DataReader:
         self.subscriber = None
         self.qos = None
         self.context = None
-
-    def __del__(self):
-        print("DELETE", self)

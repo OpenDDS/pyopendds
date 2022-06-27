@@ -26,12 +26,8 @@ class Subscriber:
         return reader
 
     def clear(self):
-        print("clear",self)
         # remove references to callbacks
         self.listener = None
         for reader in self.readers:
             reader.clear()
         self.readers.clear()
-    
-    def __del__(self):
-        print("DELETE", self)

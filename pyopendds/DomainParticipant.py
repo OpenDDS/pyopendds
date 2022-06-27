@@ -20,16 +20,10 @@ class DomainParticipant:
 
         create_participant(self, domain, isRtpstransport)
 
-    def __del__(self):
-        print("DELETE", self)
-
     def stop(self):
         participant_cleanup(self)
-        participant_stop()
 
     def clear(self):
-        print("clear",self)
-
         for topic in self.topics.values():
             topic.clear()
         self.topics.clear()

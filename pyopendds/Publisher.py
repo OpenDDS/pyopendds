@@ -25,10 +25,6 @@ class Publisher:
         return writer
 
     def clear(self):
-        print("clear", self)
         for writer in self.writers:
             writer.clear()
         self.writers.clear()
-
-    def __del__(self):
-        print("DELETE", self)

@@ -247,7 +247,7 @@ void delete_participant_var(PyObject* part_capsule)
       static_cast<DDS::DomainParticipant*>(PyCapsule_GetPointer(part_capsule, nullptr));
     if (participant) {
       numParticipant--;
-      std::cout << "numParticipant: " << numParticipant << std::endl;
+      // std::cout << "numParticipant: " << numParticipant << std::endl;
       participant = nullptr;
     }
   }
@@ -267,7 +267,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     }
     pyparticipant++;
     numParticipant++;
-    std::cout << "numParticipant: " << numParticipant << std::endl;
+    // std::cout << "numParticipant: " << numParticipant << std::endl;
 
     OpenDDS::DCPS::TransportConfig_rch transport_config;
     OpenDDS::DCPS::TransportInst_rch transport_inst;
@@ -302,7 +302,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     if (!participant) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Participant");
         numParticipant--;
-        std::cout << "numParticipant: " << numParticipant << std::endl;
+        // std::cout << "numParticipant: " << numParticipant << std::endl;
         return nullptr;
     }
 
@@ -336,17 +336,12 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     printf("delete_participant\n");
     participant_factory->delete_participant(participant);
     
-    Py_END_ALLOW_THREADS
-    Py_RETURN_NONE;
-}
-
-
-PyObject* participant_stop(PyObject* self, PyObject* args)
-{
-    if (numParticipant == 0)
+    if (numParticipant <= 0)
     {
         TheServiceParticipant->shutdown();
     }
+
+    Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
 
@@ -928,7 +923,6 @@ PyMethodDef pyopendds_Methods[] = {
     },
     { "create_participant", create_participant, METH_VARARGS, internal_docstr },
     { "participant_cleanup", participant_cleanup, METH_VARARGS, internal_docstr },
-    { "participant_stop", participant_stop, METH_VARARGS, internal_docstr },
     { "create_subscriber", create_subscriber, METH_VARARGS, internal_docstr },
     { "create_publisher", create_publisher, METH_VARARGS, internal_docstr },
     { "create_topic", create_topic, METH_VARARGS, internal_docstr },

@@ -35,8 +35,4 @@ class DataWriter:
         return self.topic.ts_package.write(self, sample)
 
     def clear(self):
-        print("clear",self)
         self.publisher = None
-
-    def __del__(self):
-        print("DELETE", self)
