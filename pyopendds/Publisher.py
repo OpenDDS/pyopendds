@@ -6,6 +6,8 @@ from .Topic import Topic
 
 if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
+    
+from _pyopendds import create_publisher
 
 
 class Publisher:
@@ -14,7 +16,6 @@ class Publisher:
         self.qos = qos
         self.writers: List[DataWriter] = []
 
-        from _pyopendds import create_publisher
 
         create_publisher(self, participant)
 
@@ -22,3 +23,12 @@ class Publisher:
         writer = DataWriter(self, topic, qos)
         self.writers.append(writer)
         return writer
+
+    def clear(self):
+        print("clear", self)
+        for writer in self.writers:
+            writer.clear()
+        self.writers.clear()
+
+    def __del__(self):
+        print("DELETE", self)

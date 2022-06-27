@@ -139,18 +139,18 @@ PyObject* pytake_next_sample(PyObject* self, PyObject* args)
 {
   Ref pyreader;
   if (!PyArg_ParseTuple(args, "O", &*pyreader)) {
-    return nullptr;
+    throw Exception("take_next_sample() missing 1 required positional argument: 'data_reader'", PyExc_TypeError);
   }
   pyreader++;
 
   // Try to Get Topic Type and Do Read
   Ref pytopic = PyObject_GetAttrString(*pyreader, "topic");
   if (!pytopic) {
-    return nullptr;
+    throw Exception("Failed retrieving attribute obj.topic of python class DataReader", PyExc_AttributeError);
   }
   Ref pytype = PyObject_GetAttrString(*pytopic, "type");
   if (!pytype) {
-    return nullptr;
+    throw Exception("Failed retrieving attribute obj.topic.type of python class DataReader", PyExc_AttributeError);
   }
 
   try {

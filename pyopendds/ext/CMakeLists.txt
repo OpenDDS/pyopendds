@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(_pyopendds CXX)
 
+set(CMAKE_BUILD_TYPE "Debug")
 find_package(Python3 COMPONENTS Development REQUIRED)
 find_package(OpenDDS REQUIRED)
 

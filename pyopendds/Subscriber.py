@@ -7,6 +7,7 @@ from .Topic import Topic
 if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
 
+from _pyopendds import create_subscriber
 
 class Subscriber:
     def __init__(self, participant: DomainParticipant, qos=None, listener=None):
@@ -14,8 +15,6 @@ class Subscriber:
         self.qos = qos
         self.listener = listener
         self.readers: List[DataReader] = []
-
-        from _pyopendds import create_subscriber
 
         create_subscriber(self, participant)
 
@@ -25,3 +24,14 @@ class Subscriber:
         reader = DataReader(self, topic, qos, listener, context=context)
         self.readers.append(reader)
         return reader
+
+    def clear(self):
+        print("clear",self)
+        # remove references to callbacks
+        self.listener = None
+        for reader in self.readers:
+            reader.clear()
+        self.readers.clear()
+    
+    def __del__(self):
+        print("DELETE", self)

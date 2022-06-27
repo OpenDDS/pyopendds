@@ -56,9 +56,9 @@ PyObject* opendds_version_dict(PyObject*, PyObject*)
 class DataReaderListenerImpl : public virtual OpenDDS::DCPS::LocalObject<DDS::DataReaderListener> {
 
 public:
-    DataReaderListenerImpl(PyObject * self, PyObject *callback);
+    DataReaderListenerImpl(PyObject *callback);
 
-
+    void clear();
 
     virtual void on_requested_deadline_missed(
         DDS::DataReader_ptr reader,
@@ -89,22 +89,34 @@ public:
 
 private:
     PyObject *_callback;
-    PyObject * _self;
 };
 
-DataReaderListenerImpl::DataReaderListenerImpl(PyObject* self, PyObject* callback) :
+DataReaderListenerImpl::DataReaderListenerImpl(PyObject* callback) :
     OpenDDS::DCPS::LocalObject<DDS::DataReaderListener>()
 {
-    _self = self;
-    Py_XINCREF(_self);
     _callback = callback;
     Py_XINCREF(_callback);
+    printf("callback++\n");
+}
+
+void DataReaderListenerImpl::clear()
+{
+    Py_XDECREF(_callback);
+    _callback == nullptr;
+    printf("callback--\n");
 }
 
 void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 {
+    printf("callback()\n"); 
+
     PyObject *callable = _callback;
     PyObject *result = NULL;
+
+    if(_callback == nullptr)
+    {
+      throw Exception("callback undefined", PyExc_TypeError);
+    }
 
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -119,11 +131,9 @@ void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
             throw Exception("Pyobject is not a callable", PyExc_TypeError);
         }
     } catch (Exception& e) {
-        //    Py_XDECREF(callable);
         PyGILState_Release(gstate);
         throw e;
     }
-    //Py_XDECREF(callable);
     PyGILState_Release(gstate);
 }
 
@@ -231,11 +241,13 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
  */
 void delete_participant_var(PyObject* part_capsule)
 {
+  printf("delete_participant_var\n");
   if (PyCapsule_CheckExact(part_capsule)) {
     DDS::DomainParticipant_var participant =
       static_cast<DDS::DomainParticipant*>(PyCapsule_GetPointer(part_capsule, nullptr));
     if (participant) {
       numParticipant--;
+      std::cout << "numParticipant: " << numParticipant << std::endl;
       participant = nullptr;
     }
   }
@@ -246,6 +258,7 @@ void delete_participant_var(PyObject* part_capsule)
  */
 PyObject* create_participant(PyObject* self, PyObject* args)
 {
+  printf("create_participant\n");
     Ref pyparticipant;
     unsigned int domain;
     int isRtpstransport;
@@ -254,6 +267,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     }
     pyparticipant++;
     numParticipant++;
+    std::cout << "numParticipant: " << numParticipant << std::endl;
 
     OpenDDS::DCPS::TransportConfig_rch transport_config;
     OpenDDS::DCPS::TransportInst_rch transport_inst;
@@ -288,6 +302,7 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     if (!participant) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Participant");
         numParticipant--;
+        std::cout << "numParticipant: " << numParticipant << std::endl;
         return nullptr;
     }
 
@@ -295,7 +310,6 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     if (set_capsule(*pyparticipant, participant, delete_participant_var)) {
         return nullptr;
     }
-
   Py_RETURN_NONE;
 }
 
@@ -314,15 +328,23 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-    numParticipant--;
-    // std::cout<<numParticipant<<"\n" ;
-
+    Py_BEGIN_ALLOW_THREADS
+    
+    printf("delete_contained_entities\n");
     participant->delete_contained_entities();
-    participant_factory->delete_participant(participant);
 
+    printf("delete_participant\n");
+    participant_factory->delete_participant(participant);
+    
+    Py_END_ALLOW_THREADS
+    Py_RETURN_NONE;
+}
+
+
+PyObject* participant_stop(PyObject* self, PyObject* args)
+{
     if (numParticipant == 0)
     {
-
         TheServiceParticipant->shutdown();
     }
     Py_RETURN_NONE;
@@ -333,6 +355,7 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
  */
 void delete_topic_var(PyObject* topic_capsule)
 {
+  printf("delete_topic_var\n");
   if (PyCapsule_CheckExact(topic_capsule)) {
     DDS::Topic_var topic = static_cast<DDS::Topic*>(PyCapsule_GetPointer(topic_capsule, nullptr));
     if (topic) {
@@ -350,6 +373,7 @@ void delete_topic_var(PyObject* topic_capsule)
  */
 PyObject* create_topic(PyObject* self, PyObject* args)
 {
+  printf("create_topic\n");
   Ref pytopic;
   Ref pyparticipant;
   char* name;
@@ -381,12 +405,55 @@ PyObject* create_topic(PyObject* self, PyObject* args)
 
   Py_RETURN_NONE;
 }
+/**
+ * Callback for Python to Call when the DataReaderListenerImpl Capsule is Deleted
+ */
+void delete_datareaderlistenerimpl_var(PyObject* datareaderlistenerimpl_capsule)
+{
+  printf("delete_datareaderlistenerimpl_var\n");
+  if (PyCapsule_CheckExact(datareaderlistenerimpl_capsule)) {
+  DataReaderListenerImpl *datareaderlistenerimpl_var = static_cast<DataReaderListenerImpl*>(PyCapsule_GetPointer(datareaderlistenerimpl_capsule, nullptr));
+    if (datareaderlistenerimpl_var) {
+      datareaderlistenerimpl_var->clear();
+      datareaderlistenerimpl_var = nullptr;
+    }
+  }
+}
+
+/*
+ * create_topic(topic: Topic, participant: DomainParticipant, topic_name: str, topic_type: str) -> None
+ *
+ * Assumes all the arguments are the types listed above and the participant has
+ * a OpenDDS DomainParticipant with the type named by topic_type has already
+ * been registered with it.
+ */
+PyObject* create_datareaderlistenerimpl(PyObject* self, PyObject* args)
+{
+  printf("create_datareaderlistenerimpl\n");
+  Ref pydatareaderlistenerimpl;
+  Ref pycallback;
+  if (!PyArg_ParseTuple(args, "OO", &*pydatareaderlistenerimpl, &*pycallback)) {
+    return nullptr;
+  }
+  pydatareaderlistenerimpl++;
+  pycallback++;
+
+  DataReaderListenerImpl *datareaderlistenerimpl = new DataReaderListenerImpl(*pycallback);
+
+  // Attach OpenDDS Topic to Topic Python Object
+  if (set_capsule(*pydatareaderlistenerimpl, datareaderlistenerimpl, delete_datareaderlistenerimpl_var)) {
+    return nullptr;
+  }
+
+  Py_RETURN_NONE;
+}
 
 /**
  * Callback for Python to Call when the Subscriber Capsule is Deleted
  */
 void delete_subscriber_var(PyObject* subscriber_capsule)
 {
+  printf("delete_subscriber_var\n");
   if (PyCapsule_CheckExact(subscriber_capsule)) {
     DDS::Subscriber_var subscriber =
       static_cast<DDS::Subscriber*>(PyCapsule_GetPointer(subscriber_capsule, nullptr));
@@ -401,6 +468,7 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
  */
 PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
+  printf("create_subscriber\n");
   Ref pyparticipant;
   Ref pysubscriber;
   if (!PyArg_ParseTuple(args, "OO", &*pysubscriber, &*pyparticipant)) {
@@ -436,6 +504,7 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
  */
 void delete_publisher_var(PyObject* publisher_capsule)
 {
+  printf("delete_publisher_var\n");
   if (PyCapsule_CheckExact(publisher_capsule)) {
     DDS::Publisher_var publisher =
       static_cast<DDS::Publisher*>(PyCapsule_GetPointer(publisher_capsule, nullptr));
@@ -450,6 +519,7 @@ void delete_publisher_var(PyObject* publisher_capsule)
  */
 PyObject* create_publisher(PyObject* self, PyObject* args)
 {
+  printf("create_publisher\n");
   Ref pyparticipant;
   Ref pypublisher;
   if (!PyArg_ParseTuple(args, "OO", &*pypublisher, &*pyparticipant)) {
@@ -485,6 +555,7 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
  */
 void delete_datareader_var(PyObject* reader_capsule)
 {
+  printf("delete_datareader_var\n");
   if (PyCapsule_CheckExact(reader_capsule)) {
     DDS::DataReader_var reader =
       static_cast<DDS::DataReader*>(PyCapsule_GetPointer(reader_capsule, nullptr));
@@ -601,23 +672,25 @@ bool update_reader_qos(PyObject* pyQos, DDS::DataReaderQos &qos)
 
         return true;
 }
+
 /**
  * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic) -> None
  */
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
+  printf("create_datareader\n");
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
-  Ref pycallback;
+  Ref pydatareaderlistenerimpl;
   Ref pyqos;
-  if (!PyArg_ParseTuple(args, "OOOOO", &*pydatareader, &*pysubscriber, &*pytopic, &*pycallback,&*pyqos )) {
+  if (!PyArg_ParseTuple(args, "OOOOO", &*pydatareader, &*pysubscriber, &*pytopic, &*pydatareaderlistenerimpl, &*pyqos )) {
     return nullptr;
   }
   pydatareader++;
   pysubscriber++;
   pytopic++;
-  pycallback++;
+  pydatareaderlistenerimpl++;
   pyqos++;
 
   // Get Subscriber
@@ -632,13 +705,11 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  DataReaderListenerImpl * listener = nullptr;
-  if (*pycallback != Py_None) {
-    if (PyCallable_Check(*pycallback)) {
-      listener = new DataReaderListenerImpl(*pydatareader, *pycallback);
-    }
-    else {
-      throw Exception("Callback provided is not a callable object", PyExc_TypeError);
+  DataReaderListenerImpl* datareaderlistenerimpl = nullptr;
+  if (*pydatareaderlistenerimpl != Py_None) {
+    datareaderlistenerimpl = get_capsule<DataReaderListenerImpl>(*pydatareaderlistenerimpl);
+    if (!datareaderlistenerimpl) {
+      return nullptr;
     }
   }
   // Create QoS
@@ -647,7 +718,7 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   bool isgoodqos = update_reader_qos(*pyqos,qos);
   // Create DataReader
   DDS::DataReader* datareader = subscriber->create_datareader(
-    topic, qos, listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    topic, qos, datareaderlistenerimpl, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
       return nullptr;
@@ -666,6 +737,7 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 */
 void delete_datawriter_var(PyObject* writer_capsule)
 {
+  printf("delete_datawriter_var\n");
     if (PyCapsule_CheckExact(writer_capsule)) {
         DDS::DataWriter_var writer = static_cast<DDS::DataWriter*>(
             PyCapsule_GetPointer(writer_capsule, nullptr));
@@ -678,6 +750,7 @@ void delete_datawriter_var(PyObject* writer_capsule)
 */
 PyObject* create_datawriter(PyObject* self, PyObject* args)
 {
+  printf("create_datawriter\n");
     Ref pydatawriter;
     Ref pypublisher;
     Ref pytopic;
@@ -855,9 +928,11 @@ PyMethodDef pyopendds_Methods[] = {
     },
     { "create_participant", create_participant, METH_VARARGS, internal_docstr },
     { "participant_cleanup", participant_cleanup, METH_VARARGS, internal_docstr },
+    { "participant_stop", participant_stop, METH_VARARGS, internal_docstr },
     { "create_subscriber", create_subscriber, METH_VARARGS, internal_docstr },
     { "create_publisher", create_publisher, METH_VARARGS, internal_docstr },
     { "create_topic", create_topic, METH_VARARGS, internal_docstr },
+    { "create_datareaderlistenerimpl", create_datareaderlistenerimpl, METH_VARARGS, internal_docstr },
     { "create_datareader", create_datareader, METH_VARARGS, internal_docstr },
     { "create_datawriter", create_datawriter, METH_VARARGS, internal_docstr },
     { "datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr },

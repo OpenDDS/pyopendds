@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .DomainParticipant import DomainParticipant
 
+from _pyopendds import create_topic
+# Get OpenDDS Topic Type Name
+import importlib
 
 class Topic:
     def __init__(
@@ -21,8 +24,6 @@ class Topic:
         self.qos = qos
         self.listener = listener
 
-        # Get OpenDDS Topic Type Name
-        import importlib
 
         self._ts_package: Any = importlib.import_module(
             topic_type._pyopendds_typesupport_packge_name
@@ -30,10 +31,18 @@ class Topic:
         if topic_type not in participant._registered_typesupport:
             self._ts_package.register_type(participant, topic_type)
         self.type_name = self._ts_package.type_name(topic_type)
-        from _pyopendds import create_topic
 
         create_topic(self, participant, name, self.type_name)
 
     @property
     def ts_package(self):
         return self._ts_package
+
+    def __del__(self):
+        print("DELETE", self)
+    
+    def clear(self):
+        print("clear",self)
+        self.name = None
+        self.type = None
+        self.listener = None
