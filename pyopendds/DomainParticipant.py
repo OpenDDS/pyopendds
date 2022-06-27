@@ -5,7 +5,7 @@ from .Subscriber import Subscriber
 from .Publisher import Publisher
 from enum import IntEnum
 
-from _pyopendds import create_participant, participant_cleanup, participant_stop
+from _pyopendds import create_participant, participant_cleanup
 
 
 class DomainParticipant:
