@@ -160,7 +160,6 @@ public:
         IdlType sample;
         DDS::SampleInfo info;
         DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
-        std::cout << "DDS::ReturnCode_t: " << rc << std::endl; // DEBUG
         if (rc != DDS::RETCODE_OK) {
             // TODO: Temporarily inhibit this error and let the user check for its return code
             PyErr_SetString(Errors::PyOpenDDS_Error(), "reader_impl->take_next_sample() failed");
