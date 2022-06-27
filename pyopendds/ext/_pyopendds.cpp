@@ -96,20 +96,16 @@ DataReaderListenerImpl::DataReaderListenerImpl(PyObject* callback) :
 {
     _callback = callback;
     Py_XINCREF(_callback);
-    printf("callback++\n");
 }
 
 void DataReaderListenerImpl::clear()
 {
     Py_XDECREF(_callback);
     _callback == nullptr;
-    printf("callback--\n");
 }
 
 void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 {
-    printf("callback()\n"); 
-
     PyObject *callable = _callback;
     PyObject *result = NULL;
 
@@ -241,13 +237,11 @@ PyObject* init_opendds_impl(PyObject* self, PyObject* args, PyObject* kw)
  */
 void delete_participant_var(PyObject* part_capsule)
 {
-  printf("delete_participant_var\n");
   if (PyCapsule_CheckExact(part_capsule)) {
     DDS::DomainParticipant_var participant =
       static_cast<DDS::DomainParticipant*>(PyCapsule_GetPointer(part_capsule, nullptr));
     if (participant) {
       numParticipant--;
-      // std::cout << "numParticipant: " << numParticipant << std::endl;
       participant = nullptr;
     }
   }
@@ -258,7 +252,6 @@ void delete_participant_var(PyObject* part_capsule)
  */
 PyObject* create_participant(PyObject* self, PyObject* args)
 {
-  printf("create_participant\n");
     Ref pyparticipant;
     unsigned int domain;
     int isRtpstransport;
@@ -267,7 +260,6 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     }
     pyparticipant++;
     numParticipant++;
-    // std::cout << "numParticipant: " << numParticipant << std::endl;
 
     OpenDDS::DCPS::TransportConfig_rch transport_config;
     OpenDDS::DCPS::TransportInst_rch transport_inst;
@@ -302,7 +294,6 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     if (!participant) {
         PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create Participant");
         numParticipant--;
-        // std::cout << "numParticipant: " << numParticipant << std::endl;
         return nullptr;
     }
 
@@ -330,10 +321,10 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
 
     Py_BEGIN_ALLOW_THREADS
     
-    printf("delete_contained_entities\n");
+
     participant->delete_contained_entities();
 
-    printf("delete_participant\n");
+
     participant_factory->delete_participant(participant);
     
     if (numParticipant <= 0)
@@ -350,7 +341,6 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
  */
 void delete_topic_var(PyObject* topic_capsule)
 {
-  printf("delete_topic_var\n");
   if (PyCapsule_CheckExact(topic_capsule)) {
     DDS::Topic_var topic = static_cast<DDS::Topic*>(PyCapsule_GetPointer(topic_capsule, nullptr));
     if (topic) {
@@ -368,7 +358,6 @@ void delete_topic_var(PyObject* topic_capsule)
  */
 PyObject* create_topic(PyObject* self, PyObject* args)
 {
-  printf("create_topic\n");
   Ref pytopic;
   Ref pyparticipant;
   char* name;
@@ -405,7 +394,6 @@ PyObject* create_topic(PyObject* self, PyObject* args)
  */
 void delete_datareaderlistenerimpl_var(PyObject* datareaderlistenerimpl_capsule)
 {
-  printf("delete_datareaderlistenerimpl_var\n");
   if (PyCapsule_CheckExact(datareaderlistenerimpl_capsule)) {
   DataReaderListenerImpl *datareaderlistenerimpl_var = static_cast<DataReaderListenerImpl*>(PyCapsule_GetPointer(datareaderlistenerimpl_capsule, nullptr));
     if (datareaderlistenerimpl_var) {
@@ -424,7 +412,6 @@ void delete_datareaderlistenerimpl_var(PyObject* datareaderlistenerimpl_capsule)
  */
 PyObject* create_datareaderlistenerimpl(PyObject* self, PyObject* args)
 {
-  printf("create_datareaderlistenerimpl\n");
   Ref pydatareaderlistenerimpl;
   Ref pycallback;
   if (!PyArg_ParseTuple(args, "OO", &*pydatareaderlistenerimpl, &*pycallback)) {
@@ -448,7 +435,6 @@ PyObject* create_datareaderlistenerimpl(PyObject* self, PyObject* args)
  */
 void delete_subscriber_var(PyObject* subscriber_capsule)
 {
-  printf("delete_subscriber_var\n");
   if (PyCapsule_CheckExact(subscriber_capsule)) {
     DDS::Subscriber_var subscriber =
       static_cast<DDS::Subscriber*>(PyCapsule_GetPointer(subscriber_capsule, nullptr));
@@ -463,7 +449,6 @@ void delete_subscriber_var(PyObject* subscriber_capsule)
  */
 PyObject* create_subscriber(PyObject* self, PyObject* args)
 {
-  printf("create_subscriber\n");
   Ref pyparticipant;
   Ref pysubscriber;
   if (!PyArg_ParseTuple(args, "OO", &*pysubscriber, &*pyparticipant)) {
@@ -499,7 +484,6 @@ PyObject* create_subscriber(PyObject* self, PyObject* args)
  */
 void delete_publisher_var(PyObject* publisher_capsule)
 {
-  printf("delete_publisher_var\n");
   if (PyCapsule_CheckExact(publisher_capsule)) {
     DDS::Publisher_var publisher =
       static_cast<DDS::Publisher*>(PyCapsule_GetPointer(publisher_capsule, nullptr));
@@ -514,7 +498,6 @@ void delete_publisher_var(PyObject* publisher_capsule)
  */
 PyObject* create_publisher(PyObject* self, PyObject* args)
 {
-  printf("create_publisher\n");
   Ref pyparticipant;
   Ref pypublisher;
   if (!PyArg_ParseTuple(args, "OO", &*pypublisher, &*pyparticipant)) {
@@ -550,7 +533,6 @@ PyObject* create_publisher(PyObject* self, PyObject* args)
  */
 void delete_datareader_var(PyObject* reader_capsule)
 {
-  printf("delete_datareader_var\n");
   if (PyCapsule_CheckExact(reader_capsule)) {
     DDS::DataReader_var reader =
       static_cast<DDS::DataReader*>(PyCapsule_GetPointer(reader_capsule, nullptr));
@@ -673,7 +655,6 @@ bool update_reader_qos(PyObject* pyQos, DDS::DataReaderQos &qos)
  */
 PyObject* create_datareader(PyObject* self, PyObject* args)
 {
-  printf("create_datareader\n");
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
@@ -732,7 +713,6 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
 */
 void delete_datawriter_var(PyObject* writer_capsule)
 {
-  printf("delete_datawriter_var\n");
     if (PyCapsule_CheckExact(writer_capsule)) {
         DDS::DataWriter_var writer = static_cast<DDS::DataWriter*>(
             PyCapsule_GetPointer(writer_capsule, nullptr));
@@ -745,7 +725,6 @@ void delete_datawriter_var(PyObject* writer_capsule)
 */
 PyObject* create_datawriter(PyObject* self, PyObject* args)
 {
-  printf("create_datawriter\n");
     Ref pydatawriter;
     Ref pypublisher;
     Ref pytopic;
