@@ -5,14 +5,7 @@ from .Subscriber import Subscriber
 from .Publisher import Publisher
 from enum import IntEnum
 
-try:
-    from _pyopendds import participant_cleanup  # noqa
-except ImportError as e:
-
-    def participant_cleanup(*args):
-        pass
-
-    pass
+from _pyopendds import create_participant, participant_cleanup
 
 
 class DomainParticipant:
@@ -25,15 +18,26 @@ class DomainParticipant:
         self.publishers: List[Publisher] = []
         self._registered_typesupport: List[Any] = []
 
-        from _pyopendds import create_participant
-
         create_participant(self, domain, isRtpstransport)
 
-    def __del__(self):
-        from _pyopendds import participant_cleanup
-
+    def stop(self):
         participant_cleanup(self)
 
+    def clear(self):
+        for topic in self.topics.values():
+            topic.clear()
+        self.topics.clear()
+        
+        for pub in self.publishers:
+            pub.clear()
+        self.publishers.clear()
+
+        for sub in self.subscribers:
+            sub.clear()
+        self.subscribers.clear()
+        
+        self.listener = None
+        
     def create_topic(
         self, name: str, topic_type: type, qos=None, listener=None
     ) -> Topic:

@@ -5,20 +5,21 @@
 
 Name:           python3-opendds
 Version:        3.20.0
-Release:        2%{?dist}
-Summary:        Python3 wrapper module for OpenDDS
+Release:        3%{?dist}
+Summary:        Setuptools extension to build and package CMake projects
 
 License:        MIT
-URL:            https://github.com/Sdpierret/pyopendds/
+URL:            https://github.com/diegoferigo/%{srcname}
 Source:         packagesource.tar.gz
 
 BuildArch:	x86_64
 BuildRequires:  python38-devel, python38-setuptools, cmake, python3-cmake-build-extension
 BuildRequires:  opendds-devel, python38-jinja2, python38-wheel
 
+Requires: python38-jinja2, python38-wheel
+
 %global _description %{expand:
-PyOpenDDS is a framework for using OpenDDS from Python.
- It has the goal of providing the standard full DDS API in OpenDDS in a Pythonic form.}
+Setuptools extension to build and package CMake projects.}
 
 %description %_description
 
