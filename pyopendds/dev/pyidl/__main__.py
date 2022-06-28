@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from shlex import split
+import re
 
 from zipfile import ZipFile
 from .gencmakefile import gen_cmakelist, gen_cmakeconfig
@@ -204,6 +205,18 @@ def mk_tmp_file(pathname: str, content: str):
     file.close()
 
 
+def process_idl_file_list(idl_list_filename: str) -> list:    
+    with open(idl_list_filename, "r") as fh:
+        raw_idl_list = fh.read()
+        idl_list = re.split("\s+", raw_idl_list)
+        
+        idl_filenames = []
+        for idl_filename in idl_list:
+            idl_filenames.append( os.path.expandvars(idl_filename) )
+
+        return idl_filenames
+
+
 def run():
     parser = argparse.ArgumentParser(
         description="Generate and install IDL Python class(es) from IDL file(s)."
@@ -211,6 +224,9 @@ def run():
         " directory will be embed into the output package."
     )
     parser.add_argument("input_files", nargs="*", help="the .idl source files")
+
+    parser.add_argument("-I", "--input-filelist", default=False, help="list of .idl source files")
+
     parser.add_argument(
         "-p",
         "--package-name",
@@ -269,16 +285,37 @@ def run():
         args.input_files[idx] = abs_filepath
         add_include_path(args, abs_filepath)
 
-    # Discover all .idl files in the current dir if no input given
-    if not args.input_files:
-        for filename in os.listdir(current_dir):
-            f = os.path.join(current_dir, filename)
-            if os.path.isfile(f) and filename.lower().endswith(".idl"):
-                args.input_files.append(f)
-                add_include_path(args, f)
-        if len(args.input_files) == 0:
-            print("Error: no IDL file to compile in the current directory.")
-            sys.exit(1)
+
+    # Allow only one input method for IDL files
+    if not args.input_files and not args.input_filelist:
+        print("Error: Cannot add IDLs from pyidl arguments and from an input file source (-I)")
+        sys.exit(1)
+    
+    input_idl_filenames = None
+
+    # List IDLs from file
+    if args.input_filelist:
+        idl_source_filename = os.path.join(current_dir, args.input_filelist)
+        print("List IDLs from:", idl_source_filename)
+        # extract list of filenames
+        input_idl_filenames = process_idl_file_list(idl_source_filename)
+    # List IDLs from arguments
+    elif args.input_files:
+        input_idl_filenames = args.input_files
+    else:
+        raise Exception("Error while parsing the list of IDLs filenames")
+
+    # Expand patterns for each filename
+    input_idl_filenames_ext = []
+    for filename in input_idl_filenames:
+        filenames = glob.glob(filename)
+        input_idl_filenames_ext.extend( filenames )
+
+    args.input_files = input_idl_filenames_ext
+
+    if len(args.input_files) == 0:
+        print("Error: no IDL files provided.")
+        sys.exit(1)
 
     # Parse package name. If no name is given, the basename of the first .idl file will be taken
     if not args.package_name:
