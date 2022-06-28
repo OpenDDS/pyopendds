@@ -177,8 +177,8 @@ def mk_tmp_package_proj(args: argparse.Namespace):
     python_build_dir = os.path.join(args.build_dir, args.package_name)
     # tmp_env = os.environ.copy()
     # tmp_env["{package_name}_idl_DIR".format(package_name=args.package_name)] = cmake_config_dir
-    cmd = "python3 setup.py bdist_wheel --dist-dir={dist_dir}".format(
-        package_name=args.package_name, dist_dir=args.dist_dir
+    cmd = "{exe} setup.py bdist_wheel --dist-dir={dist_dir}".format(
+        exe=sys.executable, package_name=args.package_name, dist_dir=args.dist_dir
     )
     # subprocess_check_run(split(cmd), cwd=python_build_dir, env=tmp_env)
     subprocess_check_run(split(cmd), cwd=python_build_dir)
