@@ -8,6 +8,13 @@ def cpp_name(name_parts):
     return "::" + "::".join(name_parts)
 
 
+def type_is_primitive(type_node) -> bool:
+    if isinstance(type_node, PrimitiveType):
+        return True
+    else:
+        return False
+
+
 def cpp_type_name(type_node):
     if isinstance(type_node, PrimitiveType):
         return type_node.kind.name
@@ -169,34 +176,53 @@ class CppOutput(Output):
             "Ref field_value;",
         ]
         sequence_from_lines = []
-        to_lines = [
-            "Ref field_elem;",
-            "field_value = PyList_New(0);",
-            "for (int i = 0; i < cpp.length(); i++) {{",
-            "    {pyopendds_type} elem = cpp[i];",
-            "    field_elem = nullptr;",
-            "    Type<{pyopendds_type}>::cpp_to_python(elem",
-            "    #ifdef CPP11_IDL",
-            "        ()",
-            "    #endif",
-            "        , *field_elem);",
-            "    PyList_Append(py, *field_elem);",
-            "}}",
-        ]
+        if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
+            to_lines = [
+                "printf(\"received a sequence\\n\");",
+                "char* buff = (char*)cpp.get_buffer();",
+                "py = PyMemoryView_FromMemory(&buff[0], cpp.length(), PyBUF_READ);",
+                "Py_INCREF(py);",
+                "printf(\"address first data: %p\\n\", buff);",
+                "printf(\"data: %02X %02X %02X %02X %02X\\n\", buff[0], buff[1], buff[2], buff[3], buff[4]);",
+                "printf(\"memoryView created\\n\");",
+            ]
+        else:
+            to_lines = [
+                "Ref field_elem;",
+                "field_value = PyList_New(0);",
+                "for (int i = 0; i < cpp.length(); i++) {{",
+                "    {pyopendds_type} elem = cpp[i];",
+                "    field_elem = nullptr;",
+                "    Type<{pyopendds_type}>::cpp_to_python(elem",
+                "    #ifdef CPP11_IDL",
+                "        ()",
+                "    #endif",
+                "        , *field_elem);",
+                "    PyList_Append(py, *field_elem);",
+                "}}",
+            ]
 
         pyopendds_type = cpp_type_name(sequence_type.base_type)
-        from_lines = [
-            "cpp.length(PyList_Size(py));",
-            "for (int i = 0; i < PyList_Size(py); i++) {{",
-            "    {pyopendds_type} elem = cpp[i];",
-            "    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem",
-            "#ifdef CPP11_IDL",
-            "    ()",
-            "#endif",
-            "    );",
-            "    cpp[i] = elem;",
-            "}}",
-        ]
+        print(sequence_type.name.itl_name)
+        if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
+            from_lines = [
+                "printf(\"received a memory view\\n\");",
+                "cpp.replace(PyMemoryView_GET_BUFFER(py)->len, PyMemoryView_GET_BUFFER(py)->len, (char *) PyBuffer_GetPointer(PyMemoryView_GET_BUFFER(py), 0));",
+                "printf(\"Created\\n\");"
+            ]
+        else:
+            from_lines = [
+                "cpp.length(PyList_Size(py));",
+                "for (int i = 0; i < PyList_Size(py); i++) {{",
+                "    {pyopendds_type} elem = cpp[i];",
+                "    Type<{pyopendds_type}>::python_to_cpp(PyList_GetItem(py, i), elem",
+                "#ifdef CPP11_IDL",
+                "    ()",
+                "#endif",
+                "    );",
+                "    cpp[i] = elem;",
+                "}}",
+            ]
 
         def line_process(lines):
             return [""] + [
