@@ -14,7 +14,9 @@ Source:         packagesource.tar.gz
 
 BuildArch:	x86_64
 BuildRequires:  python38-devel, python38-setuptools, cmake, python3-cmake-build-extension
-BuildRequires:  opendds-devel, python3-jinja2
+BuildRequires:  opendds-devel, python38-jinja2, python38-wheel
+
+Requires: python38-jinja2, python38-wheel
 
 %global _description %{expand:
 Setuptools extension to build and package CMake projects.}
