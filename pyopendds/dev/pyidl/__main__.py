@@ -207,12 +207,17 @@ def mk_tmp_file(pathname: str, content: str):
 
 def process_idl_file_list(idl_list_filename: str) -> list:    
     with open(idl_list_filename, "r") as fh:
-        raw_idl_list = fh.read()
-        idl_list = re.split("\s+", raw_idl_list)
-        
+        raw_idl_list = fh.read()    
+
+        # separate filenames, ignore dash comments 
+        rx = re.compile(r'^\s*([^#\n]+).*$', re.MULTILINE)
+        idl_list = rx.findall(raw_idl_list)
+
         idl_filenames = []
         for idl_filename in idl_list:
-            idl_filenames.append( os.path.expandvars(idl_filename) )
+            idl_filename_exp = os.path.expandvars(idl_filename)
+            idl_filenames_exp = glob.glob(idl_filename_exp)
+            idl_filenames.extend( idl_filenames_exp )
 
         return idl_filenames
 
@@ -291,27 +296,16 @@ def run():
         print("Error: Cannot add IDLs from pyidl arguments and from an input file source (-I)")
         sys.exit(1)
     
-    input_idl_filenames = None
-
     # List IDLs from file
     if args.input_filelist:
         idl_source_filename = os.path.join(current_dir, args.input_filelist)
         print("List IDLs from:", idl_source_filename)
         # extract list of filenames
-        input_idl_filenames = process_idl_file_list(idl_source_filename)
-    # List IDLs from arguments
-    elif args.input_files:
-        input_idl_filenames = args.input_files
+        args.input_files = process_idl_file_list(idl_source_filename)
+
+    # List IDLs from arguments (list already in args.input_files)
     else:
-        raise Exception("Error while parsing the list of IDLs filenames")
-
-    # Expand patterns for each filename
-    input_idl_filenames_ext = []
-    for filename in input_idl_filenames:
-        filenames = glob.glob(filename)
-        input_idl_filenames_ext.extend( filenames )
-
-    args.input_files = input_idl_filenames_ext
+        pass
 
     if len(args.input_files) == 0:
         print("Error: no IDL files provided.")
