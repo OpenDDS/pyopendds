@@ -49,21 +49,24 @@ class DataReader:
         datareader_wait_for(self, status, *normalize_time_duration(timeout))
 
     def take_next_sample(self) -> Any:
-        return self.topic.ts_package.take_next_sample(self)
-
-    def on_data_available_callback(self):
-        sample = None
         try:
-            sample = self.take_next_sample()
+            return self.topic.ts_package.take_next_sample(self)
         except: # we inhibit Exceptions due to wrong sample received
-            pass
+            return None
+            
+    def on_data_available_callback(self):
+        sample = self.take_next_sample()
+        
         if sample is None:
-            pass
-        elif self.listener is not None:
-            if self.context is None:
-                self.listener(sample)
-            else:
-                self.listener(sample, self.context)
+            return
+        
+        if self.listener is None:
+            return
+        
+        if self.context is None:
+            self.listener(sample)
+        else:
+            self.listener(sample, self.context)
 
     def clear(self):
         if self.datareaderlistenerimpl is not None:
