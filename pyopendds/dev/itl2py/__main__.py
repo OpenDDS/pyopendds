@@ -22,6 +22,15 @@ def main():
         help="Files that contain the types definitions.",
     )
     argparser.add_argument(
+        "-i",
+        "--include-itl-files",
+        metavar="INCLUDE_ITL_FILE",
+        type=Path,
+        nargs="+",
+        default=[],
+        help="Files to include at the types definitions.",
+    )
+    argparser.add_argument(
         "-o",
         "--output",
         type=Path,
