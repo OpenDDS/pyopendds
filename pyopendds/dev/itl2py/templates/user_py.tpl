@@ -25,7 +25,11 @@ class {{ type.local_name }}(_pyopendds_enum):
     {{ member.name }} = {{ member.value }}
 {%- endfor %}
 {%- elif type.sequence %}
+{%- if type.sequence.type == "chr" %}
+class {{ type.local_name }}(bytes):
+{%- else %}
 class {{ type.local_name }}(list):
+{%- endif %}
     _base_type = {{ type.sequence.type }}
     _max_len = {{ type.sequence.len }}
 {%- else %}
