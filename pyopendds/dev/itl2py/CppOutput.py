@@ -178,7 +178,9 @@ class CppOutput(Output):
         sequence_from_lines = []
         if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
             to_lines = [
-                "py = PyMemoryView_FromMemory((char*)cpp.get_buffer(), cpp.length(), PyBUF_READ);",
+                "char* buff = (char*)cpp.get_buffer();",
+                "py = PyMemoryView_FromMemory(&buff[0], cpp.length(), PyBUF_READ);",
+                "Py_INCREF(py);"
             ]
         else:
             to_lines = [
@@ -195,14 +197,18 @@ class CppOutput(Output):
                 "    PyList_Append(py, *field_elem);",
                 "}}",
             ]
-            
         pyopendds_type = cpp_type_name(sequence_type.base_type)
         print(sequence_type.name.itl_name)
-        if hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "c8":
+        if False and hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "q8":
             from_lines = [
-                "printf(\"received a memory view\\n\");",
-                "cpp.replace(PyMemoryView_GET_BUFFER(py)->len, PyMemoryView_GET_BUFFER(py)->len, (char *) PyBuffer_GetPointer(PyMemoryView_GET_BUFFER(py), 0));",
-                "printf(\"Created\\n\");"
+                "PyTypeObject * type = py->ob_type;",
+                "const char * p = type->tp_name;",
+                "Py_buffer * view = (Py_buffer *) malloc(sizeof(*view));",
+                "int error = PyObject_GetBuffer(py, view, PyBUF_SIMPLE);",
+                "char* buf = cpp.allocbuf(view->len);",
+                "memcpy(buf, view->buf, view->len);",
+                "//cpp.replace(view->len, view->len, (char*)view->buf);",
+                "free(view);"
             ]
         else:
             from_lines = [
