@@ -2,6 +2,10 @@ python3-opendds (3.20-6) focal; urgency=medium
 
   * use memoryview for char list
 
+python3-opendds (3.20-3) focal; urgency=medium
+
+  * fix release of ressources on exit
+
  -- Dragonfly <dragonfly@upnext.com>  Thu, 09 Jun 2022 10:51:47 +0200
 
 python3-opendds (3.20-2) focal; urgency=medium

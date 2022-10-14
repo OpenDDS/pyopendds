@@ -56,9 +56,9 @@ PyObject* opendds_version_dict(PyObject*, PyObject*)
 class DataReaderListenerImpl : public virtual OpenDDS::DCPS::LocalObject<DDS::DataReaderListener> {
 
 public:
-    DataReaderListenerImpl(PyObject * self, PyObject *callback);
+    DataReaderListenerImpl(PyObject *callback);
 
-
+    void clear();
 
     virtual void on_requested_deadline_missed(
         DDS::DataReader_ptr reader,
@@ -89,22 +89,30 @@ public:
 
 private:
     PyObject *_callback;
-    PyObject * _self;
 };
 
-DataReaderListenerImpl::DataReaderListenerImpl(PyObject* self, PyObject* callback) :
+DataReaderListenerImpl::DataReaderListenerImpl(PyObject* callback) :
     OpenDDS::DCPS::LocalObject<DDS::DataReaderListener>()
 {
-    _self = self;
-    Py_XINCREF(_self);
     _callback = callback;
     Py_XINCREF(_callback);
+}
+
+void DataReaderListenerImpl::clear()
+{
+    Py_XDECREF(_callback);
+    _callback == nullptr;
 }
 
 void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
 {
     PyObject *callable = _callback;
     PyObject *result = NULL;
+
+    if(_callback == nullptr)
+    {
+      throw Exception("callback undefined", PyExc_TypeError);
+    }
 
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -119,11 +127,9 @@ void DataReaderListenerImpl::on_data_available(DDS::DataReader_ptr reader)
             throw Exception("Pyobject is not a callable", PyExc_TypeError);
         }
     } catch (Exception& e) {
-        //    Py_XDECREF(callable);
         PyGILState_Release(gstate);
         throw e;
     }
-    //Py_XDECREF(callable);
     PyGILState_Release(gstate);
 }
 
@@ -295,7 +301,6 @@ PyObject* create_participant(PyObject* self, PyObject* args)
     if (set_capsule(*pyparticipant, participant, delete_participant_var)) {
         return nullptr;
     }
-
   Py_RETURN_NONE;
 }
 
@@ -314,17 +319,20 @@ PyObject* participant_cleanup(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-    numParticipant--;
-    // std::cout<<numParticipant<<"\n" ;
+    Py_BEGIN_ALLOW_THREADS
+    
 
     participant->delete_contained_entities();
+
+
     participant_factory->delete_participant(participant);
-
-    if (numParticipant == 0)
+    
+    if (numParticipant <= 0)
     {
-
         TheServiceParticipant->shutdown();
     }
+
+    Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
 
@@ -376,6 +384,46 @@ PyObject* create_topic(PyObject* self, PyObject* args)
 
   // Attach OpenDDS Topic to Topic Python Object
   if (set_capsule(*pytopic, topic, delete_topic_var)) {
+    return nullptr;
+  }
+
+  Py_RETURN_NONE;
+}
+/**
+ * Callback for Python to Call when the DataReaderListenerImpl Capsule is Deleted
+ */
+void delete_datareaderlistenerimpl_var(PyObject* datareaderlistenerimpl_capsule)
+{
+  if (PyCapsule_CheckExact(datareaderlistenerimpl_capsule)) {
+  DataReaderListenerImpl *datareaderlistenerimpl_var = static_cast<DataReaderListenerImpl*>(PyCapsule_GetPointer(datareaderlistenerimpl_capsule, nullptr));
+    if (datareaderlistenerimpl_var) {
+      datareaderlistenerimpl_var->clear();
+      datareaderlistenerimpl_var = nullptr;
+    }
+  }
+}
+
+/*
+ * create_topic(topic: Topic, participant: DomainParticipant, topic_name: str, topic_type: str) -> None
+ *
+ * Assumes all the arguments are the types listed above and the participant has
+ * a OpenDDS DomainParticipant with the type named by topic_type has already
+ * been registered with it.
+ */
+PyObject* create_datareaderlistenerimpl(PyObject* self, PyObject* args)
+{
+  Ref pydatareaderlistenerimpl;
+  Ref pycallback;
+  if (!PyArg_ParseTuple(args, "OO", &*pydatareaderlistenerimpl, &*pycallback)) {
+    return nullptr;
+  }
+  pydatareaderlistenerimpl++;
+  pycallback++;
+
+  DataReaderListenerImpl *datareaderlistenerimpl = new DataReaderListenerImpl(*pycallback);
+
+  // Attach OpenDDS Topic to Topic Python Object
+  if (set_capsule(*pydatareaderlistenerimpl, datareaderlistenerimpl, delete_datareaderlistenerimpl_var)) {
     return nullptr;
   }
 
@@ -601,6 +649,7 @@ bool update_reader_qos(PyObject* pyQos, DDS::DataReaderQos &qos)
 
         return true;
 }
+
 /**
  * create_datareader(datareader: DataReader, subscriber: Subscriber, topic: Topic) -> None
  */
@@ -609,15 +658,15 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   Ref pydatareader;
   Ref pysubscriber;
   Ref pytopic;
-  Ref pycallback;
+  Ref pydatareaderlistenerimpl;
   Ref pyqos;
-  if (!PyArg_ParseTuple(args, "OOOOO", &*pydatareader, &*pysubscriber, &*pytopic, &*pycallback,&*pyqos )) {
+  if (!PyArg_ParseTuple(args, "OOOOO", &*pydatareader, &*pysubscriber, &*pytopic, &*pydatareaderlistenerimpl, &*pyqos )) {
     return nullptr;
   }
   pydatareader++;
   pysubscriber++;
   pytopic++;
-  pycallback++;
+  pydatareaderlistenerimpl++;
   pyqos++;
 
   // Get Subscriber
@@ -632,13 +681,11 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
     return nullptr;
   }
 
-  DataReaderListenerImpl * listener = nullptr;
-  if (*pycallback != Py_None) {
-    if (PyCallable_Check(*pycallback)) {
-      listener = new DataReaderListenerImpl(*pydatareader, *pycallback);
-    }
-    else {
-      throw Exception("Callback provided is not a callable object", PyExc_TypeError);
+  DataReaderListenerImpl* datareaderlistenerimpl = nullptr;
+  if (*pydatareaderlistenerimpl != Py_None) {
+    datareaderlistenerimpl = get_capsule<DataReaderListenerImpl>(*pydatareaderlistenerimpl);
+    if (!datareaderlistenerimpl) {
+      return nullptr;
     }
   }
   // Create QoS
@@ -647,7 +694,7 @@ PyObject* create_datareader(PyObject* self, PyObject* args)
   bool isgoodqos = update_reader_qos(*pyqos,qos);
   // Create DataReader
   DDS::DataReader* datareader = subscriber->create_datareader(
-    topic, qos, listener, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+    topic, qos, datareaderlistenerimpl, OpenDDS::DCPS::DEFAULT_STATUS_MASK);
   if (!datareader) {
     PyErr_SetString(Errors::PyOpenDDS_Error(), "Failed to Create DataReader");
       return nullptr;
@@ -858,6 +905,7 @@ PyMethodDef pyopendds_Methods[] = {
     { "create_subscriber", create_subscriber, METH_VARARGS, internal_docstr },
     { "create_publisher", create_publisher, METH_VARARGS, internal_docstr },
     { "create_topic", create_topic, METH_VARARGS, internal_docstr },
+    { "create_datareaderlistenerimpl", create_datareaderlistenerimpl, METH_VARARGS, internal_docstr },
     { "create_datareader", create_datareader, METH_VARARGS, internal_docstr },
     { "create_datawriter", create_datawriter, METH_VARARGS, internal_docstr },
     { "datareader_wait_for", datareader_wait_for, METH_VARARGS, internal_docstr },
