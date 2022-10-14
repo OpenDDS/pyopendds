@@ -197,7 +197,6 @@ class CppOutput(Output):
                 "    PyList_Append(py, *field_elem);",
                 "}}",
             ]
-
         pyopendds_type = cpp_type_name(sequence_type.base_type)
         print(sequence_type.name.itl_name)
         if False and hasattr(sequence_type.base_type, "kind") and sequence_type.base_type.kind.name == "q8":
@@ -236,7 +235,7 @@ class CppOutput(Output):
 
         sequence_to_lines.extend(line_process(to_lines))
         sequence_from_lines.extend(line_process(from_lines))
-
+        
         self.context["types"].append(
             {
                 "cpp_name": cpp_name(sequence_type.name.parts),

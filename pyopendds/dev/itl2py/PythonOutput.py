@@ -68,7 +68,10 @@ class PythonOutput(Output):
             return type_node in self.module.types.values()
 
     def get_python_type_string(self, field_type):
-        if isinstance(field_type, PrimitiveType):
+        if isinstance(field_type, SequenceType) and isinstance(field_type.base_type, PrimitiveType) \
+                and field_type.base_type.kind.name in ["c8"]:
+                return "memoryview"
+        elif isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
         else:
             return field_type.local_name()
@@ -104,9 +107,7 @@ class PythonOutput(Output):
                         dict(
                             name=name,
                             type=self.get_python_type_string(node.type_node),
-                            default_value=self.get_python_default_value_string(
-                                node.type_node
-                            ),
+                            default_value=self.get_python_default_value_string(node.type_node),
                         )
                         for name, node in struct_type.fields.items()
                     ],
