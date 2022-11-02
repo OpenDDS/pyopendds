@@ -213,7 +213,7 @@ PyModuleDef /*{{ native_package_name }}*/_Module = {
 
 PyMODINIT_FUNC PyInit_/*{{ native_package_name }}*/()
 {
-  PySys_WriteStderr("\n MODULE CREATION /*{{ native_package_name }}*/\n");
+  PySys_WriteStderr("PyOpenDDS: Init Module /*{{ native_package_name }}*/\n");
   PyObject* module = PyModule_Create(&/*{{ native_package_name }}*/_Module);
   if (!module || pyopendds::Errors::cache()) {
     return nullptr;
