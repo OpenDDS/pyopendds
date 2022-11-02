@@ -78,14 +78,22 @@ public:
     cpp = static_cast</*{{ type.cpp_name }}*/>(PyLong_AsLong(py));
     /*{% else %}*/
     if (py) {
-      if (PyObject_IsInstance(py, cls) != 1 && PyObject_IsSubclass(cls, PyObject_Type(py)) != 1) {
-        const char * actual_type = PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__"));
-        std::stringstream msg;
-        msg << "python_to_cpp: PyObject(";
-        msg << actual_type;
-        msg << ") is not of type";
-        msg << "/*{{ type.local_name }}*/ nor is not parent class.";
-        throw Exception(msg.str().c_str(), PyExc_TypeError);
+      
+      std::string class_name = std::string("/*{{ type.local_name }}*/");
+      std::string type_name = std::string(Py_TYPE(py)->tp_name);
+
+      int equals = class_name.compare(type_name);
+
+      bool is_subclass = PyObject_IsSubclass(cls, PyObject_Type(py));
+      
+      // if pas equal ou pas subcalss
+      if (equals != 0 && is_subclass == false) {
+        PySys_WriteStderr("class_name = %s, type_name = %s\n", class_name.c_str(), type_name.c_str(), equals);
+        PySys_WriteStderr("equals = %d\nis_subclass = %s\n", equals, is_subclass);
+        std::string actual_type = std::string(PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__")));
+        std::string msg = "python_to_cpp: PyObject( " +  actual_type + " ) is not of type /*{{ type.local_name }}*/ nor is not parent class.";
+        PyErr_SetString(PyExc_TypeError, msg.c_str());
+        throw PyErr_Occurred();
       }
     } else {
       Ref args;
@@ -178,11 +186,11 @@ PyObject* pywrite(PyObject* self, PyObject* args)
   Ref pytype = PyObject_GetAttrString(*pytopic, "type");
   if (!pytype) return nullptr;
 
-  try {
+//  try {
     return TopicTypeBase::find(*pytype)->write(*pywriter, *pysample);
-  } catch (const Exception& e) {
-    return e.set();
-  }
+//  } catch (const Exception& e) {
+//    return e.set();
+//  }
 }
 
 PyMethodDef /*{{ native_package_name }}*/_Methods[] = {
@@ -205,6 +213,7 @@ PyModuleDef /*{{ native_package_name }}*/_Module = {
 
 PyMODINIT_FUNC PyInit_/*{{ native_package_name }}*/()
 {
+  PySys_WriteStderr("PyOpenDDS: Init Module /*{{ native_package_name }}*/\n");
   PyObject* module = PyModule_Create(&/*{{ native_package_name }}*/_Module);
   if (!module || pyopendds::Errors::cache()) {
     return nullptr;
