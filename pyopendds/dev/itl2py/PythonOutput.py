@@ -24,7 +24,7 @@ class PythonOutput(Output):
         PrimitiveType.Kind.i64: ("int", "0"),
         PrimitiveType.Kind.f32: ("float", "0.0"),
         PrimitiveType.Kind.f64: ("float", "0.0"),
-        PrimitiveType.Kind.c8: ("str", "'\\x00'"),
+        PrimitiveType.Kind.c8: ("chr", "'\\x00'"),
         PrimitiveType.Kind.c16: ("str", "'\\x00'"),
         PrimitiveType.Kind.s8: ("str", "''"),
         PrimitiveType.Kind.s16: ("str", "''"),
@@ -68,7 +68,10 @@ class PythonOutput(Output):
             return type_node in self.module.types.values()
 
     def get_python_type_string(self, field_type):
-        if isinstance(field_type, PrimitiveType):
+        if isinstance(field_type, SequenceType) and isinstance(field_type.base_type, PrimitiveType) \
+                and field_type.base_type.kind.name in ["c8"]:
+                return "memoryview"
+        elif isinstance(field_type, PrimitiveType):
             return self.primitive_types[field_type.kind][0]
         else:
             return field_type.local_name()
@@ -83,7 +86,10 @@ class PythonOutput(Output):
             elif isinstance(field_type, EnumType):
                 return type_name + "." + field_type.default_member
             elif isinstance(field_type, SequenceType):
-                return "field(default_factory={type})".format(type=type_name)
+                if isinstance(field_type.base_type, PrimitiveType) and field_type.base_type.kind.name in ["c8"]:
+                    return "memoryview(bytearray('', 'utf-8'))"
+                else:
+                    return "field(default_factory={type})".format(type=type_name)
             elif isinstance(field_type, ArrayType):
                 return "field(default_factory=list)"
             else:
@@ -91,8 +97,7 @@ class PythonOutput(Output):
 
     def visit_struct(self, struct_type):
         self.context["has_struct"] = True
-        self.context["types"].append(
-            dict(
+        d = dict(
                 local_name=struct_type.local_name(),
                 type_support=self.context["native_package_name"]
                 if struct_type.is_topic_type
@@ -102,15 +107,13 @@ class PythonOutput(Output):
                         dict(
                             name=name,
                             type=self.get_python_type_string(node.type_node),
-                            default_value=self.get_python_default_value_string(
-                                node.type_node
-                            ),
+                            default_value=self.get_python_default_value_string(node.type_node),
                         )
                         for name, node in struct_type.fields.items()
                     ],
                 ),
             )
-        )
+        self.context["types"].append(d)
 
     def visit_enum(self, enum_type):
         self.context["has_enum"] = True
@@ -131,15 +134,14 @@ class PythonOutput(Output):
         type = sequence_type.base_type.local_name()
         if type == None:
             type = self.primitive_types[sequence_type.base_type.kind][0]
-        self.context["types"].append(
-            dict(
-                local_name=sequence_type.local_name(),
-                type_support=self.context["native_package_name"]
-                if sequence_type.is_topic_type
-                else None,
-                sequence=dict(
-                    type=type,
-                    len=sequence_type.max_count,
-                ),
-            )
+        d = dict(
+            local_name=sequence_type.local_name(),
+            type_support=self.context["native_package_name"]
+            if sequence_type.is_topic_type
+            else None,
+            sequence=dict(
+                type=type,
+                len=sequence_type.max_count,
+            ),
         )
+        self.context["types"].append(d)

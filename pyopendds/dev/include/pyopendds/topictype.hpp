@@ -123,6 +123,18 @@ public:
             throw Exception();
     }
 
+    /**
+    * Callback for Python to call when the sample capsule is deleted
+    */
+    static void delete_sample(PyObject* capsule)
+    {
+        printf("delete_sample\n");
+        if (PyCapsule_CheckExact(capsule)) {
+            IdlType* sample = static_cast<IdlType*>(PyCapsule_GetPointer(capsule, nullptr));
+            if (sample) delete sample;
+        }
+    }
+
     PyObject* take_next_sample(PyObject* pyreader)
     {
         DDS::DataReader* reader = get_capsule<DDS::DataReader>(pyreader);
@@ -157,9 +169,9 @@ public:
 // #else
         // TODO: fallback to naive implementation
         
-        IdlType sample;
+        IdlType* sample = new IdlType();
         DDS::SampleInfo info;
-        DDS::ReturnCode_t rc = reader_impl->take_next_sample(sample, info);
+        DDS::ReturnCode_t rc = reader_impl->take_next_sample(*sample, info);
         if (rc != DDS::RETCODE_OK) {
             // TODO: Temporarily inhibit this error and let the user check for its return code
             throw Exception("reader_impl->take_next_sample() failed", Errors::PyOpenDDS_Error());
@@ -168,7 +180,8 @@ public:
 // #endif
         if (info.valid_data) {
             PyObject* rv = nullptr;
-            Type<IdlType>::cpp_to_python(sample, rv);
+            Type<IdlType>::cpp_to_python(*sample, rv);
+            set_capsule(rv, sample, delete_sample);
             return rv;
         } else {
             throw Exception("received invalid data", Errors::PyOpenDDS_Error());
