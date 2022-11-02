@@ -4,7 +4,7 @@
 %define __python3 /usr/bin/python3.8
 
 Name:           python3-opendds
-Version:        3.20.1
+Version:        3.20.3
 Release:        0%{?dist}
 Summary:        Setuptools extension to build and package CMake projects
 
