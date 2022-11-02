@@ -1,6 +1,14 @@
-python3-opendds (3.20-6) focal; urgency=medium
+python3-opendds (3.20.2-0) focal; urgency=medium
 
   * use memoryview for char list
+
+ -- Dragonfly <dragonfly@upnext.com>  Wed, 02 Nov 2022 17:13:30 +0200
+
+python3-opendds (3.20.1-0) focal; urgency=medium
+
+  * Add include itl file option argument
+
+ -- Dragonfly <dragonfly@upnext.com>  Thu, 09 Jun 2022 10:51:47 +0200
 
 python3-opendds (3.20-3) focal; urgency=medium
 

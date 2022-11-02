@@ -76,6 +76,7 @@ def generate(context: dict) -> None:
       - idl_library_cmake_name
       - idl_library_build_dir
       - itl_files
+      - include_itl_files
       - output
       - package_name
       - native_package_name

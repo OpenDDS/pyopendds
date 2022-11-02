@@ -38,6 +38,9 @@ class CppOutput(Output):
                 idl_names=[
                     itl_file.name[: -len(".itl")] for itl_file in context["itl_files"]
                 ],
+                include_idl_names=[
+                    include_itl_file.name[: -len(".itl")] for include_itl_file in context["include_itl_files"]
+                ],
                 types=[],
                 jinja=Environment(
                     loader=context["jinja_loader"],
