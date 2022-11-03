@@ -128,7 +128,6 @@ public:
     */
     static void delete_sample(PyObject* capsule)
     {
-        printf("delete_sample\n");
         if (PyCapsule_CheckExact(capsule)) {
             IdlType* sample = static_cast<IdlType*>(PyCapsule_GetPointer(capsule, nullptr));
             if (sample) delete sample;
