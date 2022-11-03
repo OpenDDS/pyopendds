@@ -86,10 +86,10 @@ public:
 
       bool is_subclass = PyObject_IsSubclass(cls, PyObject_Type(py));
       
-      // if pas equal ou pas subcalss
+      // if pas equal ou pas subclass
       if (equals != 0 && is_subclass == false) {
-        PySys_WriteStderr("class_name = %s, type_name = %s\n", class_name.c_str(), type_name.c_str(), equals);
-        PySys_WriteStderr("equals = %d\nis_subclass = %s\n", equals, is_subclass);
+        PySys_WriteStderr("class_name = %s, type_name = %s\n", class_name.c_str(), type_name.c_str());
+        PySys_WriteStderr("equals = %d\nis_subclass = %d\n", equals, is_subclass);
         std::string actual_type = std::string(PyUnicode_AsUTF8(PyObject_GetAttrString(PyObject_Type(py),"__name__")));
         std::string msg = "python_to_cpp: PyObject( " +  actual_type + " ) is not of type /*{{ type.local_name }}*/ nor is not parent class.";
         PyErr_SetString(PyExc_TypeError, msg.c_str());
@@ -213,7 +213,6 @@ PyModuleDef /*{{ native_package_name }}*/_Module = {
 
 PyMODINIT_FUNC PyInit_/*{{ native_package_name }}*/()
 {
-  PySys_WriteStderr("PyOpenDDS: Init Module /*{{ native_package_name }}*/\n");
   PyObject* module = PyModule_Create(&/*{{ native_package_name }}*/_Module);
   if (!module || pyopendds::Errors::cache()) {
     return nullptr;
