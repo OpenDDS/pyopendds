@@ -8,6 +8,6 @@ X-Python3-Version: >= 3.8
 
 Package: python3-opendds
 Architecture: amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, opendds (>= 3.20)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, opendds (>= 3.20), python3-cmake-build-extension
 Description: Python3 library for opendds
  allow Python3 applications to use the OpenDDS library.
