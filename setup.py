@@ -53,6 +53,7 @@ setup(
     },
     install_requires=[
         'jinja2',
-        'cmake'
+        'cmake',
+        'cmake-build-extension'
     ]
 )

@@ -1,3 +1,9 @@
+python3-opendds (3.20.5-2) focal; urgency=medium
+
+  * Add python3-cmake-build-extension on setup.py depends
+
+ -- Dragonfly <dragonfly@upnext.com>  Tue, 29 Nov 2022 17:18:19 +0200
+
 python3-opendds (3.20.5-1) focal; urgency=medium
 
   * Add python3-cmake-build-extension on depends
