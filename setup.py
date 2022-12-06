@@ -54,6 +54,8 @@ setup(
     install_requires=[
         'jinja2',
         'cmake',
-        'cmake-build-extension'
+        'cmake-build-extension',
+        'setuptools>=60.0',
+        'pip>=22.0'
     ]
 )
